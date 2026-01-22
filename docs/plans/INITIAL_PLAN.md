@@ -36,15 +36,113 @@ trinity auth logout             # Clear local auth session
 trinity auth status             # Show subscription/auth status
 ```
 
-**Init & Run:**
+**Chat & Planning:**
 ```bash
-trinity init                    # Smart init with Claude (analyzes project)
+trinity chat                    # Interactive mode - discuss, plan, orchestrate
+trinity analyze                 # Deep dive on codebase, suggest next steps
+trinity plan "add auth"         # Generate implementation plan for a feature
+trinity plan show               # Show current plan
+trinity plan approve            # Approve plan, generate stories
+```
+
+**PRD Management:**
+```bash
+trinity prd generate            # Turn rough idea/plan into structured stories
+trinity prd refine              # AI review and improve existing stories
+trinity prd show                # Show full PRD
+```
+
+**Run Loop:**
+```bash
 trinity run                     # Run loop (foreground, streaming output)
 trinity run --bg                # Run in background
 trinity run --once              # Single story only
 trinity watch                   # Attach to running loop, stream output
 trinity finish                  # Complete current story, then exit gracefully
 trinity kill                    # Hard stop immediately
+```
+
+**Init:**
+```bash
+trinity init                    # Smart init with Claude (analyzes project)
+```
+
+**Features (Parallel Workspaces):**
+```bash
+trinity feature create "auth"         # Clone repo into isolated workspace
+trinity feature create "payments"     # Another parallel feature
+trinity feature list                  # Show all features and status
+trinity feature list --available      # Only features ready to start (deps met)
+trinity feature suggest               # Suggest parallelization opportunities
+trinity feature switch auth           # Switch context to feature
+trinity feature status auth           # Show feature progress
+trinity feature merge auth            # Create PR to merge feature back
+trinity feature delete auth           # Cleanup workspace after merge
+trinity feature config auth --auto-merge=true  # Per-feature settings
+```
+
+**Parallel Execution:**
+```bash
+trinity run                           # Run current feature/workspace
+trinity run --all                     # Run ALL valid features in parallel
+trinity run mvp                       # Run whole phase
+trinity run mvp:auth                  # Run specific epic
+trinity run mvp:auth:STORY-1.1.2      # Run specific story (to unblock deps)
+trinity watch --all                   # Watch all running features
+trinity status                        # Show all agents and what they're working on
+trinity recover                       # Restart any crashed agents
+```
+
+**Feature Defaults:**
+- `--auto-pr=true` - Creates PR when feature completes (safe default)
+- `--auto-merge=false` - Requires opt-in (user should review)
+
+**Branching Strategy (dev branch integration):**
+```
+main (stable releases)
+  ↑
+dev (integration) ← features merge here
+  ↑
+feature-auth, feature-payments, etc.
+```
+
+```bash
+trinity config set integration_branch dev    # Set integration branch
+trinity feature create payments              # Clones from dev (has merged code)
+trinity release                              # Merge dev → main
+```
+
+**Flow:**
+1. `feature-auth` completes → auto-PR → merges to `dev`
+2. `feature-payments` depends on `auth:STORY-1.1.2`
+3. Trinity checks: is that commit in `dev`? Yes → payments can start
+4. `feature-payments` clones from `dev` (already has auth code)
+5. When stable, `trinity release` merges `dev` → `main`
+
+**Dependency resolution:**
+- Dependencies resolve when code is in `integration_branch` (default: `dev`)
+- If no `dev` branch configured, falls back to `main`
+- This enables parallel features while ensuring code availability
+
+**Dependency validation:**
+- Before running anything, Trinity checks all dependencies
+- Unmet deps → warning with what's missing, won't start
+- `--force` runs dependencies first, then the requested item
+```bash
+$ trinity run mvp:payments:STORY-2.1.1
+
+⚠ Cannot run mvp:payments:STORY-2.1.1
+  Unmet dependencies:
+    - mvp:auth:STORY-1.1.2 (pending)
+
+  Use --force to run dependencies first, then this story.
+
+$ trinity run mvp:payments:STORY-2.1.1 --force
+
+Running dependencies first:
+  → mvp:auth:STORY-1.1.2 ... ✓ merged to dev
+Then running:
+  → mvp:payments:STORY-2.1.1 ...
 ```
 
 **Story Management:**
@@ -67,29 +165,190 @@ trinity next                    # Show what story would run next
 ```bash
 trinity status                  # Progress overview
 trinity reset                   # Clear progress (keep config)
-trinity reset --hard            # Remove .trinity/ entirely
+trinity reset --hard            # Remove project from ~/.trinity/ entirely
 trinity config show             # Show configuration
 trinity config set KEY VALUE    # Set config value
 trinity config edit             # Open config in editor
 ```
 
-**Logging:**
-- All runs logged to `.trinity/logs/YYYY-MM-DD-NNN.log`
-- `latest` symlink points to current/most recent log
-- Background runs write to log instead of terminal
+**Releases:**
+```bash
+trinity release                 # Merge dev → main (PR or direct)
+trinity release --dry-run       # Show what would be released
+trinity release --tag v1.0.0    # Merge and tag
+```
+
+**Storage & Workspaces:**
+```
+~/.trinity/
+├── auth.json                         # Global auth/subscription
+├── config.json                       # Global config
+├── projects/
+│   └── <project-hash>/
+│       ├── config.json               # Project config
+│       ├── prd/
+│       │   ├── index.json            # Phases, epics, deps, agents
+│       │   └── phases/
+│       │       ├── mvp/
+│       │       │   ├── meta.json     # Phase metadata
+│       │       │   └── epics/
+│       │       │       ├── auth/
+│       │       │       │   ├── meta.json
+│       │       │       │   └── stories/
+│       │       │       │       ├── STORY-1.1.1.json
+│       │       │       │       └── STORY-1.1.2.json
+│       │       │       └── core-api/
+│       │       └── growth/
+│       │           └── epics/
+│       │               ├── payments/
+│       │               └── notifications/
+│       └── workspaces/
+│           ├── trunk/                # Default - works on actual repo
+│           │   ├── state.json
+│           │   └── logs/
+│           └── feature-<name>/       # Isolated feature workspace
+│               ├── repo/             # Full repo clone
+│               ├── state.json
+│               └── logs/
+```
+
+**Hierarchy:** Phase → Epic → Story
+
+- **Phase**: Major milestone ("MVP", "Growth", "Polish")
+- **Epic**: Complete feature ("Auth", "Payments")
+- **Story**: Single implementable task ("Add login form")
+
+**index.json** - the brain:
+```json
+{
+  "phases": {
+    "mvp": {
+      "name": "MVP",
+      "depends_on": []
+    },
+    "growth": {
+      "name": "Growth",
+      "depends_on": ["mvp:auth:STORY-1.1.2"]
+    }
+  },
+  "epics": {
+    "auth": {
+      "phase": "mvp",
+      "path": "epics/auth",
+      "depends_on": [],
+      "status": "complete"
+    },
+    "payments": {
+      "phase": "growth",
+      "path": "epics/payments",
+      "depends_on": ["mvp:auth:STORY-1.1.2"],
+      "status": "in_progress"
+    },
+    "notifications": {
+      "phase": "growth",
+      "path": "epics/notifications",
+      "depends_on": [],
+      "status": "pending"
+    }
+  },
+  "agents": {
+    "feature-payments": {
+      "workspace": "feature-payments",
+      "epic": "payments",
+      "current_story": "STORY-2.1.1",
+      "pid": 12345,
+      "started_at": "2024-01-15T10:00:00Z",
+      "status": "running"
+    }
+  }
+}
+```
+
+**Universal dependency syntax** (3-level hierarchy):
+```
+"mvp"                        → whole phase
+"mvp:auth"                   → epic in phase
+"mvp:auth:STORY-1.1.2"       → specific story
+```
+
+A phase can depend on a story. An epic can depend on a story. Maximum flexibility, minimum artificial blocking.
+```
+
+- User's project stays completely clean - no scaffolded files
+- Modular PRD structure - no giant JSON files
+- Epic-level dependencies - know which features are valid to start
+- Story-level dependencies - order within features + cross-epic refs
+- Agent tracking - recover crashed processes
+- `trunk` workspace operates on actual repo (no clone)
+- Feature workspaces clone repo so multiple Claudes can work simultaneously
 
 #### Smart Init
 Instead of static templates, `trinity init` uses Claude to understand the project:
 
 1. Run `init-analyze.md` prompt → get project summary (stack, build cmd, structure)
-2. Run `init-claude-md.md` prompt → generate CLAUDE.md if missing
-3. Run `init-prompt-md.md` prompt → generate tailored prompt.md
-4. Create starter `prd.json` (empty, ready for stories)
+2. Run `init-claude-md.md` prompt → generate CLAUDE.md in project (if missing) - this is for Claude Code
+3. Run `init-prompt-md.md` prompt → generate tailored prompt.md in `~/.trinity/projects/<hash>/`
+4. Create starter `prd.json` in `~/.trinity/projects/<hash>/` (empty, ready for stories)
 
-**Meta-prompts** (ship with Trinity):
+**Storage:** All Trinity data lives in `~/.trinity/` - user's project stays clean except for optional CLAUDE.md.
+
+#### Parallel Features
+
+Trinity supports multiple features being developed simultaneously in isolated workspaces:
+
+```bash
+$ trinity feature create "auth"
+Creating workspace for 'auth'...
+Cloning repo to ~/.trinity/projects/.../workspaces/feature-auth/repo/
+Created empty PRD. Use `trinity chat` or `trinity prd generate` to add stories.
+
+$ trinity feature create "payments"
+Creating workspace for 'payments'...
+
+$ trinity run --all
+Starting 2 features in parallel...
+[auth]     STORY-1.1.1 Creating user signup...
+[payments] STORY-1.1.1 Adding Stripe integration...
+```
+
+Each feature:
+- Gets its own repo clone (so changes don't conflict)
+- Has its own PRD (scoped to that feature)
+- Runs independently with its own Claude Code instance
+- Eventually merges back via PR
+
+#### Orchestration
+
+Trinity isn't just a loop runner - it's an orchestrator with built-in "skills". Users talk to Trinity, Trinity executes the right workflow via Claude Code.
+
+**Example flow:**
+```
+$ trinity chat
+> I want to add user authentication
+
+Trinity: Let me analyze your project first...
+[runs analyze prompt via Claude Code]
+
+Trinity: I see you're using Go with Chi router. I'd suggest:
+- JWT-based auth
+- Middleware pattern
+- 4 stories: signup, login, middleware, protected routes
+
+Want me to generate these stories? [Y/n]
+> y
+
+[runs prd-generate prompt via Claude Code]
+Added 4 stories to your PRD. Run `trinity list` to see them.
+```
+
+**Meta-prompts** (ship with Trinity, embedded via go:embed):
 - `prompts/init-analyze.md` - Analyze project structure
 - `prompts/init-claude-md.md` - Generate CLAUDE.md
-- `prompts/init-prompt-md.md` - Generate Trinity prompt.md
+- `prompts/plan.md` - Break feature into implementation approach
+- `prompts/prd-generate.md` - Turn plan into structured stories
+- `prompts/prd-refine.md` - Review and improve story quality
+- `prompts/story-execute.md` - The actual implementation loop
+- `prompts/chat.md` - Interactive orchestration mode
 
 #### Requirements
 - **Claude Code** - Required. Trinity uses Claude Code as its execution engine (not just an LLM API). Claude Code handles file I/O, bash commands, tool loops, context management.
@@ -177,6 +436,8 @@ trinity/
 - **Target** - Solo devs first, team features in v1.0
 - **Monetization** - Subscription (target $5-10/month)
 - **Auth** - OAuth browser login (Google/GitHub), no trial mode
+- **Global storage** - All Trinity data in `~/.trinity/`, user projects stay clean (only CLAUDE.md added)
+- **Parallel workspaces** - Each feature gets isolated repo clone, multiple PRDs, run simultaneously
 
 ## Questions Remaining
 
