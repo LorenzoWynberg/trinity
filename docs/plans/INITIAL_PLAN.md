@@ -114,7 +114,7 @@ trinity release                              # Merge dev → main
 
 **Flow:**
 1. `feature-auth` completes → auto-PR → merges to `dev`
-2. `feature-payments` depends on `auth:STORY-1.1.2`
+2. `feature-payments` depends on `mvp:auth:STORY-1.1.2`
 3. Trinity checks: is that commit in `dev`? Yes → payments can start
 4. `feature-payments` clones from `dev` (already has auth code)
 5. When stable, `trinity release` merges `dev` → `main`
@@ -272,13 +272,29 @@ trinity release --tag v1.0.0    # Merge and tag
 ```
 
 A phase can depend on a story. An epic can depend on a story. Maximum flexibility, minimum artificial blocking.
-```
 
 - User's project stays completely clean - no scaffolded files
 - Modular PRD structure - no giant JSON files
 - Epic-level dependencies - know which features are valid to start
 - Story-level dependencies - order within features + cross-epic refs
 - Agent tracking - recover crashed processes
+
+**Activity & Learnings:**
+```
+~/.trinity/projects/<hash>/
+├── activity/
+│   └── YYYY-MM-DD.md         # Daily logs (decisions, issues, progress)
+└── learnings/
+    ├── index.json            # Quick lookup by keyword
+    ├── auth.md               # Topic-specific patterns
+    ├── database.md
+    └── gotchas.md            # Things that tripped us up
+```
+
+AI layer:
+- **Before acting**: Checks `learnings/index.json` → reads relevant topic files
+- **After acting**: Logs to `activity/`, updates `learnings/` if new pattern
+- **Corrections**: Uses Was/Now/Why format when fixing misconceptions
 - `trunk` workspace operates on actual repo (no clone)
 - Feature workspaces clone repo so multiple Claudes can work simultaneously
 
@@ -349,6 +365,32 @@ Added 4 stories to your PRD. Run `trinity list` to see them.
 - `prompts/prd-refine.md` - Review and improve story quality
 - `prompts/story-execute.md` - The actual implementation loop
 - `prompts/chat.md` - Interactive orchestration mode
+
+**AI has internal tools** for PRD management (insert, move, renumber, etc.). Users go through AI for judgment:
+```
+User: "Add a story between login and password reset"
+
+AI: [checks learnings/index.json for relevant context]
+    [reads learnings/auth.md]
+    [sees STORY-1.1.2 is complete]
+
+    "STORY-1.1.2 (login) is already complete. Inserting will
+     renumber it to 1.1.3. This won't affect code, just IDs.
+
+     Options:
+     1. Insert anyway
+     2. Add to end of epic instead
+
+     What do you prefer?"
+
+User: "1"
+
+AI: [runs internal insert tool]
+    [updates prd/index.json]
+    [logs to activity/2024-01-15.md]
+
+    "Done. Created mvp:auth:STORY-1.1.3 'Add session management'"
+```
 
 #### Requirements
 - **Claude Code** - Required. Trinity uses Claude Code as its execution engine (not just an LLM API). Claude Code handles file I/O, bash commands, tool loops, context management.
@@ -434,7 +476,7 @@ trinity/
 - **GUI in Wails** - Go-based, auto-generated TS bindings, lighter than Electron
 - **Smart init** - Claude analyzes project and generates tailored setup (not static templates)
 - **Target** - Solo devs first, team features in v1.0
-- **Monetization** - Subscription (target $5-10/month)
+- **Monetization** - Subscription, likely ~$5/month (tentative)
 - **Auth** - OAuth browser login (Google/GitHub), no trial mode
 - **Global storage** - All Trinity data in `~/.trinity/`, user projects stay clean (only CLAUDE.md added)
 - **Parallel workspaces** - Each feature gets isolated repo clone, multiple PRDs, run simultaneously
@@ -444,11 +486,6 @@ trinity/
 1. How do we handle different project types?
    - AI figures it out from project structure via smart init
    - Example implementations for reference
-
-2. Pricing model?
-   - Free tier with limits?
-   - One-time purchase?
-   - Subscription?
 
 ## Next Steps
 

@@ -84,6 +84,19 @@ A phase can depend on just a story. An epic can depend on just a story. Maximum 
 
 `index.json` tracks: phases, epics, dependencies, agent assignments (for crash recovery).
 
+## Activity & Learnings
+
+```
+~/.trinity/projects/<hash>/
+├── activity/
+│   └── YYYY-MM-DD.md         # Daily decisions, issues, progress
+└── learnings/
+    ├── index.json            # Keyword lookup
+    └── *.md                  # Topic files
+```
+
+AI reads relevant learnings before acting (via index), logs decisions to activity, updates learnings when patterns discovered. Uses Was/Now/Why format for corrections.
+
 ## Parallel Features
 
 ```bash
@@ -116,15 +129,15 @@ feature branches
 ## Core Concepts
 
 ### Autonomous Dev Loop
-1. Read PRD with stories from `~/.trinity/projects/<hash>/prd.json`
+1. Read PRD from `~/.trinity/projects/<hash>/prd/`
 2. Pick next story based on dependencies
 3. Create feature branch
 4. Run Claude Code to implement
 5. Self-review and iterate
-6. Create PR, merge, cleanup
+6. Create PR, merge to dev
 7. Repeat until all stories complete
 
-### Story Format (prd.json)
+### Story Format
 ```json
 {
   "id": "STORY-1.2.3",
@@ -132,7 +145,7 @@ feature branches
   "intent": "Why this matters",
   "acceptance": ["Criterion 1", "Criterion 2"],
   "passes": false,
-  "depends_on": ["STORY-1.1.1"]
+  "depends_on": ["mvp:auth:STORY-1.1.1"]
 }
 ```
 
