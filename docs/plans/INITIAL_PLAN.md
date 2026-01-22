@@ -75,20 +75,39 @@ Instead of static templates, `trinity init` uses Claude to understand the projec
 
 ## Architecture
 
+Monorepo with Go workspaces for clean separation:
+
 ```
 trinity/
-├── cmd/
-│   └── trinity/       # CLI entrypoint
-├── internal/          # Core logic
-│   ├── config/
-│   ├── loop/          # Dev loop logic
-│   └── claude/        # Claude Code integration
-├── prompts/           # Meta-prompts for smart init
-├── docs/
-│   ├── plans/
-│   └── guides/
-└── examples/
+├── go.work              # Go workspace (ties modules together)
+├── core/                # Shared logic (separate go.mod)
+│   ├── go.mod
+│   ├── config/          # Config loading/saving
+│   ├── loop/            # Dev loop logic
+│   ├── claude/          # Claude Code integration
+│   └── prd/             # PRD/story management
+├── cli/                 # CLI app (separate go.mod, imports core)
+│   ├── go.mod
+│   ├── cmd/
+│   │   └── trinity/     # main.go entrypoint
+│   └── internal/        # CLI-specific code
+├── gui/                 # Wails app v0.2 (separate go.mod, imports core)
+│   └── ...              # wails init structure later
+├── prompts/             # Meta-prompts (embedded into cli via go:embed)
+│   ├── init-analyze.md
+│   ├── init-claude-md.md
+│   └── init-prompt-md.md
+├── examples/            # Example implementations
+└── docs/
+    ├── plans/
+    └── guides/
 ```
+
+**Key principles:**
+- `core/` contains all shared logic - imported by both CLI and GUI
+- Each component has its own `go.mod` for clean dependency boundaries
+- `go.work` enables local development without publishing modules
+- Prompts embedded in CLI binary via `go:embed`
 
 ## Technical Stack
 
