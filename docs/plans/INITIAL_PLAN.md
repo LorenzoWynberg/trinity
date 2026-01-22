@@ -27,12 +27,49 @@ A tool that:
 
 ### MVP (v0.1)
 
-#### CLI
-- `trinity init` - Initialize Trinity in current project (interactive setup)
-- `trinity run` - Run the development loop
-- `trinity status` - Show current state/progress
-- `trinity reset` - Reset state
-- `trinity config` - Manage configuration
+#### CLI Commands
+
+**Init & Run:**
+```bash
+trinity init                    # Smart init with Claude (analyzes project)
+trinity run                     # Run loop (foreground, streaming output)
+trinity run --bg                # Run in background
+trinity run --once              # Single story only
+trinity watch                   # Attach to running loop, stream output
+trinity finish                  # Complete current story, then exit gracefully
+trinity kill                    # Hard stop immediately
+```
+
+**Story Management:**
+```bash
+trinity list                    # List all stories with status
+trinity list --pending          # Only pending stories
+trinity list --done             # Only completed stories
+trinity show STORY-1            # Show story details
+trinity add                     # Add story (interactive by default)
+trinity add "Title" --quick     # Quick add, title only
+trinity add "Title" --accepts "..." --depends STORY-1  # Power user flags
+trinity edit STORY-1            # Edit story in editor
+trinity remove STORY-1          # Remove story from PRD
+trinity skip STORY-1            # Mark as skipped
+trinity retry STORY-1           # Reset story to pending
+trinity next                    # Show what story would run next
+```
+
+**Management:**
+```bash
+trinity status                  # Progress overview
+trinity reset                   # Clear progress (keep config)
+trinity reset --hard            # Remove .trinity/ entirely
+trinity config show             # Show configuration
+trinity config set KEY VALUE    # Set config value
+trinity config edit             # Open config in editor
+```
+
+**Logging:**
+- All runs logged to `.trinity/logs/YYYY-MM-DD-NNN.log`
+- `latest` symlink points to current/most recent log
+- Background runs write to log instead of terminal
 
 #### Smart Init
 Instead of static templates, `trinity init` uses Claude to understand the project:
@@ -52,7 +89,7 @@ Instead of static templates, `trinity init` uses Claude to understand the projec
 
 ### v0.2 - GUI
 
-#### Desktop App (Tauri)
+#### Desktop App (Wails)
 - Project management dashboard
 - Visual PRD editor (drag-drop stories, dependencies)
 - Real-time streaming output
