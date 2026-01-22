@@ -23,7 +23,7 @@ Trinity sets up and runs AI-powered autonomous development workflows. Point it a
 
 ```bash
 # Install
-cargo install trinity
+go install github.com/LorenzoWynberg/trinity@latest
 
 # Initialize in your project
 cd my-project

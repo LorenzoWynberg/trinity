@@ -77,11 +77,13 @@ Instead of static templates, `trinity init` uses Claude to understand the projec
 
 ```
 trinity/
-├── packages/
-│   ├── cli/           # CLI tool (Rust)
-│   ├── core/          # Core logic (shared)
-│   ├── gui/           # Desktop app (Tauri)
-│   └── prompts/       # Meta-prompts for smart init
+├── cmd/
+│   └── trinity/       # CLI entrypoint
+├── internal/          # Core logic
+│   ├── config/
+│   ├── loop/          # Dev loop logic
+│   └── claude/        # Claude Code integration
+├── prompts/           # Meta-prompts for smart init
 ├── docs/
 │   ├── plans/
 │   └── guides/
@@ -91,10 +93,10 @@ trinity/
 ## Technical Stack
 
 ### CLI
-- **Rust** - Fast execution, single binary, cross-platform
+- **Go** - Fast development, simple codebase, good CLI ecosystem
 
 ### GUI Framework (v0.2)
-- **Tauri** - Pairs well with Rust CLI, lighter than Electron
+- **Wails** - Go-based, auto-generated TypeScript bindings, fast builds
 
 ### AI Integration
 - **Claude Code CLI only** - Shell out to `claude` command
@@ -105,7 +107,8 @@ trinity/
 - **Name:** Trinity
 - **Claude Code required** - It's the execution engine, not a swappable provider
 - **Commercial** - Closed source commercial product
-- **CLI in Rust** - Fast, single binary distribution
+- **CLI in Go** - Fast development, simple codebase, single binary
+- **GUI in Wails** - Go-based, auto-generated TS bindings, lighter than Electron
 - **Smart init** - Claude analyzes project and generates tailored setup (not static templates)
 - **Target** - Solo devs first, team features in v1.0
 
@@ -122,12 +125,13 @@ trinity/
 
 ## Next Steps
 
-1. [ ] Decide on CLI language → **Rust**
-2. [ ] Create basic CLI scaffold
-3. [ ] Port loop logic from jetbrains-elvish Ralph
-4. [ ] Create meta-prompts for smart init
-5. [ ] Test on a new project
-6. [ ] Iterate based on feedback
+1. [x] Decide on CLI language → **Go**
+2. [x] Decide on GUI framework → **Wails**
+3. [ ] Create basic CLI scaffold
+4. [ ] Port loop logic from jetbrains-elvish Ralph
+5. [ ] Create meta-prompts for smart init
+6. [ ] Test on a new project
+7. [ ] Iterate based on feedback
 
 ## Inspiration
 
