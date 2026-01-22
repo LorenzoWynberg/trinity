@@ -29,6 +29,13 @@ A tool that:
 
 #### CLI Commands
 
+**Auth & Billing:**
+```bash
+trinity auth login              # Browser OAuth (Google/GitHub), required
+trinity auth logout             # Clear local auth session
+trinity auth status             # Show subscription/auth status
+```
+
 **Init & Run:**
 ```bash
 trinity init                    # Smart init with Claude (analyzes project)
@@ -86,6 +93,7 @@ Instead of static templates, `trinity init` uses Claude to understand the projec
 
 #### Requirements
 - **Claude Code** - Required. Trinity uses Claude Code as its execution engine (not just an LLM API). Claude Code handles file I/O, bash commands, tool loops, context management.
+- **Paid subscription** - Required. No trial mode; users must authenticate via OAuth (Google/GitHub) before running commands.
 
 ### v0.2 - GUI
 
@@ -167,6 +175,8 @@ trinity/
 - **GUI in Wails** - Go-based, auto-generated TS bindings, lighter than Electron
 - **Smart init** - Claude analyzes project and generates tailored setup (not static templates)
 - **Target** - Solo devs first, team features in v1.0
+- **Monetization** - Subscription (target $5-10/month)
+- **Auth** - OAuth browser login (Google/GitHub), no trial mode
 
 ## Questions Remaining
 
