@@ -1,35 +1,38 @@
-# Ralph Framework
+# Trinity
 
-> Create and run autonomous AI development loops for any project.
+> Autonomous AI development loops for any project.
 
 ## What is this?
 
-Ralph Framework lets you set up AI-powered autonomous development workflows (like Ralph from [jetbrains-elvish](https://github.com/LorenzoWynberg/jetbrains-elvish)) for any project.
+Trinity sets up and runs AI-powered autonomous development workflows. Point it at a project, define your stories, and let it build while you're AFK.
 
 **Status:** Planning phase - see [docs/plans/INITIAL_PLAN.md](docs/plans/INITIAL_PLAN.md)
 
 ## Planned Features
 
-- 🚀 **CLI** - `ralph init`, `ralph run`, `ralph status`
-- 📋 **Templates** - Pre-built setups for different project types
-- 🤖 **Multi-provider** - Claude, OpenAI, Gemini support
-- 🖥️ **GUI** - Desktop app for visual workflow management
+- 🚀 **CLI** - `trinity init`, `trinity run`, `trinity status`
+- 🧠 **Smart Init** - Claude analyzes your project and generates setup
 - 📊 **Streaming** - Real-time output as AI works
+- 🖥️ **GUI** - Desktop app for visual workflow management (v0.2)
+
+## Requirements
+
+- [Claude Code](https://claude.ai/code) - Trinity uses Claude Code as its execution engine
 
 ## Quick Start (Future)
 
 ```bash
 # Install
-npm install -g ralph-framework
+cargo install trinity
 
 # Initialize in your project
 cd my-project
-ralph init
+trinity init
 
-# Run the loop
-ralph run
+# Add stories to .trinity/prd.json, then:
+trinity run
 ```
 
 ## License
 
-TBD
+Commercial
