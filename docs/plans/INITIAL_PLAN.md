@@ -419,14 +419,60 @@ Want me to generate these stories? [Y/n]
 Added 4 stories to your PRD. Run `trinity list` to see them.
 ```
 
-**Meta-prompts** (ship with Trinity, embedded via go:embed):
-- `prompts/init-analyze.md` - Analyze project structure
-- `prompts/init-claude-md.md` - Generate CLAUDE.md
-- `prompts/plan.md` - Break feature into implementation approach
-- `prompts/prd-generate.md` - Turn plan into structured stories
-- `prompts/prd-refine.md` - Review and improve story quality
-- `prompts/story-execute.md` - The actual implementation loop
-- `prompts/chat.md` - Interactive orchestration mode
+**Prompt Templates & Response Schemas:**
+```
+prompts/
+├── templates/                    # Prompts with {{placeholders}}
+│   ├── init-analyze.md
+│   ├── init-claude-md.md
+│   ├── plan.md
+│   ├── prd-create.md
+│   ├── prd-add.md
+│   ├── prd-refine.md
+│   ├── story-execute.md
+│   └── chat.md
+├── schemas/                      # Expected JSON response formats
+│   ├── prd-create.json
+│   ├── prd-add.json
+│   ├── prd-refine.json
+│   └── ...
+└── internal/                     # Internal command prompts
+    ├── learn.md
+    ├── log.md
+    ├── complete.md
+    └── ...
+```
+
+**CLI ↔ Claude communication:**
+```
+1. CLI fills template:
+   prd-add.md + {existing_prd, user_input}
+
+2. Sends to Claude with response schema
+
+3. Claude returns structured JSON:
+   {
+     "analysis": "Looks like it belongs in auth...",
+     "suggestions": [
+       {"id": 1, "type": "story", "parent": "mvp:auth", "after": "STORY-1.1.2"},
+       {"id": 2, "type": "epic", "parent": "mvp", "after": "auth"}
+     ],
+     "generated": {
+       "title": "Password reset",
+       "intent": "Allow users to...",
+       "acceptance": ["..."]
+     }
+   }
+
+4. CLI parses → renders menu → user picks → next step
+```
+
+**Session state:**
+```
+~/.trinity/sessions/<id>.json    # Wizard progress, temp data
+```
+
+Claude always returns parseable JSON, CLI handles rendering/UX.
 
 **AI has internal tools** for PRD management (insert, move, renumber, etc.). Users go through AI for judgment:
 ```
@@ -501,19 +547,21 @@ trinity/
 │   └── internal/        # CLI-specific code
 ├── gui/                 # Wails app v0.2 (separate go.mod, imports core)
 │   └── ...              # wails init structure later
-├── prompts/             # Meta-prompts (embedded into cli via go:embed)
-│   ├── init-analyze.md
-│   ├── init-claude-md.md
-│   ├── plan.md
-│   ├── prd-generate.md
-│   ├── prd-refine.md
-│   ├── story-execute.md
-│   ├── chat.md
-│   └── internal/        # Prompts for internal commands
+├── prompts/             # Embedded into CLI via go:embed
+│   ├── templates/       # Prompts with {{placeholders}}
+│   │   ├── init-analyze.md
+│   │   ├── prd-create.md
+│   │   ├── prd-add.md
+│   │   ├── story-execute.md
+│   │   └── chat.md
+│   ├── schemas/         # Expected JSON response formats
+│   │   ├── prd-create.json
+│   │   ├── prd-add.json
+│   │   └── ...
+│   └── internal/        # Internal command prompts
 │       ├── learn.md
 │       ├── log.md
 │       ├── complete.md
-│       ├── add-story.md
 │       └── move-story.md
 ├── examples/            # Example implementations
 └── docs/

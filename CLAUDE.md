@@ -173,22 +173,28 @@ Users talk to Trinity, Trinity executes workflows via Claude Code with the right
 ### Claude Code Integration
 Trinity shells out to `claude` CLI - it's the execution engine, not just an API. Claude Code handles file I/O, bash commands, and context management.
 
-### Meta-Prompts
-Embedded prompts in `prompts/` that Trinity uses:
+### Prompt Templates & Schemas
 
-**Orchestration:**
-- `plan.md` - Break feature into implementation approach
-- `prd-generate.md` - Turn plan into stories
-- `prd-refine.md` - Improve story quality
-- `story-execute.md` - Implementation loop
-- `chat.md` - Interactive orchestration
+```
+prompts/
+├── templates/           # Prompts with {{placeholders}}
+│   ├── prd-create.md
+│   ├── prd-add.md
+│   ├── story-execute.md
+│   └── chat.md
+├── schemas/             # Expected JSON response formats
+│   ├── prd-create.json
+│   ├── prd-add.json
+│   └── ...
+└── internal/            # Internal command prompts
+    ├── learn.md
+    ├── complete.md
+    └── ...
+```
 
-**Internal commands** (`prompts/internal/`):
-- `learn.md` - Integrate learnings (check dups, format, update index)
-- `log.md` - Structure activity log entries
-- `complete.md` - Validate story completion, update deps
-- `add-story.md` - Check structure, assign ID, validate deps
-- `move-story.md` - Handle renumbering, update refs
+**Flow:** CLI fills template → sends to Claude → Claude returns JSON → CLI parses and renders UI.
+
+Session state stored in `~/.trinity/sessions/<id>.json` for wizard progress.
 
 ## Reference Implementation
 
