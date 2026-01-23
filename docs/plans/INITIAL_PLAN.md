@@ -57,6 +57,7 @@ trinity prd show                # Show full PRD
 trinity run                     # Run loop (foreground, streaming output)
 trinity run --bg                # Run in background
 trinity run --once              # Single story only
+trinity run --docker            # Run in isolated Docker container
 trinity watch                   # Attach to running loop, stream output
 trinity finish                  # Complete current story, then exit gracefully
 trinity kill                    # Hard stop immediately
@@ -358,6 +359,45 @@ A phase can depend on a story. An epic can depend on a story. Maximum flexibilit
 - Epic-level dependencies - know which features are valid to start
 - Story-level dependencies - order within features + cross-epic refs
 - Agent tracking - recover crashed processes
+
+**Docker Isolation (optional):**
+
+For users who want an extra safety layer, Trinity can run Claude Code inside Docker containers:
+
+```bash
+trinity run --docker            # Run in isolated container
+trinity run --all --docker      # All features in containers
+```
+
+**What gets mounted:**
+```bash
+docker run \
+  -v /path/to/project:/workspace \      # Project (read-write)
+  -v ~/.trinity:/root/.trinity \        # State persists
+  trinity run
+```
+
+**Benefits:**
+- Filesystem isolation - AI can only access mounted `/workspace`
+- Resource limits - CPU/memory caps prevent runaway processes
+- Network restrictions - can limit or disable network access
+- Easy cleanup - container removal is clean
+
+**Data safety:**
+- Git commits → pushed to remote (safe)
+- `~/.trinity/` → mounted volume (persists)
+- Project files → mounted volume (persists)
+- Only at-risk: uncommitted WIP if container crashes mid-story (same as local)
+
+**Mitigations:**
+- Story-level atomicity - worst case, redo one story
+- `trinity recover` works the same in Docker mode
+- Optional: more aggressive WIP commits in Docker mode
+
+**Requirements:**
+- Docker installed and running
+- Claude CLI pre-installed in container image
+- Git credentials available (mount or env vars)
 
 **SQLite for shared state:**
 ```
