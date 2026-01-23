@@ -290,10 +290,10 @@ A phase can depend on a story. An epic can depend on a story. Maximum flexibilit
 
 **Schema:**
 ```sql
--- PRD Structure
-phases (id, name, status, depends_on)
-epics (id, phase_id, name, path, status, depends_on)
-stories (id, epic_id, title, intent, acceptance, status, depends_on)
+-- PRD Structure (priority optional but encouraged: critical, high, medium, low)
+phases (id, name, status, depends_on, priority)
+epics (id, phase_id, name, path, status, depends_on, priority)
+stories (id, epic_id, title, intent, acceptance, status, depends_on, priority)
 
 -- Agent Tracking
 agents (id, workspace, epic, current_story, pid, status, started_at)
@@ -301,11 +301,20 @@ agents (id, workspace, epic, current_story, pid, status, started_at)
 -- Activity Logs
 activity_logs (id, timestamp, agent, action, message, story_ref)
 
--- Learnings (with tags relation)
-tags (id, name)                           -- "auth", "jwt", "testing"
+-- Tags (shared across PRD and learnings)
+tags (id, name)                           -- "auth", "frontend", "urgent", etc.
+
+-- PRD Tags (many-to-many)
+phase_tags (phase_id, tag_id)
+epic_tags (epic_id, tag_id)
+story_tags (story_id, tag_id)
+
+-- Learnings
 learnings (id, content, created_at, updated_at)
-learning_tags (learning_id, tag_id)       -- Many-to-many
+learning_tags (learning_id, tag_id)
 ```
+
+Priority enum: `critical`, `high`, `medium`, `low` (optional but encouraged during PRD generation).
 
 **Internal commands (Claude calls these):**
 ```bash
