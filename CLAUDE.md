@@ -116,6 +116,24 @@ trinity recover                       # Restart crashed agents
 
 Defaults: `--auto-pr=true`, `--auto-merge=false` (user reviews PRs).
 
+## Docker Isolation (Optional)
+
+For users who want extra safety, Trinity can run Claude Code in isolated Docker containers:
+
+```bash
+trinity run --docker            # Run in isolated container
+trinity run --all --docker      # All features in containers
+```
+
+**What it provides:**
+- Filesystem isolation - AI can only access mounted project directory
+- Resource limits - CPU/memory caps prevent runaway processes
+- Network restrictions - can limit or disable network access
+
+**Data safety:** Project and `~/.trinity/` are mounted volumes, so all state persists. Only uncommitted WIP is at risk if container crashes (same as local).
+
+**Requirements:** Docker installed, Claude CLI in container image, git credentials available.
+
 ## Branching Strategy
 
 ```
