@@ -162,7 +162,8 @@ Trinity isn't just a loop runner - it's an orchestrator with built-in "skills":
 trinity chat                    # Interactive - discuss, plan, orchestrate
 trinity analyze                 # Deep dive on codebase
 trinity plan "add auth"         # Generate implementation plan
-trinity prd generate            # Turn plan into structured stories
+trinity prd create              # Wizard: gather → generate → refine loop → implement
+trinity prd add                 # Add with AI placement suggestions + renumbering
 trinity prd refine              # AI review and improve stories
 trinity run                     # Execute the implementation loop
 ```

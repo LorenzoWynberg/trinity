@@ -145,20 +145,69 @@ Then running:
   → mvp:payments:STORY-2.1.1 ...
 ```
 
-**Story Management:**
+**PRD Management (interactive wizards):**
+```bash
+trinity prd create              # Full wizard: gather info → generate → refine loop → implement
+trinity prd add                 # Add phase/epic/story with AI placement suggestions
+trinity prd refine              # AI reviews PRD, suggests improvements
+trinity prd show                # Show full PRD tree
+trinity prd show mvp:auth       # Show specific phase/epic
+```
+
+**`trinity prd create` wizard:**
+```
+Trinity: What are you building?
+> Task management API
+
+Trinity: Tech stack?
+> Go, PostgreSQL
+
+[AI generates PRD]
+
+Trinity: Generated:
+  Phase: MVP
+  ├── Epic: Auth (3 stories)
+  └── Epic: Tasks (4 stories)
+
+  [I]mplement  [R]efine  [S]how  [O]ver
+> r
+
+Trinity: What to refine?
+> Split auth into separate epics
+
+[Loop until user picks Implement]
+```
+
+**`trinity prd add` wizard:**
+```
+Trinity: What to add?
+> Password reset
+
+[AI analyzes existing PRD]
+
+Trinity: Looks like it belongs in mvp:auth.
+  [1] New story after STORY-1.1.2 → becomes 1.1.3
+  [2] New epic after auth
+  [3] Specify manually...
+> 1
+
+Trinity: Priority? [C]ritical [H]igh [M]edium [L]ow
+> m
+
+Trinity: Tags (comma separated)?
+> auth, email
+
+[Confirm → creates with proper renumbering]
+```
+
+**Quick commands (scripting/power users):**
 ```bash
 trinity list                    # List all stories with status
-trinity list --pending          # Only pending stories
-trinity list --done             # Only completed stories
-trinity show STORY-1            # Show story details
-trinity add                     # Add story (interactive by default)
-trinity add "Title" --quick     # Quick add, title only
-trinity add "Title" --accepts "..." --depends STORY-1  # Power user flags
-trinity edit STORY-1            # Edit story in editor
-trinity remove STORY-1          # Remove story from PRD
-trinity skip STORY-1            # Mark as skipped
-trinity retry STORY-1           # Reset story to pending
-trinity next                    # Show what story would run next
+trinity list --pending          # Only pending
+trinity show mvp:auth:STORY-1.1.1  # Show story details
+trinity skip <story>            # Mark as skipped
+trinity retry <story>           # Reset to pending
+trinity next                    # Show what runs next
 ```
 
 **Management:**
