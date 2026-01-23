@@ -139,8 +139,9 @@ feature branches
 3. Create feature branch
 4. Run Claude Code to implement
 5. Self-review and iterate
-6. Create PR, merge to dev
-7. Repeat until all stories complete
+6. **If `human_testing.required`**: pause for manual verification
+7. Create PR, merge to dev
+8. Repeat until all stories complete
 
 ### Story Format
 ```json
@@ -150,9 +151,16 @@ feature branches
   "intent": "Why this matters",
   "acceptance": ["Criterion 1", "Criterion 2"],
   "passes": false,
-  "depends_on": ["mvp:auth:STORY-1.1.1"]
+  "depends_on": ["mvp:auth:STORY-1.1.1"],
+  "human_testing": {
+    "required": true,
+    "instructions": "Test login with valid/invalid credentials",
+    "url": "/login"
+  }
 }
 ```
+
+The `human_testing` field is optional. When present and `required: true`, Trinity pauses after implementation for manual verification.
 
 ### Orchestration
 

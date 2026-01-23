@@ -248,6 +248,62 @@ Hotfix characteristics:
 - Auto-tagged in activity log
 - Optional `--link` to associate with epic
 
+**Human Testing Gates:**
+```bash
+trinity approve                    # Approve current pending test
+trinity reject "feedback here"     # Reject with feedback, Claude iterates
+trinity pending                    # Show stories awaiting human testing
+```
+
+Some stories require manual verification (UI changes, UX flows, visual design). Mark these with `human_testing`:
+
+```json
+{
+  "id": "STORY-1.2.3",
+  "title": "Add login form",
+  "human_testing": {
+    "required": true,
+    "instructions": "Test login with valid/invalid credentials",
+    "url": "/login"
+  }
+}
+```
+
+**Project config for dev server:**
+```json
+{
+  "dev_cmd": "npm run dev",
+  "dev_port": 3000,
+  "dev_ready_signal": "ready on"
+}
+```
+
+**Flow when `human_testing.required` is true:**
+```
+1. Trinity implements story
+2. Self-review passes
+3. Trinity starts dev server (dev_cmd)
+4. Waits for dev_ready_signal in stdout
+5. Notifies user:
+
+   ┌────────────────────────────────────────┐
+   │ 🧪 Human Testing Required              │
+   │                                        │
+   │ Story: STORY-1.2.3 "Add login form"    │
+   │ URL: http://localhost:3000/login       │
+   │                                        │
+   │ Instructions:                          │
+   │   Test login with valid/invalid creds  │
+   │                                        │
+   │ [A]pprove  [R]eject  [S]kip            │
+   └────────────────────────────────────────┘
+
+6. User tests manually, then responds:
+   - Approve → mark complete, continue to next story
+   - Reject → enter feedback, Claude iterates on implementation
+   - Skip → mark as needs_review, continue (can revisit later)
+```
+
 **Management:**
 ```bash
 trinity status                  # Progress overview
@@ -317,7 +373,9 @@ A phase can depend on a story. An epic can depend on a story. Maximum flexibilit
 -- PRD Structure (priority optional but encouraged: critical, high, medium, low)
 phases (id, name, status, depends_on, priority)
 epics (id, phase_id, name, path, status, depends_on, priority)
-stories (id, epic_id, title, intent, acceptance, status, depends_on, priority)
+stories (id, epic_id, title, intent, acceptance, status, depends_on, priority,
+         human_testing_required, human_testing_instructions, human_testing_url,
+         human_testing_status)  -- status: pending, approved, rejected
 
 -- Agent Tracking
 agents (id, workspace, epic, current_story, pid, status, started_at)
