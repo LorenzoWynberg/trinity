@@ -288,6 +288,25 @@ A phase can depend on a story. An epic can depend on a story. Maximum flexibilit
 - Claude never writes directly - calls `trinity internal` commands
 - Trinity is the single coordinator for ALL shared writes
 
+**Schema:**
+```sql
+-- PRD Structure
+phases (id, name, status, depends_on)
+epics (id, phase_id, name, path, status, depends_on)
+stories (id, epic_id, title, intent, acceptance, status, depends_on)
+
+-- Agent Tracking
+agents (id, workspace, epic, current_story, pid, status, started_at)
+
+-- Activity Logs
+activity_logs (id, timestamp, agent, action, message, story_ref)
+
+-- Learnings (with tags relation)
+tags (id, name)                           -- "auth", "jwt", "testing"
+learnings (id, content, created_at, updated_at)
+learning_tags (learning_id, tag_id)       -- Many-to-many
+```
+
 **Internal commands (Claude calls these):**
 ```bash
 trinity internal complete <story>           # Mark story done

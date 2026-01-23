@@ -71,6 +71,8 @@ User's project gets no scaffolded files. The output is commits/code.
 - Trinity queues signals, processes sequentially (no conflicts)
 - Each command has its own prompt (`prompts/internal/*.md`) for intelligent handling
 
+**Schema:** phases, epics, stories (PRD) | agents (tracking) | activity_logs | tags, learnings, learning_tags (knowledge with many-to-many tags)
+
 ## PRD Structure
 
 **Hierarchy:** Phase → Epic → Story
