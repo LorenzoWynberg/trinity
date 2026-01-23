@@ -512,6 +512,13 @@ prompts/
 
 Claude always returns parseable JSON, CLI handles rendering/UX.
 
+**Token optimization principles:**
+- Minimal context - only send what's needed (not full PRD if one epic relevant)
+- Structured JSON output - no prose, no "Sure, I'd be happy to..."
+- Schema-constrained responses - Claude knows exact format expected
+- Incremental context - load more only when needed
+- Cache common patterns - don't re-analyze unchanged code
+
 **AI has internal tools** for PRD management (insert, move, renumber, etc.). Users go through AI for judgment:
 ```
 User: "Add a story between login and password reset"

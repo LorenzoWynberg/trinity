@@ -197,6 +197,8 @@ prompts/
 
 Session state stored in `~/.trinity/sessions/<id>.json` for wizard progress.
 
+**Token optimization:** Minimal context in, structured JSON out. No prose, no fluff. Schema-constrained responses.
+
 ## Reference Implementation
 
 See `examples/jetbrains-elvish/` for patterns Trinity will port to Go:
