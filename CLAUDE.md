@@ -166,6 +166,7 @@ trinity prd create              # Wizard: gather → generate → refine loop �
 trinity prd add                 # Add with AI placement suggestions + renumbering
 trinity prd refine              # AI review and improve stories
 trinity run                     # Execute the implementation loop
+trinity hotfix "desc"           # Fast lane for quick fixes (no PRD overhead)
 ```
 
 Users talk to Trinity, Trinity executes workflows via Claude Code with the right meta-prompts.

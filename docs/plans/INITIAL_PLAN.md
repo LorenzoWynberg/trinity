@@ -210,6 +210,44 @@ trinity retry <story>           # Reset to pending
 trinity next                    # Show what runs next
 ```
 
+**Hotfix (fast lane for quick fixes):**
+```bash
+trinity hotfix "description"                    # PR to integration_branch
+trinity hotfix "desc" --target main             # PR directly to main (urgent)
+trinity hotfix "desc" --auto-merge              # Auto merge when CI passes
+trinity hotfix "desc" --link mvp:auth           # Link to epic for tracking
+```
+
+**`trinity hotfix` flow:**
+```
+$ trinity hotfix "login button broken on mobile"
+
+Trinity: Analyzing...
+
+  Found issue in src/components/LoginButton.tsx
+  - onClick missing touch event
+
+  [V]iew diff  [A]pply  [R]efine  [C]ancel
+
+> a
+
+Trinity: Applied fix, tests passing.
+
+  [P]R to dev  [M]ain (urgent)  [C]ommit only  [R]evert
+
+> p
+
+Trinity: Created PR #42 → dev
+  Branch: hotfix/login-button-touch
+```
+
+Hotfix characteristics:
+- No phase/epic/story overhead
+- Creates `hotfix/<name>` branch
+- PRs to `integration_branch` by default (or `--target`)
+- Auto-tagged in activity log
+- Optional `--link` to associate with epic
+
 **Management:**
 ```bash
 trinity status                  # Progress overview
