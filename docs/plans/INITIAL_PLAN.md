@@ -279,6 +279,54 @@ A phase can depend on a story. An epic can depend on a story. Maximum flexibilit
 - Story-level dependencies - order within features + cross-epic refs
 - Agent tracking - recover crashed processes
 
+**SQLite for shared state:**
+```
+~/.trinity/projects/<hash>/trinity.db
+```
+- All PRD state, agent tracking, activity logs, learnings in one DB
+- Handles concurrent writes (multiple agents running)
+- Claude never writes directly - calls `trinity internal` commands
+- Trinity is the single coordinator for ALL shared writes
+
+**Internal commands (Claude calls these):**
+```bash
+trinity internal complete <story>           # Mark story done
+trinity internal add-story <epic> "title"   # Add story
+trinity internal log "message"              # Write to activity log
+trinity internal learn "topic" "pattern"    # Add to learnings
+trinity internal move-story <from> <to>     # Renumber, update refs
+```
+
+**Queue processing (sequential):**
+```
+Claude A: signals "learn X" → keeps working (fire and forget)
+Claude B: signals "complete Y" → keeps working
+                    ↓
+            Trinity Queue
+                    ↓
+        Process one at a time:
+          1. Pop item
+          2. Run item's prompt (if needed)
+          3. Wait for completion
+          4. Write to DB
+          5. Next item
+```
+
+Workers don't block. Trinity processes queue sequentially - no parallel writes, no conflicts.
+
+**Each internal command has its own prompt:**
+```
+prompts/internal/
+├── learn.md          # Check dups, format, integrate, update index
+├── log.md            # Structure activity log entry
+├── complete.md       # Validate completion, update deps
+├── add-story.md      # Check structure, assign ID, validate deps
+├── move-story.md     # Handle renumbering, update all refs
+└── ...
+```
+
+Not dumb writes - each command handled intelligently by its prompt.
+
 **Activity & Learnings:**
 ```
 ~/.trinity/projects/<hash>/
@@ -442,7 +490,17 @@ trinity/
 ├── prompts/             # Meta-prompts (embedded into cli via go:embed)
 │   ├── init-analyze.md
 │   ├── init-claude-md.md
-│   └── init-prompt-md.md
+│   ├── plan.md
+│   ├── prd-generate.md
+│   ├── prd-refine.md
+│   ├── story-execute.md
+│   ├── chat.md
+│   └── internal/        # Prompts for internal commands
+│       ├── learn.md
+│       ├── log.md
+│       ├── complete.md
+│       ├── add-story.md
+│       └── move-story.md
 ├── examples/            # Example implementations
 └── docs/
     ├── plans/
