@@ -186,29 +186,12 @@ trinity release --tag v1.0.0    # Merge and tag
 ├── projects/
 │   └── <project-hash>/
 │       ├── config.json               # Project config
-│       ├── prd/
-│       │   ├── index.json            # Phases, epics, deps, agents
-│       │   └── phases/
-│       │       ├── mvp/
-│       │       │   ├── meta.json     # Phase metadata
-│       │       │   └── epics/
-│       │       │       ├── auth/
-│       │       │       │   ├── meta.json
-│       │       │       │   └── stories/
-│       │       │       │       ├── STORY-1.1.1.json
-│       │       │       │       └── STORY-1.1.2.json
-│       │       │       └── core-api/
-│       │       └── growth/
-│       │           └── epics/
-│       │               ├── payments/
-│       │               └── notifications/
+│       ├── trinity.db                # All PRD, agents, activity, learnings
 │       └── workspaces/
 │           ├── trunk/                # Default - works on actual repo
-│           │   ├── state.json
 │           │   └── logs/
 │           └── feature-<name>/       # Isolated feature workspace
 │               ├── repo/             # Full repo clone
-│               ├── state.json
 │               └── logs/
 ```
 
@@ -217,52 +200,6 @@ trinity release --tag v1.0.0    # Merge and tag
 - **Phase**: Major milestone ("MVP", "Growth", "Polish")
 - **Epic**: Complete feature ("Auth", "Payments")
 - **Story**: Single implementable task ("Add login form")
-
-**index.json** - the brain:
-```json
-{
-  "phases": {
-    "mvp": {
-      "name": "MVP",
-      "depends_on": []
-    },
-    "growth": {
-      "name": "Growth",
-      "depends_on": ["mvp:auth:STORY-1.1.2"]
-    }
-  },
-  "epics": {
-    "auth": {
-      "phase": "mvp",
-      "path": "epics/auth",
-      "depends_on": [],
-      "status": "complete"
-    },
-    "payments": {
-      "phase": "growth",
-      "path": "epics/payments",
-      "depends_on": ["mvp:auth:STORY-1.1.2"],
-      "status": "in_progress"
-    },
-    "notifications": {
-      "phase": "growth",
-      "path": "epics/notifications",
-      "depends_on": [],
-      "status": "pending"
-    }
-  },
-  "agents": {
-    "feature-payments": {
-      "workspace": "feature-payments",
-      "epic": "payments",
-      "current_story": "STORY-2.1.1",
-      "pid": 12345,
-      "started_at": "2024-01-15T10:00:00Z",
-      "status": "running"
-    }
-  }
-}
-```
 
 **Universal dependency syntax** (3-level hierarchy):
 ```
@@ -274,7 +211,7 @@ trinity release --tag v1.0.0    # Merge and tag
 A phase can depend on a story. An epic can depend on a story. Maximum flexibility, minimum artificial blocking.
 
 - User's project stays completely clean - no scaffolded files
-- Modular PRD structure - no giant JSON files
+- All PRD data in SQLite - efficient queries, concurrent writes handled
 - Epic-level dependencies - know which features are valid to start
 - Story-level dependencies - order within features + cross-epic refs
 - Agent tracking - recover crashed processes

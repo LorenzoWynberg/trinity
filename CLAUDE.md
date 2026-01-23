@@ -47,16 +47,8 @@ Everything lives in `~/.trinity/` - user projects stay clean:
 ├── config.json                       # Global preferences
 ├── projects/
 │   └── <project-hash>/
-│       ├── prd/
-│       │   ├── index.json            # Phases, epics, deps, agents
-│       │   └── phases/
-│       │       ├── mvp/
-│       │       │   └── epics/
-│       │       │       └── auth/
-│       │       │           └── stories/
-│       │       └── growth/
-│       │           └── epics/
-│       │               └── payments/
+│       ├── config.json               # Project config
+│       ├── trinity.db                # All PRD, agents, activity, learnings
 │       └── workspaces/
 │           ├── trunk/                # Default workspace (actual repo)
 │           └── feature-<name>/       # Isolated clone
@@ -65,7 +57,7 @@ Everything lives in `~/.trinity/` - user projects stay clean:
 
 User's project gets no scaffolded files. The output is commits/code.
 
-**SQLite for shared state** (`trinity.db`):
+**SQLite** (`trinity.db`):
 - All PRD state, agents, activity, learnings in one DB
 - Claude never writes directly - calls `trinity internal` commands
 - Trinity queues signals, processes sequentially (no conflicts)
