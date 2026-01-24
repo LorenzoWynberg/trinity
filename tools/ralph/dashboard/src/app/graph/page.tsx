@@ -159,7 +159,7 @@ export default function GraphPage() {
             size={1}
             color={isDark ? '#333' : '#ccc'}
           />
-          <Controls className={isDark ? '' : '[&>button]:bg-white [&>button]:border-gray-200'} />
+          <Controls />
           <MiniMap
             nodeColor={(node) => {
               const status = node.data?.status as string
