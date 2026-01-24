@@ -8,7 +8,7 @@ var max-iterations = 100
 var base-branch = "dev"
 var quiet-mode = $false
 var claude-timeout = 1800
-var auto-pr = $true
+var auto-pr = $false
 var auto-merge = $false
 var resume-mode = $false
 var reset-mode = $false
@@ -48,8 +48,8 @@ fn parse-args {|arguments|
     } elif (or (eq $arg "-q") (eq $arg "--quiet")) {
       set quiet-mode = $true
       set i = (+ $i 1)
-    } elif (eq $arg "--no-auto-pr") {
-      set auto-pr = $false
+    } elif (eq $arg "--auto-pr") {
+      set auto-pr = $true
       set i = (+ $i 1)
     } elif (eq $arg "--auto-merge") {
       set auto-merge = $true

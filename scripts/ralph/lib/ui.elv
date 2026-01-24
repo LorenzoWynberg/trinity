@@ -66,7 +66,7 @@ USAGE:
 OPTIONS:
   --max-iterations <n>    Maximum iterations before auto-stop (default: 100)
   --base-branch <name>    Base branch to create story branches from (default: dev)
-  --no-auto-pr            Prompt before creating PR (default: auto-create)
+  --auto-pr               Auto-create PR without prompting (default: prompt)
   --auto-merge            Auto-merge PR without prompting (default: prompt)
   --resume                Resume from last state (skip story selection)
   --reset                 Reset state and start fresh
