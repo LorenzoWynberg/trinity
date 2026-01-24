@@ -60,6 +60,11 @@ Stay focused on the feedback - don't refactor unrelated code.
   deps_info=$(prd_get_story_deps "$story_id")
   prompt="${prompt//\{\{DEPENDENCIES\}\}/$deps_info}"
 
+  # Add recent activity logs for context
+  local activity_logs
+  activity_logs=$(activity_get_recent_logs)
+  prompt="${prompt//\{\{RECENT_ACTIVITY_LOGS\}\}/$activity_logs}"
+
   CLAUDE_OUTPUT_FILE=$(mktemp)
   CLAUDE_PROMPT_FILE=$(mktemp)
   echo "$prompt" > "$CLAUDE_PROMPT_FILE"
