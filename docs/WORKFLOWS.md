@@ -27,7 +27,7 @@ trinity init
 Trinity will:
 - Analyze your project structure
 - Detect stack (language, framework)
-- Create CLAUDE.md with project context
+- Create CLAUDE.md with project context (includes no-AI-attribution rule)
 - Set up `~/.trinity/projects/<hash>/`
 
 ### 2. Analyze
