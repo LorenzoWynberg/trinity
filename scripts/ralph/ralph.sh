@@ -105,7 +105,7 @@ if [[ -n "$UNMERGED_OUTPUT" ]]; then
 
     # Run PR flow for this story
     ui_status "Handling unmerged story: $sid"
-    pr_run_flow "$sid" "$branch" "$story_title" 0 > /dev/null
+    PR_RESULT=$(pr_run_flow "$sid" "$branch" "$story_title" 0)
     echo ""
   done <<< "$UNMERGED_OUTPUT"
 

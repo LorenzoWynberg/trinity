@@ -191,9 +191,9 @@ PR_FEEDBACK=""
 
 # Prompt for feedback text
 pr_get_feedback() {
-  echo ""
+  echo "" > /dev/tty
   ui_status "Enter feedback for Claude (press Enter twice to finish):"
-  echo -e "\033[2m(Describe what changes are needed)\033[0m"
+  echo -e "\033[2m(Describe what changes are needed)\033[0m" > /dev/tty
 
   local feedback=""
   local line=""
@@ -246,7 +246,7 @@ pr_run_flow() {
 
       if [[ "$PR_AUTO_PR" != "true" ]]; then
         ui_status "Review the PR. What would you like to do?"
-        echo -e "\033[33m[Y]es update description / [n]o skip / [f]eedback request changes\033[0m"
+        echo -e "\033[33m[Y]es update description / [n]o skip / [f]eedback request changes\033[0m" > /dev/tty
 
         local answer=""
         read -r answer </dev/tty 2>/dev/null || answer=""
@@ -283,7 +283,7 @@ pr_run_flow() {
 
       if [[ "$PR_AUTO_PR" != "true" ]]; then
         ui_status "Create PR to $PR_BASE_BRANCH?"
-        echo -e "\033[33m[Y]es / [n]o\033[0m"
+        echo -e "\033[33m[Y]es / [n]o\033[0m" > /dev/tty
 
         local answer
         answer=$(pr_prompt_user)
@@ -307,9 +307,9 @@ pr_run_flow() {
 
     # === MERGE / FEEDBACK PROMPT ===
     if [[ "$pr_exists" == "true" && "$PR_AUTO_MERGE" != "true" ]]; then
-      echo ""
+      echo "" > /dev/tty
       ui_status "What would you like to do?"
-      echo -e "\033[33m[y]es merge / [N]o leave open / [f]eedback request changes\033[0m"
+      echo -e "\033[33m[y]es merge / [N]o leave open / [f]eedback request changes\033[0m" > /dev/tty
 
       local answer=""
       read -r answer </dev/tty 2>/dev/null || answer=""
