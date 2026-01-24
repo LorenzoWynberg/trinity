@@ -115,17 +115,21 @@ export default function GraphPage() {
   }))
 
   // Apply highlighting styles to nodes and add info click handler
-  const styledNodes: Node[] = nodes.map(node => ({
-    ...node,
-    data: {
-      ...node.data,
-      onInfoClick: () => openStoryModal(node.id, node.data?.status as StoryStatus || 'pending'),
-    },
-    style: {
-      ...node.style,
-      opacity: highlightedNodes.size > 0 && !highlightedNodes.has(node.id) ? 0.3 : 1,
-    },
-  }))
+  const styledNodes: Node[] = nodes.map(node => {
+    const isHighlighted = highlightedNodes.has(node.id)
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        onInfoClick: () => openStoryModal(node.id, node.data?.status as StoryStatus || 'pending'),
+      },
+      style: {
+        ...node.style,
+        opacity: highlightedNodes.size > 0 && !isHighlighted ? 0.3 : 1,
+      },
+      zIndex: isHighlighted ? 1001 : 0,
+    }
+  })
 
   if (loading) {
     return (
