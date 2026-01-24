@@ -136,8 +136,9 @@ while (< $current-iteration $config[max-iterations]) {
 
     git:ensure-on-branch $branch-name
 
-    # Run Claude
-    var output-file = (claude:run $story-id $branch-name $current-state[attempts] $current-iteration "")
+    # Run Claude (don't capture output - streaming goes to terminal)
+    claude:run $story-id $branch-name $current-state[attempts] $current-iteration ""
+    var output-file = (claude:get-output-file)
 
     # Format Go files
     echo ""
