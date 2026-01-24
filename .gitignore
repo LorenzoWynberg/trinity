@@ -8,9 +8,9 @@ dist/
 *.dylib
 
 # Build output
-trinity
-cli/trinity
-gui/trinity-gui
+/trinity
+/cli/trinity
+/gui/trinity-gui
 
 # Test
 *.test
