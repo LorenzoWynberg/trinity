@@ -28,7 +28,7 @@
         "go build ./cli/cmd/trinity produces binary",
         "./trinity --help shows usage"
       ],
-      "passes": false,
+      "passes": true,
       "depends_on": [
         "STORY-1.1.1"
       ],

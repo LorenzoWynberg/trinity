@@ -4,6 +4,28 @@ This file tracks progress on building Trinity v0.1 using the autonomous developm
 
 ---
 
+## STORY-1.1.2: Create CLI entrypoint with Cobra
+Date: 2026-01-24
+Status: COMPLETED
+
+### Changes
+- Modified `cli/cmd/trinity/main.go` to use spf13/cobra framework
+- Added root command with Use, Short, Long, and Version fields
+- Added github.com/spf13/cobra v1.10.2 as direct dependency in cli/go.mod
+- Help text includes getting started commands (init, analyze, plan add, run)
+
+### Learnings
+- Cobra's Version field auto-generates --version flag
+- Long description supports multi-line for better help formatting
+
+### Verification
+- `go work sync` succeeds
+- `go build ./cli/cmd/trinity` produces binary
+- `./trinity --help` shows usage with getting started guide
+- `./trinity --version` shows version 0.1.0
+
+---
+
 ## STORY-1.1.1: Create Go workspace structure
 Date: 2026-01-24
 Status: COMPLETED
