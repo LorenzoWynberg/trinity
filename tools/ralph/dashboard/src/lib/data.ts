@@ -120,23 +120,29 @@ export async function getMetrics(): Promise<Metrics | null> {
   }
 }
 
-export async function getActivityLogs(): Promise<{ date: string; content: string; archived: boolean }[]> {
+export type ActivityProject = 'trinity' | 'ralph'
+
+export async function getActivityLogs(project: ActivityProject = 'trinity'): Promise<{ date: string; content: string; archived: boolean }[]> {
   try {
-    const activityDir = path.join(LOGS_DIR, 'activity')
+    const activityDir = path.join(LOGS_DIR, 'activity', project)
     const archiveDir = path.join(activityDir, 'archive')
     const logs: { date: string; content: string; archived: boolean }[] = []
 
-    // Read recent logs from main directory
-    const files = await fs.readdir(activityDir)
-    const mdFiles = files.filter(f => f.match(/^\d{4}-\d{2}-\d{2}\.md$/))
+    // Read recent logs from project directory
+    try {
+      const files = await fs.readdir(activityDir)
+      const mdFiles = files.filter(f => f.match(/^\d{4}-\d{2}-\d{2}\.md$/))
 
-    for (const file of mdFiles) {
-      const content = await fs.readFile(path.join(activityDir, file), 'utf-8')
-      logs.push({
-        date: file.replace('.md', ''),
-        content,
-        archived: false
-      })
+      for (const file of mdFiles) {
+        const content = await fs.readFile(path.join(activityDir, file), 'utf-8')
+        logs.push({
+          date: file.replace('.md', ''),
+          content,
+          archived: false
+        })
+      }
+    } catch {
+      // Directory might not exist yet
     }
 
     // Read archived logs from archive/YYYY-MM/ subdirectories
@@ -166,6 +172,19 @@ export async function getActivityLogs(): Promise<{ date: string; content: string
     return logs.sort((a, b) => b.date.localeCompare(a.date))
   } catch {
     return []
+  }
+}
+
+export async function getActivityProjects(): Promise<ActivityProject[]> {
+  try {
+    const activityDir = path.join(LOGS_DIR, 'activity')
+    const entries = await fs.readdir(activityDir, { withFileTypes: true })
+    const projects = entries
+      .filter(e => e.isDirectory() && ['trinity', 'ralph'].includes(e.name))
+      .map(e => e.name as ActivityProject)
+    return projects.length > 0 ? projects : ['trinity']
+  } catch {
+    return ['trinity']
   }
 }
 

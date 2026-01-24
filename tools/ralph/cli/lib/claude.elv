@@ -80,7 +80,7 @@ fn preflight-checks {
 
 # Archive old activity logs (>7 days) on startup
 fn archive-old-logs {
-  var activity-dir = (path:join $project-root "logs" "activity")
+  var activity-dir = (path:join $project-root "logs" "activity" "ralph")
   var archive-dir = (path:join $activity-dir "archive")
 
   if (not (path:is-dir $activity-dir)) {
@@ -127,7 +127,7 @@ fn archive-old-logs {
 
 # Get recent activity logs (up to 2 most recent)
 fn get-recent-activity-logs {
-  var activity-dir = (path:join $project-root "logs" "activity")
+  var activity-dir = (path:join $project-root "logs" "activity" "ralph")
 
   # Check if directory exists
   if (not (path:is-dir $activity-dir)) {
@@ -264,7 +264,7 @@ fn extract-learnings {|story-id branch-name|
   # Get story activity (from today's log)
   var activity = ""
   var today = (date '+%Y-%m-%d')
-  var activity-file = (path:join $project-root "logs" "activity" $today".md")
+  var activity-file = (path:join $project-root "logs" "activity" "ralph" $today".md")
   if (path:is-regular $activity-file) {
     try {
       set activity = (cat $activity-file | slurp)
