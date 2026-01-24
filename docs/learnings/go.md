@@ -1,5 +1,7 @@
 # Go Learnings
 
+> **TL;DR:** Use `go.work` for multi-module repos, `replace` directive for local modules, always run `go work sync` after changes.
+
 ## Workspaces
 
 ### Multi-module monorepo setup

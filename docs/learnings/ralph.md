@@ -1,5 +1,7 @@
 # Ralph Learnings
 
+> **TL;DR:** Two-stage completion (passes→merged), activity logs via `{{RECENT_ACTIVITY_LOGS}}`, PR defaults (yes create, no merge), Claude-generated PR descriptions from git history.
+
 ## Streaming Claude Output
 
 ### jq filters for stream-json
