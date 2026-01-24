@@ -26,7 +26,8 @@ fn init {|root branch apr amerge|
 # Generate or update PR description using Claude
 # Checks current PR body and decides if update is needed
 fn generate-pr-body {|story-id story-title branch-name|
-  ui:dim "  Analyzing PR and generating description..." > /dev/tty
+  # Use echo directly to /dev/tty to avoid capture issues
+  echo "\e[2m  Generating PR description with Claude...\e[0m" > /dev/tty
 
   # Get current PR body if it exists
   var current-body = ""
@@ -140,20 +141,20 @@ Output ONLY 'DESCRIPTION_COMPLETE' or the full updated description. No other tex
 
   # Check if Claude says it's already complete
   if (str:contains $result "DESCRIPTION_COMPLETE") {
-    ui:dim "  PR description is already complete" > /dev/tty
+    echo "\e[2m  PR description is already complete\e[0m" > /dev/tty
     put $current-body
     return
   }
 
   # If we got a result, use it
   if (not (eq (str:trim-space $result) "")) {
-    ui:success "  PR description generated" > /dev/tty
+    echo "\e[32m\e[1m✓ \e[0m\e[32mPR description generated\e[0m" > /dev/tty
     put $result
     return
   }
 
   # Fallback if Claude fails
-  ui:dim "  Claude unavailable, using basic template" > /dev/tty
+  echo "\e[2m  Claude unavailable, using basic template\e[0m" > /dev/tty
   put "## "$story-id": "$story-title"
 
 ### Commits
@@ -179,24 +180,24 @@ fn check-exists {|branch-name|
 
 # Create a new PR with Claude-generated description
 fn create {|branch-name story-id story-title|
-  ui:status "Creating PR to "$base-branch"..." > /dev/tty
+  echo "\e[34m► \e[0mCreating PR to "$base-branch"..." > /dev/tty
 
   var body = (generate-pr-body $story-id $story-title $branch-name)
 
   try {
     var url = (gh pr create --base $base-branch --head $branch-name --title $story-id": "$story-title --body $body 2>&1 | slurp)
     set url = (str:trim-space $url)
-    ui:success "PR created: "$url > /dev/tty
+    echo "\e[32m\e[1m✓ \e[0m\e[32mPR created: "$url"\e[0m" > /dev/tty
     put $url
   } catch e {
-    ui:error "Failed to create PR: "(to-string $e[reason]) > /dev/tty
+    echo "\e[31m\e[1m✗ \e[0mFailed to create PR: "(to-string $e[reason]) > /dev/tty
     put ""
   }
 }
 
 # Update PR description - Claude checks if update is needed
 fn update {|branch-name story-id story-title|
-  ui:status "Checking PR description..." > /dev/tty
+  echo "\e[34m► \e[0mChecking PR description..." > /dev/tty
 
   var body = (generate-pr-body $story-id $story-title $branch-name)
 
@@ -208,16 +209,16 @@ fn update {|branch-name story-id story-title|
 
   # If body is same as current, no update needed
   if (eq $body $current-body) {
-    ui:dim "  No update needed" > /dev/tty
+    echo "\e[2m  No update needed\e[0m" > /dev/tty
     put $true
     return
   }
 
   try {
-    gh pr edit $branch-name --body $body 2>&1 | slurp
+    gh pr edit $branch-name --body $body 2>&1 > /dev/null
     put $true
   } catch e {
-    ui:error "Failed to update PR: "(to-string $e[reason]) > /dev/tty
+    echo "\e[31m\e[1m✗ \e[0mFailed to update PR: "(to-string $e[reason]) > /dev/tty
     put $false
   }
 }
@@ -290,10 +291,10 @@ fn merge {|branch-name|
 
 # Push changes to remote
 fn push-changes {|branch-name|
-  ui:dim "Pushing refinement changes..." > /dev/tty
+  echo "\e[2mPushing refinement changes...\e[0m" > /dev/tty
   try {
-    git -C $project-root push origin $branch-name 2>&1 | slurp
-    ui:success "Changes pushed" > /dev/tty
+    git -C $project-root push origin $branch-name 2>&1 > /dev/null
+    echo "\e[32m\e[1m✓ \e[0m\e[32mChanges pushed\e[0m" > /dev/tty
     put $true
   } catch _ {
     put $false
