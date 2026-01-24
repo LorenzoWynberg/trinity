@@ -42,35 +42,6 @@ prd:init $prd-file
 claude:init $project-root $prompt-template $config[claude-timeout] $config[quiet-mode] $config[max-iterations]
 pr:init $project-root $config[base-branch] $config[auto-pr] $config[auto-merge]
 
-# Graceful exit handler
-fn graceful-exit {
-  echo ""
-  echo ""
-  ui:box "INTERRUPTED - Saving State" "warn"
-
-  try {
-    var st = (state:read)
-    if $st[current_story] {
-      ui:dim "Current story: "$st[current_story]
-      ui:dim "Branch:        "$st[branch]
-      ui:dim "Status:        "$st[status]
-    }
-    ui:dim "State preserved in state.json"
-    ui:dim "Run './ralph.elv --resume' to continue"
-  } catch {
-    ui:dim "Could not read state"
-  }
-
-  echo ""
-  ui:warn "Exiting gracefully..."
-  exit 130
-}
-
-# Register signal handler for Ctrl+C (SIGINT)
-set-global-signal-handler int {
-  graceful-exit
-}
-
 # Print banner
 echo ""
 ui:box "RALPH - Autonomous Development Loop" "info"
