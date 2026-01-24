@@ -106,7 +106,12 @@
       ],
       "phase": 1,
       "epic": 2,
-      "story_number": 3
+      "story_number": 3,
+      "human_testing": {
+        "required": true,
+        "instructions": "Test config show displays readable output, config set persists values, config edit opens editor correctly",
+        "url": null
+      }
     },
     {
       "id": "STORY-2.1.1",
@@ -211,7 +216,8 @@
         "db.Stories.GetNext() returns story with deps met, not blocked",
         "Dependency resolution checks all depends_on items",
         "Supports phase, epic, and story-level dependencies",
-        "Returns nil when no stories available"
+        "Returns nil when no stories available",
+        "Respects human_testing.status - stories awaiting approval not selected"
       ],
       "passes": false,
       "depends_on": [
@@ -524,18 +530,38 @@
       "story_number": 3
     },
     {
-      "id": "STORY-4.1.1",
-      "title": "Create prompt template loader",
-      "intent": "Load and manage prompt templates with placeholder substitution",
+      "id": "STORY-4.0.1",
+      "title": "Create prompts directory structure",
+      "intent": "Scaffold the embedded prompts directory with proper organization",
       "acceptance": [
-        "prompts/ directory with go:embed for templates",
-        "LoadTemplate(name) returns template content",
-        "FillTemplate(template, vars) substitutes {{placeholders}}",
-        "Templates organized: templates/, schemas/, internal/"
+        "prompts/ directory exists at repo root",
+        "prompts/templates/ subdirectory created",
+        "prompts/schemas/ subdirectory created",
+        "prompts/internal/ subdirectory created",
+        "prompts/embed.go with go:embed directive for all subdirectories"
       ],
       "passes": false,
       "depends_on": [
         "STORY-1.1.1"
+      ],
+      "phase": 4,
+      "epic": 0,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-4.1.1",
+      "title": "Create prompt template loader",
+      "intent": "Load and manage prompt templates with placeholder substitution",
+      "acceptance": [
+        "core/prompts/loader.go exists",
+        "Uses prompts/ directory via go:embed",
+        "LoadTemplate(name) returns template content",
+        "FillTemplate(template, vars) substitutes {{placeholders}}",
+        "Returns error for missing templates or placeholders"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.0.1"
       ],
       "phase": 4,
       "epic": 1,
@@ -554,7 +580,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.1.1"
+        "STORY-4.0.1"
       ],
       "phase": 4,
       "epic": 1,
@@ -569,11 +595,12 @@
         "Instructs Claude to analyze project structure",
         "Identifies tech stack and patterns",
         "Suggests relevant skills to install",
-        "Returns structured JSON analysis"
+        "Returns structured JSON matching schemas/analyze.json"
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.1.1"
+        "STORY-4.0.1",
+        "STORY-4.3.1"
       ],
       "phase": 4,
       "epic": 1,
@@ -587,12 +614,13 @@
         "prompts/templates/plan-add-init.md exists",
         "Instructs Claude to create PRD structure",
         "Guides phase/epic/story breakdown",
-        "Returns structured JSON PRD",
-        "Follows schema in prompts/schemas/plan-add.json"
+        "Returns structured JSON matching schemas/plan-add.json",
+        "Includes dependency assignment guidelines"
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.1.1"
+        "STORY-4.0.1",
+        "STORY-4.3.2"
       ],
       "phase": 4,
       "epic": 1,
@@ -626,15 +654,54 @@
         "Analyzes story quality and clarity",
         "Suggests improved acceptance criteria",
         "Identifies stories that should be split",
-        "Returns structured refinement suggestions"
+        "Returns structured refinement suggestions matching schemas/plan-refine.json"
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.1.5"
+        "STORY-4.1.5",
+        "STORY-4.3.3"
       ],
       "phase": 4,
       "epic": 1,
       "story_number": 6
+    },
+    {
+      "id": "STORY-4.1.7",
+      "title": "Create init-analyze.md prompt template",
+      "intent": "Define prompt for initial project analysis during trinity init",
+      "acceptance": [
+        "prompts/templates/init-analyze.md exists",
+        "Quick analysis of project structure",
+        "Detects primary language and framework",
+        "Identifies build system and test framework",
+        "Returns structured JSON for CLAUDE.md generation"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.0.1"
+      ],
+      "phase": 4,
+      "epic": 1,
+      "story_number": 7
+    },
+    {
+      "id": "STORY-4.1.8",
+      "title": "Create init-claude-md.md prompt template",
+      "intent": "Define prompt for generating project CLAUDE.md",
+      "acceptance": [
+        "prompts/templates/init-claude-md.md exists",
+        "Takes project analysis as input",
+        "Generates project-specific guidance",
+        "Includes build/test commands",
+        "Supports --no-ai-attribution flag in output"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.1.7"
+      ],
+      "phase": 4,
+      "epic": 1,
+      "story_number": 8
     },
     {
       "id": "STORY-4.2.1",
@@ -648,7 +715,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.1.1"
+        "STORY-4.0.1"
       ],
       "phase": 4,
       "epic": 2,
@@ -666,7 +733,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.1.1"
+        "STORY-4.0.1"
       ],
       "phase": 4,
       "epic": 2,
@@ -684,7 +751,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.1.1"
+        "STORY-4.0.1"
       ],
       "phase": 4,
       "epic": 2,
@@ -702,11 +769,68 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.1.1"
+        "STORY-4.0.1"
       ],
       "phase": 4,
       "epic": 2,
       "story_number": 4
+    },
+    {
+      "id": "STORY-4.3.1",
+      "title": "Create analyze.json response schema",
+      "intent": "Define expected JSON structure for analyze command output",
+      "acceptance": [
+        "prompts/schemas/analyze.json exists",
+        "Defines stack object (language, framework, build_tool)",
+        "Defines structure description field",
+        "Defines suggestions array with title, description, priority",
+        "Valid JSON Schema format"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.0.1"
+      ],
+      "phase": 4,
+      "epic": 3,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-4.3.2",
+      "title": "Create plan-add.json response schema",
+      "intent": "Define expected JSON structure for plan add command output",
+      "acceptance": [
+        "prompts/schemas/plan-add.json exists",
+        "Defines analysis field for placement reasoning",
+        "Defines suggestions array with type, parent, after fields",
+        "Defines generated object with full story structure",
+        "Valid JSON Schema format"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.0.1"
+      ],
+      "phase": 4,
+      "epic": 3,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-4.3.3",
+      "title": "Create plan-refine.json response schema",
+      "intent": "Define expected JSON structure for plan refine command output",
+      "acceptance": [
+        "prompts/schemas/plan-refine.json exists",
+        "Defines refinements array with story_id, suggestions",
+        "Defines split_recommendations for large stories",
+        "Defines improved_acceptance array",
+        "Valid JSON Schema format"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.0.1"
+      ],
+      "phase": 4,
+      "epic": 3,
+      "story_number": 3
     },
     {
       "id": "STORY-5.1.1",
@@ -735,6 +859,7 @@
         "selectNext() calls db.Stories.GetNext()",
         "Handles resume of in-progress story",
         "Skips blocked stories",
+        "Skips stories awaiting human approval",
         "Returns nil when all done"
       ],
       "passes": false,
@@ -801,6 +926,25 @@
       "phase": 5,
       "epic": 1,
       "story_number": 5
+    },
+    {
+      "id": "STORY-5.1.6",
+      "title": "Implement human testing gate in loop",
+      "intent": "Pause loop when story requires human verification",
+      "acceptance": [
+        "After story complete, check human_testing.required",
+        "If required, set human_testing_status to 'awaiting'",
+        "Display human testing instructions to user",
+        "Pause loop and prompt user to run trinity approve/reject",
+        "Continue to next story only after approval"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-5.1.4"
+      ],
+      "phase": 5,
+      "epic": 1,
+      "story_number": 6
     },
     {
       "id": "STORY-5.2.1",
@@ -876,7 +1020,12 @@
       ],
       "phase": 6,
       "epic": 1,
-      "story_number": 1
+      "story_number": 1,
+      "human_testing": {
+        "required": true,
+        "instructions": "Run trinity init in a test project directory. Verify: prompts appear correctly, directories created in ~/.trinity/projects/, database initialized, CLAUDE.md offer works",
+        "url": null
+      }
     },
     {
       "id": "STORY-6.1.2",
@@ -895,7 +1044,12 @@
       ],
       "phase": 6,
       "epic": 1,
-      "story_number": 2
+      "story_number": 2,
+      "human_testing": {
+        "required": true,
+        "instructions": "Run trinity analyze on a known project (Go, React, Python). Verify: correct stack detected, sensible skill suggestions, output is readable and accurate",
+        "url": null
+      }
     },
     {
       "id": "STORY-6.2.1",
@@ -915,7 +1069,12 @@
       ],
       "phase": 6,
       "epic": 2,
-      "story_number": 1
+      "story_number": 1,
+      "human_testing": {
+        "required": true,
+        "instructions": "Test both flows: 1) Add to empty PRD - verify creates sensible structure, 2) Add to existing PRD - verify new items integrate correctly with proper dependencies",
+        "url": null
+      }
     },
     {
       "id": "STORY-6.2.2",
@@ -934,7 +1093,12 @@
       ],
       "phase": 6,
       "epic": 2,
-      "story_number": 2
+      "story_number": 2,
+      "human_testing": {
+        "required": true,
+        "instructions": "Create a PRD with multiple phases/epics/stories. Verify: hierarchy displays correctly, status indicators work, specific ref lookup works, dependencies shown clearly",
+        "url": null
+      }
     },
     {
       "id": "STORY-6.2.3",
@@ -991,7 +1155,12 @@
       ],
       "phase": 6,
       "epic": 3,
-      "story_number": 1
+      "story_number": 1,
+      "human_testing": {
+        "required": true,
+        "instructions": "Run trinity run on a simple 2-3 story PRD. Verify: stories execute in correct order, output streams properly, story completion/blocking handled correctly, can interrupt with Ctrl+C",
+        "url": null
+      }
     },
     {
       "id": "STORY-6.3.2",
@@ -1009,7 +1178,12 @@
       ],
       "phase": 6,
       "epic": 3,
-      "story_number": 2
+      "story_number": 2,
+      "human_testing": {
+        "required": true,
+        "instructions": "Watch trinity run output on a real story. Verify: streaming output is readable, progress shows current story, banners appear on state changes, final summary is clear",
+        "url": null
+      }
     },
     {
       "id": "STORY-6.4.1",
@@ -1028,7 +1202,12 @@
       ],
       "phase": 6,
       "epic": 4,
-      "story_number": 1
+      "story_number": 1,
+      "human_testing": {
+        "required": true,
+        "instructions": "Run trinity status at various stages of a project. Verify: progress counts accurate, recent activity displayed, blocked items highlighted, output is clear and useful",
+        "url": null
+      }
     },
     {
       "id": "STORY-6.4.2",
@@ -1151,17 +1330,23 @@
       "acceptance": [
         "trinity approve approves current pending test",
         "trinity approve <ref> approves specific story",
+        "Updates human_testing_status to 'approved'",
         "Updates story status to completed",
         "Unblocks dependent stories",
         "Logs approval activity"
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.3.1"
+        "STORY-5.1.6"
       ],
       "phase": 6,
       "epic": 6,
-      "story_number": 1
+      "story_number": 1,
+      "human_testing": {
+        "required": true,
+        "instructions": "Create a story with human_testing.required=true. Run it to completion. Verify: loop pauses, instructions displayed, trinity approve works, story marked complete, loop can continue",
+        "url": null
+      }
     },
     {
       "id": "STORY-6.6.2",
@@ -1170,7 +1355,8 @@
       "acceptance": [
         "trinity reject 'feedback' rejects with reason",
         "trinity reject <ref> 'feedback' rejects specific story",
-        "Resets story to pending with feedback attached",
+        "Stores rejection feedback in story",
+        "Resets story to pending",
         "Claude sees feedback on next attempt",
         "Logs rejection activity"
       ],
@@ -1180,7 +1366,12 @@
       ],
       "phase": 6,
       "epic": 6,
-      "story_number": 2
+      "story_number": 2,
+      "human_testing": {
+        "required": true,
+        "instructions": "Reject a completed story with feedback. Run trinity run again. Verify: feedback is visible to Claude in next attempt, story iterates based on feedback",
+        "url": null
+      }
     },
     {
       "id": "STORY-6.7.1",
@@ -1311,7 +1502,12 @@
       ],
       "phase": 7,
       "epic": 1,
-      "story_number": 2
+      "story_number": 2,
+      "human_testing": {
+        "required": true,
+        "instructions": "Run various trinity commands (status, run, errors). Verify: colors appear correctly in terminal, colors disabled when piped to file, contrast is readable",
+        "url": null
+      }
     },
     {
       "id": "STORY-7.1.3",
@@ -1329,7 +1525,12 @@
       ],
       "phase": 7,
       "epic": 1,
-      "story_number": 3
+      "story_number": 3,
+      "human_testing": {
+        "required": true,
+        "instructions": "Run operations that take time (analyze, run). Verify: spinner animates smoothly, cleans up on completion, cleans up on Ctrl+C, disabled in non-TTY",
+        "url": null
+      }
     },
     {
       "id": "STORY-7.2.1",
@@ -1384,7 +1585,12 @@
       ],
       "phase": 7,
       "epic": 3,
-      "story_number": 1
+      "story_number": 1,
+      "human_testing": {
+        "required": true,
+        "instructions": "Run complete workflow on a fresh test project: trinity init, trinity analyze, trinity plan add with simple feature, trinity run. Verify entire flow works end-to-end",
+        "url": null
+      }
     },
     {
       "id": "STORY-7.3.2",
@@ -1402,7 +1608,12 @@
       ],
       "phase": 7,
       "epic": 3,
-      "story_number": 2
+      "story_number": 2,
+      "human_testing": {
+        "required": true,
+        "instructions": "Start trinity run, kill process mid-story (kill -9), restart trinity run. Verify: crash detected, resume prompt appears, can successfully resume or restart story",
+        "url": null
+      }
     },
     {
       "id": "STORY-7.3.3",
@@ -1420,7 +1631,12 @@
       ],
       "phase": 7,
       "epic": 3,
-      "story_number": 3
+      "story_number": 3,
+      "human_testing": {
+        "required": true,
+        "instructions": "Create PRD with complex dependencies (story->story, story->epic, cross-phase). Run and verify: correct execution order, no story runs before deps, completion unblocks correctly",
+        "url": null
+      }
     }
   ]
 }
