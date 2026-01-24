@@ -445,9 +445,9 @@ fn generate-commit-message {|story-id branch-name|
   var story-title = (prd:get-story-title $story-id)
 
   # Get diff for this story
+  var base = "dev"  # TODO: get from config
   var diff = ""
   try {
-    var base = "dev"  # TODO: get from config
     set diff = (git -C $project-root diff --stat $base"..."$branch-name 2>/dev/null | slurp)
   } catch _ { }
 

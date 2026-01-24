@@ -67,9 +67,9 @@ fn version-has-incomplete {|version|
 # Get the lowest semantic version that has incomplete stories
 fn get-active-version {
   var versions = [(list-versions)]
-  for version $versions {
-    if (version-has-incomplete $version) {
-      put $version
+  for ver $versions {
+    if (version-has-incomplete $ver) {
+      put $ver
       return
     }
   }
@@ -483,8 +483,8 @@ fn show-version-status {
 
   var versions = [(list-versions)]
 
-  for version $versions {
-    var file = (get-version-file $version)
+  for ver $versions {
+    var file = (get-version-file $ver)
     var total = (jq '.stories | length' $file)
     var merged = (jq '[.stories[] | select(.merged == true)] | length' $file)
     var passed = (jq '[.stories[] | select(.passes == true)] | length' $file)
@@ -500,8 +500,8 @@ fn show-version-status {
       set status = "complete"
     }
 
-    echo $version" ["$status"]"
-    echo "  File: prd/"$version".json"
+    echo $ver" ["$status"]"
+    echo "  File: prd/"$ver".json"
     echo "  Progress: "$merged"/"$total" ("$pct"%)"
     echo "  - Passed (awaiting merge): "(- $passed $merged)
     echo "  - Skipped: "$skipped
