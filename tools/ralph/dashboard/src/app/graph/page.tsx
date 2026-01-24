@@ -103,16 +103,21 @@ export default function GraphPage() {
 
   // Apply highlighting styles to edges
   const defaultEdgeColor = isDark ? '#6b7280' : '#9ca3af'
-  const styledEdges: Edge[] = edges.map(edge => ({
-    ...edge,
-    style: {
-      ...edge.style,
-      strokeWidth: highlightedEdges.has(edge.id) ? 4 : 2,
-      stroke: highlightedEdges.has(edge.id) ? '#facc15' : (edge.style?.stroke || defaultEdgeColor),
-      opacity: highlightedEdges.size > 0 && !highlightedEdges.has(edge.id) ? 0.2 : 1,
-    },
-    zIndex: highlightedEdges.has(edge.id) ? 1000 : 0,
-  }))
+  const hasHighlighting = highlightedEdges.size > 0
+  const styledEdges: Edge[] = edges.map(edge => {
+    const isHighlighted = highlightedEdges.has(edge.id)
+    return {
+      ...edge,
+      style: {
+        ...edge.style,
+        strokeWidth: isHighlighted ? 4 : 2,
+        stroke: isHighlighted ? '#facc15' : (edge.style?.stroke || defaultEdgeColor),
+        opacity: hasHighlighting && !isHighlighted ? 0.15 : 1,
+      },
+      // Highlighted edges above faded nodes, non-highlighted edges at bottom
+      zIndex: isHighlighted ? 1000 : -10,
+    }
+  })
 
   // Apply highlighting styles to nodes and add info click handler
   const styledNodes: Node[] = nodes.map(node => {
