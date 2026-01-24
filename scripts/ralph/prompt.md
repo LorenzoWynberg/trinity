@@ -5,6 +5,8 @@ Story: {{CURRENT_STORY}} | Branch: {{BRANCH}} | Attempt: {{ATTEMPT}} | Iteration
 
 Dependencies (completed): {{DEPENDENCIES}}
 
+{{FEEDBACK}}
+
 ## 1. Load Context
 Read these files first:
 - `scripts/ralph/prd.json` - acceptance criteria for {{CURRENT_STORY}}
@@ -13,7 +15,7 @@ Read these files first:
 - `docs/PROMPTS.md` - prompt system design
 - `CLAUDE.md` - project conventions
 
-If attempt > 1: check `git log` and `git diff` for previous work.
+If attempt > 1 or refinement: check `git log` and `git diff` for previous work. Focus on the feedback if provided.
 
 ## 2. Scope
 Implement ONLY {{CURRENT_STORY}}. No refactoring unrelated code. Stay focused on acceptance criteria.
