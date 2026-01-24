@@ -136,9 +136,81 @@ while (< $current-iteration $config[max-iterations]) {
 
     git:ensure-on-branch $branch-name
 
-    # Run Claude (don't capture output - streaming goes to terminal)
-    claude:run $story-id $branch-name $current-state[attempts] $current-iteration ""
-    var output-file = (claude:get-output-file)
+    # Prepare Claude prompt
+    var prep = (claude:prepare $story-id $branch-name $current-state[attempts] $current-iteration "")
+    var prompt-file = $prep[prompt-file]
+    var output-file = $prep[output-file]
+    var story-title = $prep[story-title]
+    var claude-config = (claude:get-config)
+
+    var mode-label = "attempt "$current-state[attempts]
+    ui:status "Running Claude ("$mode-label")..."
+    ui:dim "  Story:  "$story-id
+    ui:dim "  Title:  "$story-title
+    ui:dim "  Branch: "$branch-name
+    ui:dim "  Output: "$output-file
+    echo ""
+
+    ui:status "Invoking Claude CLI..."
+    ui:dim "  This may take several minutes. Claude is working autonomously."
+    if $claude-config[quiet-mode] {
+      ui:dim "  Quiet mode: output captured to file only."
+    } else {
+      ui:dim "  Streaming mode: real-time output."
+    }
+    ui:dim "  Waiting for completion signal..."
+    echo ""
+
+    ui:divider "Claude Working"
+
+    # Run streaming pipeline at TOP LEVEL (not in a function) - this is critical for streaming to work
+    cd $claude-config[project-root]
+    var claude-start = (date +%s)
+
+    try {
+      if $claude-config[quiet-mode] {
+        timeout $claude-config[timeout] bash -c 'claude --dangerously-skip-permissions --print < "$1"' _ $prompt-file > $output-file 2>&1
+      } else {
+        # jq filters from https://www.aihero.dev/heres-how-to-stream-claude-code-with-afk-ralph
+        var stream-text = 'select(.type == "assistant").message.content[]? | select(.type == "text").text // empty | gsub("\n"; "\r\n") | . + "\r\n\n"'
+        var final-result = 'select(.type == "result").result // empty'
+
+        # Streaming pipeline - must run at top level, not in a function
+        try {
+          timeout $claude-config[timeout] claude --dangerously-skip-permissions --verbose --print --output-format stream-json < $prompt-file 2>&1 | grep --line-buffered '^{' | tee $output-file | jq --unbuffered -rj $stream-text 2>/dev/null
+        } catch _ { }
+
+        # Extract final result text for signal detection
+        try {
+          jq -rs $final-result $output-file > $output-file".result" 2>/dev/null
+        } catch _ { }
+
+        # Use the extracted result if available
+        if (path:is-regular $output-file".result") {
+          var result-content = (cat $output-file".result" | slurp)
+          if (not (eq $result-content "")) {
+            echo $result-content > $output-file
+          }
+          rm -f $output-file".result"
+        }
+      }
+      var claude-end = (date +%s)
+      var claude-duration = (- $claude-end $claude-start)
+      ui:divider-end
+      ui:success "Claude execution completed in "$claude-duration"s"
+    } catch e {
+      var claude-end = (date +%s)
+      var claude-duration = (- $claude-end $claude-start)
+      ui:divider-end
+      if (>= $claude-duration $claude-config[timeout]) {
+        ui:error "Claude execution TIMED OUT after "$claude-config[timeout]"s"
+      } else {
+        ui:error "Claude execution error: "(to-string $e[reason])
+      }
+    } finally {
+      rm -f $prompt-file
+      rm -f $output-file".result" 2>/dev/null
+    }
 
     # Format Go files
     echo ""
