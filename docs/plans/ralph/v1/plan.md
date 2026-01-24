@@ -46,7 +46,7 @@ fn get-feedback {
 }
 ```
 
-**Files:** `scripts/ralph/lib/pr.elv`
+**Files:** `tools/ralph/cli/lib/pr.elv`
 
 **Effort:** 15 min
 
@@ -84,8 +84,8 @@ Output ONLY the commit message, no explanation.
 ```
 
 **Files:**
-- `scripts/ralph/lib/claude.elv`
-- `scripts/ralph/prompt.md`
+- `tools/ralph/cli/lib/claude.elv`
+- `tools/ralph/cli/prompt.md`
 
 **Effort:** 1 hour
 
@@ -176,9 +176,9 @@ PR #42: STORY-1.1.2 - Create CLI entrypoint
 ```
 
 **Files:**
-- `scripts/ralph/lib/pr.elv` - Comment functions, state-based flow
-- `scripts/ralph/lib/state.elv` - Add pr_url field
-- `scripts/ralph/ralph.elv` - Pass pr_url to run-flow
+- `tools/ralph/cli/lib/pr.elv` - Comment functions, state-based flow
+- `tools/ralph/cli/lib/state.elv` - Add pr_url field
+- `tools/ralph/cli/ralph.elv` - Pass pr_url to run-flow
 
 **Effort:** 2 hours
 
@@ -190,7 +190,7 @@ PR #42: STORY-1.1.2 - Create CLI entrypoint
 
 **Solution:** Track all metrics per story in dedicated `metrics.json` file.
 
-**Storage:** `scripts/ralph/metrics.json`
+**Storage:** `tools/ralph/cli/metrics.json`
 ```json
 {
   "stories": {
@@ -253,9 +253,9 @@ Per-Story:
 ```
 
 **Files:**
-- New `scripts/ralph/lib/metrics.elv`
-- `scripts/ralph/lib/claude.elv` - extract tokens from output
-- `scripts/ralph/ralph.elv` - update metrics on story complete
+- New `tools/ralph/cli/lib/metrics.elv`
+- `tools/ralph/cli/lib/claude.elv` - extract tokens from output
+- `tools/ralph/cli/ralph.elv` - update metrics on story complete
 
 **Effort:** 2 hours
 
@@ -342,8 +342,8 @@ if $signals[complete] {
 - `conventions.md` - Coding standards learned
 
 **Files:**
-- `scripts/ralph/lib/claude.elv`
-- `scripts/ralph/ralph.elv`
+- `tools/ralph/cli/lib/claude.elv`
+- `tools/ralph/cli/ralph.elv`
 
 **Effort:** 1.5 hours
 
@@ -415,9 +415,9 @@ if (not $config[no-validate]) {
 **Flag:** `--no-validate` to skip validation
 
 **Files:**
-- `scripts/ralph/lib/claude.elv`
-- `scripts/ralph/lib/cli.elv`
-- `scripts/ralph/ralph.elv`
+- `tools/ralph/cli/lib/claude.elv`
+- `tools/ralph/cli/lib/cli.elv`
+- `tools/ralph/cli/ralph.elv`
 
 **Effort:** 1 hour
 
@@ -451,9 +451,9 @@ fn skip-story {|story-id reason|
 ```
 
 **Files:**
-- `scripts/ralph/lib/prd.elv`
-- `scripts/ralph/lib/cli.elv`
-- `scripts/ralph/ralph.elv`
+- `tools/ralph/cli/lib/prd.elv`
+- `tools/ralph/cli/lib/cli.elv`
+- `tools/ralph/cli/ralph.elv`
 
 **Effort:** 30 min
 
@@ -487,8 +487,8 @@ notify "Ralph" "Story STORY-1.2.3 BLOCKED"
 **Flag:** `--notify` to enable (off by default)
 
 **Files:**
-- `scripts/ralph/lib/ui.elv`
-- `scripts/ralph/ralph.elv`
+- `tools/ralph/cli/lib/ui.elv`
+- `tools/ralph/cli/ralph.elv`
 
 **Effort:** 15 min
 
@@ -523,9 +523,9 @@ After reviewing, user will run without --plan to execute.
 ```
 
 **Files:**
-- `scripts/ralph/lib/cli.elv`
-- `scripts/ralph/lib/claude.elv`
-- `scripts/ralph/prompt.md`
+- `tools/ralph/cli/lib/cli.elv`
+- `tools/ralph/cli/lib/claude.elv`
+- `tools/ralph/cli/prompt.md`
 
 **Effort:** 1 hour
 
@@ -561,8 +561,8 @@ fn archive-old-logs {
 Run on startup before main loop.
 
 **Files:**
-- `scripts/ralph/lib/claude.elv` (or new `lib/activity.elv`)
-- `scripts/ralph/ralph.elv`
+- `tools/ralph/cli/lib/claude.elv` (or new `lib/activity.elv`)
+- `tools/ralph/cli/ralph.elv`
 
 **Effort:** 20 min
 
@@ -601,9 +601,9 @@ Legend: [x] merged  [>] in progress  [ ] pending  [!] blocked  [-] skipped
 ```
 
 **Files:**
-- `scripts/ralph/lib/prd.elv`
-- `scripts/ralph/lib/cli.elv`
-- `scripts/ralph/ralph.elv`
+- `tools/ralph/cli/lib/prd.elv`
+- `tools/ralph/cli/lib/cli.elv`
+- `tools/ralph/cli/ralph.elv`
 
 **Effort:** 1.5 hours
 
@@ -646,7 +646,7 @@ if $config[yolo-mode] {
 ```
 
 **Files:**
-- `scripts/ralph/lib/cli.elv`
+- `tools/ralph/cli/lib/cli.elv`
 
 **Effort:** 5 min
 
@@ -753,7 +753,7 @@ fn post-webhook {|event payload|
 ```
 
 **Files:**
-- New `scripts/ralph/lib/notify.elv`
-- `scripts/ralph/ralph.elv`
+- New `tools/ralph/cli/lib/notify.elv`
+- `tools/ralph/cli/ralph.elv`
 
 **Effort:** 1 hour

@@ -146,7 +146,7 @@ Track implementation progress for the Next.js PRD dashboard.
 
 - Using Next.js 14 App Router with server components
 - 5-second revalidation for auto-refresh on all pages
-- Reading files directly from scripts/ralph/ and docs/
+- Reading files directly from tools/ralph/ and docs/
 
 ---
 

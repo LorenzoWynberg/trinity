@@ -3,13 +3,13 @@ import path from 'path'
 import type { PRD, State, Metrics, PhaseProgress, EpicProgress, Story } from './types'
 
 // Paths relative to project root
-const PROJECT_ROOT = path.join(process.cwd(), '../..')
-const RALPH_DIR = path.join(PROJECT_ROOT, 'scripts/ralph')
+const PROJECT_ROOT = path.join(process.cwd(), '../../..')
+const RALPH_CLI_DIR = path.join(PROJECT_ROOT, 'tools/ralph/cli')
 const DOCS_DIR = path.join(PROJECT_ROOT, 'docs')
 
 export async function getPRD(): Promise<PRD | null> {
   try {
-    const content = await fs.readFile(path.join(RALPH_DIR, 'prd.json'), 'utf-8')
+    const content = await fs.readFile(path.join(RALPH_CLI_DIR, 'prd.json'), 'utf-8')
     return JSON.parse(content)
   } catch {
     return null
@@ -18,7 +18,7 @@ export async function getPRD(): Promise<PRD | null> {
 
 export async function getState(): Promise<State | null> {
   try {
-    const content = await fs.readFile(path.join(RALPH_DIR, 'state.json'), 'utf-8')
+    const content = await fs.readFile(path.join(RALPH_CLI_DIR, 'state.json'), 'utf-8')
     return JSON.parse(content)
   } catch {
     return null
@@ -27,7 +27,7 @@ export async function getState(): Promise<State | null> {
 
 export async function getMetrics(): Promise<Metrics | null> {
   try {
-    const content = await fs.readFile(path.join(RALPH_DIR, 'metrics.json'), 'utf-8')
+    const content = await fs.readFile(path.join(RALPH_CLI_DIR, 'metrics.json'), 'utf-8')
     return JSON.parse(content)
   } catch {
     return null

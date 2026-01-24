@@ -9,14 +9,14 @@ Dependencies (completed): {{DEPENDENCIES}}
 
 ## 1. Load Context
 Read these files first:
-- `scripts/ralph/prd.json` - acceptance criteria for {{CURRENT_STORY}}
+- `tools/ralph/cli/prd.json` - acceptance criteria for {{CURRENT_STORY}}
 - `docs/ARCHITECTURE.md` - system design and patterns
 - `docs/COMMANDS.md` - CLI command specifications
 - `docs/PROMPTS.md` - prompt system design
 - `docs/learnings/` - **read relevant files** based on task:
   - `go.md` - Go patterns, workspaces, modules
   - `ralph.md` - Ralph patterns, streaming, state
-- `scripts/ralph/progress.txt` - story history
+- `tools/ralph/cli/progress.txt` - story history
 - `CLAUDE.md` - project conventions
 
 If attempt > 1 or refinement: check `git log` and `git diff` for previous work. Focus on the feedback if provided.
@@ -64,8 +64,8 @@ After build passes, ask: "What's missing or could improve?"
 
 Update these files:
 - `docs/learnings/*.md`: Add any NEW learnings to the appropriate topic file
-- `scripts/ralph/progress.txt`: APPEND entry with date, changes, learnings
-- `scripts/ralph/prd.json`: Set `"passes": true` for {{CURRENT_STORY}}
+- `tools/ralph/cli/progress.txt`: APPEND entry with date, changes, learnings
+- `tools/ralph/cli/prd.json`: Set `"passes": true` for {{CURRENT_STORY}}
   - NOTE: Do NOT set `merged` - Ralph handles that after PR is merged
 - `docs/activity/YYYY-MM-DD.md`: Update with completed work, files modified, decisions made
 
@@ -95,7 +95,7 @@ Don't commit. Don't update prd.json.
 
 **Still capture learnings from failure:**
 - `docs/learnings/*.md`: Add what you learned to the appropriate file's **Gotchas** section
-- `scripts/ralph/progress.txt`: APPEND what was tried and why blocked
+- `tools/ralph/cli/progress.txt`: APPEND what was tried and why blocked
 - `docs/activity/YYYY-MM-DD.md`: Detailed blocker info and what was attempted
 
 Failures are valuable learning opportunities - don't lose them!

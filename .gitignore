@@ -32,4 +32,4 @@ Thumbs.db
 .env.local
 
 # Ralph state
-scripts/ralph/state.json
+tools/ralph/cli/state.json

@@ -17,7 +17,7 @@ A local dashboard that reads Ralph's data files and presents them in a beautiful
 ## Directory Structure
 
 ```
-scripts/ralph/web/
+tools/ralph/dashboard/
 ├── app/
 │   ├── layout.tsx          # Root layout with sidebar
 │   ├── page.tsx            # Dashboard home (overview)
@@ -269,7 +269,7 @@ const { data } = useSWR('/api/state', fetcher, {
 ## Running the Dashboard
 
 ```bash
-cd scripts/ralph/web
+cd tools/ralph/web
 npm install
 npm run dev
 # Open http://localhost:3000

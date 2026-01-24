@@ -419,7 +419,7 @@ Output a detailed plan that includes:
 4. **Potential challenges** - gotchas or edge cases to watch for
 
 Read the following for context:
-- `scripts/ralph/prd.json` - full story details
+- `tools/ralph/cli/prd.json` - full story details
 - `docs/ARCHITECTURE.md` - system design
 - `docs/learnings/` - existing learnings
 

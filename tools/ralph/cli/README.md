@@ -5,11 +5,11 @@ Ralph is an autonomous development loop that builds Trinity v0.1 by working thro
 ## Quick Start
 
 ```bash
-# From the scripts/ralph directory
+# From the tools/ralph/cli directory
 ./ralph.elv
 
 # Or from project root
-./scripts/ralph/ralph.elv
+./tools/ralph/cli/ralph.elv
 ```
 
 ## Prerequisites
