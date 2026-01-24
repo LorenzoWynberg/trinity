@@ -18,10 +18,11 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useTheme } from 'next-themes'
-import { ArrowRight, ArrowDown, Hand } from 'lucide-react'
+import { ArrowRight, ArrowDown, Save, Trash2, X } from 'lucide-react'
 import { StoryNode } from '@/components/story-node'
+import { VersionNode } from '@/components/version-node'
 import { StoryModal } from '@/components/story-modal'
-import { useGraphData, calculateAutoPositions, LayoutMode } from '@/hooks/use-graph-data'
+import { useGraphData, calculateAutoPositions, GraphLayoutData } from '@/hooks/use-graph-data'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -30,10 +31,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import type { Story, StoryStatus } from '@/lib/types'
 
 const nodeTypes = {
   story: StoryNode,
+  version: VersionNode,
 }
 
 function GraphContent() {
@@ -46,13 +55,14 @@ function GraphContent() {
     loading,
     stories,
     versions,
-    layout,
-    saveLayout
+    layoutData,
+    saveLayoutData,
+    deleteCustomLayout,
   } = useGraphData(selectedVersion)
   const { fitView } = useReactFlow()
   const shouldFitViewRef = useRef(true)
   const prevVersionRef = useRef(selectedVersion)
-  const prevLayoutRef = useRef(layout.layout)
+  const prevActiveRef = useRef(layoutData.active)
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
@@ -64,14 +74,18 @@ function GraphContent() {
   const [selectedStatus, setSelectedStatus] = useState<StoryStatus>('pending')
   const [modalOpen, setModalOpen] = useState(false)
 
+  // Save dialog state
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false)
+  const [newLayoutName, setNewLayoutName] = useState('')
+
   // Track version/layout changes to trigger fitView
   useEffect(() => {
-    if (prevVersionRef.current !== selectedVersion || prevLayoutRef.current !== layout.layout) {
+    if (prevVersionRef.current !== selectedVersion || prevActiveRef.current !== layoutData.active) {
       shouldFitViewRef.current = true
       prevVersionRef.current = selectedVersion
-      prevLayoutRef.current = layout.layout
+      prevActiveRef.current = layoutData.active
     }
-  }, [selectedVersion, layout.layout])
+  }, [selectedVersion, layoutData.active])
 
   // Update nodes when data loads
   useEffect(() => {
@@ -88,69 +102,86 @@ function GraphContent() {
     }
   }, [initialNodes, initialEdges, setNodes, setEdges, fitView])
 
-  // Handle layout mode change
-  const handleLayoutChange = useCallback(async (newLayoutMode: LayoutMode) => {
-    if (newLayoutMode === 'custom') {
-      // Just switch to custom, keep current positions
-      const positions: Record<string, { x: number; y: number }> = {}
-      nodes.forEach(node => {
-        positions[node.id] = { x: node.position.x, y: node.position.y }
-      })
-      await saveLayout({ layout: 'custom', positions })
-    } else {
-      // Recalculate positions for horizontal/vertical
-      const newPositions = calculateAutoPositions(stories, newLayoutMode)
-      await saveLayout({ layout: newLayoutMode, positions: newPositions })
-
-      // Update nodes immediately
-      setNodes(prevNodes => prevNodes.map(node => ({
-        ...node,
-        position: newPositions[node.id] || node.position
-      })))
-
-      // Fit view after layout change
-      setTimeout(() => {
-        fitView({ padding: 0.1, duration: 200 })
-      }, 50)
+  // Handle layout selection change
+  const handleLayoutChange = useCallback(async (value: string) => {
+    if (value === '__create__') {
+      setSaveDialogOpen(true)
+      return
     }
-  }, [nodes, stories, saveLayout, setNodes, fitView])
 
-  // Handle node drag end - switch to custom mode
+    const newData: GraphLayoutData = {
+      ...layoutData,
+      active: value,
+    }
+    await saveLayoutData(newData)
+
+    // Fit view after layout change
+    setTimeout(() => {
+      fitView({ padding: 0.1, duration: 200 })
+    }, 50)
+  }, [layoutData, saveLayoutData, fitView])
+
+  // Save current positions as a new custom layout
+  const handleSaveNewLayout = useCallback(async () => {
+    if (!newLayoutName.trim()) return
+
+    const positions: Record<string, { x: number; y: number }> = {}
+    nodes.forEach(node => {
+      positions[node.id] = { x: node.position.x, y: node.position.y }
+    })
+
+    const newData: GraphLayoutData = {
+      active: newLayoutName.trim(),
+      customLayouts: {
+        ...layoutData.customLayouts,
+        [newLayoutName.trim()]: { positions },
+      },
+    }
+
+    await saveLayoutData(newData)
+    setSaveDialogOpen(false)
+    setNewLayoutName('')
+  }, [nodes, layoutData, saveLayoutData, newLayoutName])
+
+  // Handle node drag end - update custom layout if active
   const handleNodesChange = useCallback((changes: NodeChange<Node>[]) => {
     onNodesChange(changes)
 
-    // Check if any node was dragged (position change)
     const hasDrag = changes.some(change =>
       change.type === 'position' && change.dragging === false && change.position
     )
 
-    if (hasDrag && layout.layout !== 'custom') {
-      // Switch to custom mode and save all positions
-      const positions: Record<string, { x: number; y: number }> = {}
-      nodes.forEach(node => {
-        // Apply any position changes from the current batch
-        const change = changes.find(c => c.type === 'position' && c.id === node.id)
-        if (change && change.type === 'position' && change.position) {
-          positions[node.id] = { x: change.position.x, y: change.position.y }
-        } else {
-          positions[node.id] = { x: node.position.x, y: node.position.y }
+    if (hasDrag) {
+      const activeLayout = layoutData.active
+
+      // If currently on a custom layout, update its positions
+      if (activeLayout !== 'horizontal' && activeLayout !== 'vertical') {
+        const positions: Record<string, { x: number; y: number }> = {}
+        nodes.forEach(node => {
+          const change = changes.find(c => c.type === 'position' && c.id === node.id)
+          if (change && change.type === 'position' && change.position) {
+            positions[node.id] = { x: change.position.x, y: change.position.y }
+          } else {
+            positions[node.id] = { x: node.position.x, y: node.position.y }
+          }
+        })
+
+        const newData: GraphLayoutData = {
+          ...layoutData,
+          customLayouts: {
+            ...layoutData.customLayouts,
+            [activeLayout]: { positions },
+          },
         }
-      })
-      saveLayout({ layout: 'custom', positions })
-    } else if (hasDrag && layout.layout === 'custom') {
-      // Already in custom mode, just save updated positions
-      const positions: Record<string, { x: number; y: number }> = {}
-      nodes.forEach(node => {
-        const change = changes.find(c => c.type === 'position' && c.id === node.id)
-        if (change && change.type === 'position' && change.position) {
-          positions[node.id] = { x: change.position.x, y: change.position.y }
-        } else {
-          positions[node.id] = { x: node.position.x, y: node.position.y }
-        }
-      })
-      saveLayout({ layout: 'custom', positions })
+        saveLayoutData(newData)
+      }
     }
-  }, [onNodesChange, layout.layout, nodes, saveLayout])
+  }, [onNodesChange, layoutData, nodes, saveLayoutData])
+
+  // Delete a custom layout
+  const handleDeleteLayout = useCallback(async (name: string) => {
+    await deleteCustomLayout(name)
+  }, [deleteCustomLayout])
 
   // Get all ancestors (dependencies) recursively
   const getAncestors = useCallback((nodeId: string, visited: Set<string> = new Set()): Set<string> => {
@@ -246,6 +277,9 @@ function GraphContent() {
     }
   })
 
+  // Get list of custom layout names
+  const customLayoutNames = Object.keys(layoutData.customLayouts || {})
+
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -277,9 +311,9 @@ function GraphContent() {
         )}
 
         {/* Layout Selector - Right */}
-        <div className="absolute top-4 right-4 z-10">
-          <Select value={layout.layout} onValueChange={(v) => handleLayoutChange(v as LayoutMode)}>
-            <SelectTrigger className="w-[140px] h-9 bg-background">
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+          <Select value={layoutData.active} onValueChange={handleLayoutChange}>
+            <SelectTrigger className="w-[160px] h-9 bg-background">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -295,14 +329,38 @@ function GraphContent() {
                   Vertical
                 </div>
               </SelectItem>
-              <SelectItem value="custom">
-                <div className="flex items-center gap-2">
-                  <Hand className="h-4 w-4" />
-                  Custom
+              {customLayoutNames.length > 0 && (
+                <div className="border-t my-1" />
+              )}
+              {customLayoutNames.map(name => (
+                <SelectItem key={name} value={name}>
+                  <div className="flex items-center justify-between w-full gap-2">
+                    <span className="truncate">{name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+              <div className="border-t my-1" />
+              <SelectItem value="__create__">
+                <div className="flex items-center gap-2 text-primary">
+                  <Save className="h-4 w-4" />
+                  Create view...
                 </div>
               </SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Delete button for custom layouts */}
+          {layoutData.active !== 'horizontal' && layoutData.active !== 'vertical' && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => handleDeleteLayout(layoutData.active)}
+              title="Delete this layout"
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          )}
         </div>
 
         <ReactFlow
@@ -358,6 +416,36 @@ function GraphContent() {
           }
         }}
       />
+
+      {/* Create View Dialog */}
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create View</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <label className="text-sm font-medium mb-2 block">View Name</label>
+            <input
+              type="text"
+              value={newLayoutName}
+              onChange={(e) => setNewLayoutName(e.target.value)}
+              placeholder="e.g., By Phase, Compact, My Layout"
+              className="w-full px-3 py-2 border rounded-md bg-background"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSaveNewLayout()
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveNewLayout} disabled={!newLayoutName.trim()}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

@@ -2,13 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Node, Edge, MarkerType } from '@xyflow/react'
-import type { Story, StoryStatus } from '@/lib/types'
+import type { Story, StoryStatus, VersionInfo } from '@/lib/types'
 
-export type LayoutMode = 'horizontal' | 'vertical' | 'custom'
-
-export type GraphLayout = {
-  layout: LayoutMode
-  positions: Record<string, { x: number; y: number }>
+export type GraphLayoutData = {
+  active: string // 'horizontal' | 'vertical' | custom layout name
+  customLayouts: Record<string, { positions: Record<string, { x: number; y: number }> }>
 }
 
 type GraphData = {
@@ -17,8 +15,10 @@ type GraphData = {
   stories: Story[]
   loading: boolean
   versions: string[]
-  layout: GraphLayout
-  saveLayout: (layout: GraphLayout) => Promise<void>
+  versionProgress: VersionInfo[]
+  layoutData: GraphLayoutData
+  saveLayoutData: (data: GraphLayoutData) => Promise<void>
+  deleteCustomLayout: (name: string) => Promise<void>
 }
 
 function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatus {
@@ -59,10 +59,12 @@ function calculateDepths(stories: Story[]): Map<string, number> {
   return depths
 }
 
-// Calculate auto-layout positions
-export function calculateAutoPositions(
+// Calculate auto-layout positions for a single version
+function calculateSingleVersionPositions(
   stories: Story[],
-  direction: 'horizontal' | 'vertical'
+  direction: 'horizontal' | 'vertical',
+  offsetX: number = 0,
+  offsetY: number = 0
 ): Record<string, { x: number; y: number }> {
   const depths = calculateDepths(stories)
   const positions: Record<string, { x: number; y: number }> = {}
@@ -97,8 +99,8 @@ export function calculateAutoPositions(
       const group = byDepth.get(depth) || []
       group.forEach((story, idx) => {
         positions[story.id] = {
-          x: depth * (NODE_WIDTH + H_GAP),
-          y: idx * (NODE_HEIGHT + V_GAP)
+          x: offsetX + depth * (NODE_WIDTH + H_GAP),
+          y: offsetY + idx * (NODE_HEIGHT + V_GAP)
         }
       })
     }
@@ -113,12 +115,12 @@ export function calculateAutoPositions(
         const chunk = group.slice(chunkStart, chunkStart + MAX_PER_ROW)
         const chunkSize = chunk.length
         const rowWidth = chunkSize * NODE_WIDTH + (chunkSize - 1) * H_GAP
-        const xOffset = (maxRowWidth - rowWidth) / 2
+        const xOff = (maxRowWidth - rowWidth) / 2
 
         chunk.forEach((story, idx) => {
           positions[story.id] = {
-            x: xOffset + idx * (NODE_WIDTH + H_GAP),
-            y: currentRow * (NODE_HEIGHT + V_GAP)
+            x: offsetX + xOff + idx * (NODE_WIDTH + H_GAP),
+            y: offsetY + currentRow * (NODE_HEIGHT + V_GAP)
           }
         })
         currentRow++
@@ -129,25 +131,121 @@ export function calculateAutoPositions(
   return positions
 }
 
+// Calculate auto-layout positions with version grouping
+export function calculateAutoPositions(
+  stories: Story[],
+  direction: 'horizontal' | 'vertical',
+  includeVersionHeaders: boolean = false
+): Record<string, { x: number; y: number }> {
+  // Group stories by version
+  const byVersion = new Map<string, Story[]>()
+  stories.forEach(story => {
+    const ver = story.target_version || 'unknown'
+    if (!byVersion.has(ver)) byVersion.set(ver, [])
+    byVersion.get(ver)!.push(story)
+  })
+
+  // Sort versions
+  const sortedVersions = Array.from(byVersion.keys()).sort((a, b) => {
+    const [, aMajor, aMinor] = a.match(/v(\d+)\.(\d+)/) || [, '0', '0']
+    const [, bMajor, bMinor] = b.match(/v(\d+)\.(\d+)/) || [, '0', '0']
+    if (aMajor !== bMajor) return parseInt(aMajor) - parseInt(bMajor)
+    return parseInt(aMinor) - parseInt(bMinor)
+  })
+
+  // If only one version and not showing headers, use simple layout
+  if (sortedVersions.length <= 1 && !includeVersionHeaders) {
+    return calculateSingleVersionPositions(stories, direction)
+  }
+
+  const positions: Record<string, { x: number; y: number }> = {}
+  const NODE_WIDTH = 170
+  const NODE_HEIGHT = 70
+  const VERSION_HEADER_HEIGHT = 60
+  const VERSION_GAP = 100
+  const H_GAP = direction === 'vertical' ? 80 : 60
+  const V_GAP = direction === 'vertical' ? 70 : 20
+
+  if (direction === 'horizontal') {
+    let currentX = 0
+
+    for (const ver of sortedVersions) {
+      const verStories = byVersion.get(ver) || []
+      if (verStories.length === 0) continue
+
+      if (includeVersionHeaders) {
+        positions[`version:${ver}`] = { x: currentX, y: -VERSION_HEADER_HEIGHT - 20 }
+      }
+
+      const verPositions = calculateSingleVersionPositions(verStories, direction, currentX, 0)
+      Object.assign(positions, verPositions)
+
+      const maxX = Math.max(...Object.values(verPositions).map(p => p.x))
+      currentX = maxX + NODE_WIDTH + VERSION_GAP
+    }
+  } else {
+    let currentY = 0
+
+    for (const ver of sortedVersions) {
+      const verStories = byVersion.get(ver) || []
+      if (verStories.length === 0) continue
+
+      if (includeVersionHeaders) {
+        positions[`version:${ver}`] = { x: 0, y: currentY }
+        currentY += VERSION_HEADER_HEIGHT + 20
+      }
+
+      const verPositions = calculateSingleVersionPositions(verStories, direction, 0, currentY)
+      Object.assign(positions, verPositions)
+
+      const maxY = Math.max(...Object.values(verPositions).map(p => p.y))
+      currentY = maxY + NODE_HEIGHT + VERSION_GAP
+    }
+  }
+
+  return positions
+}
+
+const defaultLayoutData: GraphLayoutData = {
+  active: 'horizontal',
+  customLayouts: {}
+}
+
 export function useGraphData(version: string = 'all'): GraphData {
   const [nodes, setNodes] = useState<Node[]>([])
   const [edges, setEdges] = useState<Edge[]>([])
   const [stories, setStories] = useState<Story[]>([])
   const [versions, setVersions] = useState<string[]>([])
+  const [versionProgress, setVersionProgress] = useState<VersionInfo[]>([])
   const [loading, setLoading] = useState(true)
-  const [layout, setLayout] = useState<GraphLayout>({ layout: 'horizontal', positions: {} })
+  const [layoutData, setLayoutData] = useState<GraphLayoutData>(defaultLayoutData)
 
-  // Save layout to API
-  const saveLayout = useCallback(async (newLayout: GraphLayout) => {
-    setLayout(newLayout)
+  // Save layout data to API
+  const saveLayoutData = useCallback(async (data: GraphLayoutData) => {
+    setLayoutData(data)
     try {
       await fetch(`/api/graph-layout?version=${version}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newLayout),
+        body: JSON.stringify(data),
       })
     } catch (error) {
       console.error('Failed to save layout:', error)
+    }
+  }, [version])
+
+  // Delete a custom layout
+  const deleteCustomLayout = useCallback(async (name: string) => {
+    try {
+      await fetch(`/api/graph-layout?version=${version}&layout=${encodeURIComponent(name)}`, {
+        method: 'DELETE',
+      })
+      // Refresh layout data
+      const res = await fetch(`/api/graph-layout?version=${version}`)
+      const data = await res.json()
+      setLayoutData(data)
+    } catch (error) {
+      console.error('Failed to delete layout:', error)
     }
   }, [version])
 
@@ -165,11 +263,12 @@ export function useGraphData(version: string = 'all'): GraphData {
         const prd = await prdRes.json()
         const state = await stateRes.json()
         const versionsData = await versionsRes.json()
-        const savedLayout: GraphLayout = await layoutRes.json()
+        const savedLayoutData: GraphLayoutData = await layoutRes.json()
         const currentStoryId = state?.current_story || null
 
         setVersions(versionsData.versions || [])
-        setLayout(savedLayout)
+        setVersionProgress(versionsData.progress || [])
+        setLayoutData(savedLayoutData)
 
         if (!prd?.stories) {
           setLoading(false)
@@ -179,24 +278,57 @@ export function useGraphData(version: string = 'all'): GraphData {
         const storiesData: Story[] = prd.stories
         setStories(storiesData)
 
-        // Determine positions based on layout mode
-        let positions: Record<string, { x: number; y: number }>
+        const isAllVersions = version === 'all'
+        const showVersionHeaders = isAllVersions && (versionsData.versions?.length || 0) > 1
 
-        if (savedLayout.layout === 'custom' && Object.keys(savedLayout.positions).length > 0) {
-          // Use saved custom positions, but calculate for any new stories
-          const autoPositions = calculateAutoPositions(storiesData, 'horizontal')
-          positions = { ...autoPositions, ...savedLayout.positions }
+        // Determine positions based on active layout
+        let positions: Record<string, { x: number; y: number }>
+        const activeLayout = savedLayoutData.active || 'horizontal'
+
+        if (activeLayout === 'horizontal' || activeLayout === 'vertical') {
+          // Auto-calculate positions
+          positions = calculateAutoPositions(storiesData, activeLayout, showVersionHeaders)
         } else {
-          // Calculate auto positions
-          const direction = savedLayout.layout === 'vertical' ? 'vertical' : 'horizontal'
-          positions = calculateAutoPositions(storiesData, direction)
+          // Use custom layout positions
+          const customLayout = savedLayoutData.customLayouts[activeLayout]
+          if (customLayout && Object.keys(customLayout.positions).length > 0) {
+            // Merge with auto positions for any new stories
+            const autoPositions = calculateAutoPositions(storiesData, 'horizontal', showVersionHeaders)
+            positions = { ...autoPositions, ...customLayout.positions }
+          } else {
+            // Fallback to horizontal
+            positions = calculateAutoPositions(storiesData, 'horizontal', showVersionHeaders)
+          }
         }
 
         // Create nodes
-        const nodeList: Node[] = storiesData.map(story => {
+        const nodeList: Node[] = []
+
+        // Add version header nodes if showing all versions
+        if (showVersionHeaders) {
+          for (const progress of (versionsData.progress || [])) {
+            const pos = positions[`version:${progress.version}`] || { x: 0, y: 0 }
+            nodeList.push({
+              id: `version:${progress.version}`,
+              type: 'version',
+              position: pos,
+              draggable: true,
+              data: {
+                label: progress.version,
+                total: progress.total,
+                merged: progress.merged,
+                percentage: progress.percentage,
+                direction: activeLayout,
+              },
+            })
+          }
+        }
+
+        // Add story nodes
+        for (const story of storiesData) {
           const status = getStoryStatus(story, currentStoryId)
           const pos = positions[story.id] || { x: 0, y: 0 }
-          return {
+          nodeList.push({
             id: story.id,
             type: 'story',
             position: pos,
@@ -206,10 +338,10 @@ export function useGraphData(version: string = 'all'): GraphData {
               status,
               phase: story.phase,
               epic: story.epic,
-              direction: savedLayout.layout,
+              direction: activeLayout,
             },
-          }
-        })
+          })
+        }
 
         // Create edges
         const edgeList: Edge[] = []
@@ -218,13 +350,16 @@ export function useGraphData(version: string = 'all'): GraphData {
         for (const story of storiesData) {
           if (story.depends_on) {
             for (const depId of story.depends_on) {
-              if (nodeIds.has(depId)) {
-                const depStory = storiesData.find(s => s.id === depId)
+              const actualDepId = depId.includes(':') ? depId.split(':').pop()! : depId
+
+              if (nodeIds.has(actualDepId)) {
+                const depStory = storiesData.find(s => s.id === actualDepId)
                 const isDepMerged = depStory?.merged
+                const isCrossVersion = depStory?.target_version !== story.target_version
 
                 edgeList.push({
-                  id: `${depId}->${story.id}`,
-                  source: depId,
+                  id: `${actualDepId}->${story.id}`,
+                  source: actualDepId,
                   target: story.id,
                   type: 'smoothstep',
                   markerEnd: {
@@ -233,8 +368,9 @@ export function useGraphData(version: string = 'all'): GraphData {
                     height: 12,
                   },
                   style: {
-                    strokeWidth: 2,
-                    stroke: isDepMerged ? '#22c55e' : '#6b7280',
+                    strokeWidth: isCrossVersion ? 3 : 2,
+                    stroke: isDepMerged ? '#22c55e' : (isCrossVersion ? '#f59e0b' : '#6b7280'),
+                    strokeDasharray: isCrossVersion ? '5,5' : undefined,
                   },
                   animated: getStoryStatus(story, currentStoryId) === 'in_progress',
                 })
@@ -254,10 +390,9 @@ export function useGraphData(version: string = 'all'): GraphData {
 
     fetchData()
 
-    // Refresh every 5 seconds
     const interval = setInterval(fetchData, 5000)
     return () => clearInterval(interval)
   }, [version])
 
-  return { nodes, edges, stories, loading, versions, layout, saveLayout }
+  return { nodes, edges, stories, loading, versions, versionProgress, layoutData, saveLayoutData, deleteCustomLayout }
 }
