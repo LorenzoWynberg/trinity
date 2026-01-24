@@ -48,7 +48,7 @@ Ralph is an autonomous development loop that builds Trinity v0.1 by working thro
 ./ralph.elv --reset                   # Reset state, start fresh
 ./ralph.elv --max-iterations 50       # Limit iterations (default: 100)
 ./ralph.elv --base-branch main        # Use different base branch (default: dev)
-./ralph.elv --no-auto-pr              # Prompt before creating PR
+./ralph.elv --auto-pr                 # Auto-create PR without prompting
 ./ralph.elv --auto-merge              # Auto-merge PRs without prompting
 ./ralph.elv -q                        # Quiet mode (no Claude output)
 ```
