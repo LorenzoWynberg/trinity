@@ -22,6 +22,13 @@ import { StoryNode } from '@/components/story-node'
 import { StoryModal } from '@/components/story-modal'
 import { useGraphData } from '@/hooks/use-graph-data'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { Story, StoryStatus } from '@/lib/types'
 
 const nodeTypes = {
@@ -32,13 +39,15 @@ function GraphContent() {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
   const [direction, setDirection] = useState<'horizontal' | 'vertical'>('horizontal')
-  const { nodes: initialNodes, edges: initialEdges, loading, stories } = useGraphData(direction)
+  const [selectedVersion, setSelectedVersion] = useState<string>('all')
+  const { nodes: initialNodes, edges: initialEdges, loading, stories, versions } = useGraphData(direction, selectedVersion)
   const { fitView } = useReactFlow()
   const shouldFitViewRef = useRef(true) // Fit on initial render
   const prevDirectionRef = useRef(direction)
+  const prevVersionRef = useRef(selectedVersion)
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([])
-  const [edges, setEdges, onEdgesChange] = useEdgesState([])
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
 
   // Load saved direction on mount
   useEffect(() => {
@@ -59,13 +68,14 @@ function GraphContent() {
   const [selectedStatus, setSelectedStatus] = useState<StoryStatus>('pending')
   const [modalOpen, setModalOpen] = useState(false)
 
-  // Track direction changes to trigger fitView
+  // Track direction/version changes to trigger fitView
   useEffect(() => {
-    if (prevDirectionRef.current !== direction) {
+    if (prevDirectionRef.current !== direction || prevVersionRef.current !== selectedVersion) {
       shouldFitViewRef.current = true
       prevDirectionRef.current = direction
+      prevVersionRef.current = selectedVersion
     }
-  }, [direction])
+  }, [direction, selectedVersion])
 
   // Update nodes when data loads, only fit view on initial render or direction change
   useEffect(() => {
@@ -210,7 +220,25 @@ function GraphContent() {
   return (
     <>
       <div className="h-[calc(100vh-2rem)] w-full relative">
-        <div className="absolute top-4 right-4 z-10">
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+          {/* Version Selector */}
+          {versions.length > 1 && (
+            <Select value={selectedVersion} onValueChange={setSelectedVersion}>
+              <SelectTrigger className="w-[120px] h-9 bg-background">
+                <SelectValue placeholder="All versions" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All versions</SelectItem>
+                {versions.map(version => (
+                  <SelectItem key={version} value={version}>
+                    {version}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {/* Direction Toggle */}
           <Button
             variant="outline"
             size="sm"

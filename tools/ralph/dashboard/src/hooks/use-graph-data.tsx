@@ -9,6 +9,7 @@ type GraphData = {
   edges: Edge[]
   stories: Story[]
   loading: boolean
+  versions: string[]
 }
 
 function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatus {
@@ -49,23 +50,32 @@ function calculateDepths(stories: Story[]): Map<string, number> {
   return depths
 }
 
-export function useGraphData(direction: 'horizontal' | 'vertical' = 'horizontal'): GraphData {
+export function useGraphData(
+  direction: 'horizontal' | 'vertical' = 'horizontal',
+  version: string = 'all'
+): GraphData {
   const [nodes, setNodes] = useState<Node[]>([])
   const [edges, setEdges] = useState<Edge[]>([])
   const [stories, setStories] = useState<Story[]>([])
+  const [versions, setVersions] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [prdRes, stateRes] = await Promise.all([
-          fetch('/api/prd'),
+        const versionParam = version !== 'all' ? `?version=${version}` : ''
+        const [prdRes, stateRes, versionsRes] = await Promise.all([
+          fetch(`/api/prd${versionParam}`),
           fetch('/api/state'),
+          fetch('/api/versions'),
         ])
 
         const prd = await prdRes.json()
         const state = await stateRes.json()
+        const versionsData = await versionsRes.json()
         const currentStoryId = state?.current_story || null
+
+        setVersions(versionsData.versions || [])
 
         if (!prd?.stories) {
           setLoading(false)
@@ -212,7 +222,7 @@ export function useGraphData(direction: 'horizontal' | 'vertical' = 'horizontal'
     // Refresh every 5 seconds
     const interval = setInterval(fetchData, 5000)
     return () => clearInterval(interval)
-  }, [direction])
+  }, [direction, version])
 
-  return { nodes, edges, stories, loading }
+  return { nodes, edges, stories, loading, versions }
 }

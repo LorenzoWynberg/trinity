@@ -14,12 +14,23 @@ export interface Story {
   skip_reason?: string
   merge_commit?: string
   pr_url?: string
+  target_version?: string
 }
 
 export interface PRD {
   project: string
   version: string
   stories: Story[]
+}
+
+// Version info for multi-version support
+export interface VersionInfo {
+  version: string
+  total: number
+  merged: number
+  passed: number
+  skipped: number
+  percentage: number
 }
 
 // State Types

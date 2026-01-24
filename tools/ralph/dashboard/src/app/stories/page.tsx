@@ -1,12 +1,13 @@
-import { getPRD, getState } from '@/lib/data'
+import { getPRD, getState, getVersions } from '@/lib/data'
 import { StoriesList } from '@/components/stories-list'
 
 export const revalidate = 5
 
 export default async function StoriesPage() {
-  const [prd, state] = await Promise.all([
+  const [prd, state, versions] = await Promise.all([
     getPRD(),
-    getState()
+    getState(),
+    getVersions()
   ])
 
   if (!prd) {
@@ -30,7 +31,7 @@ export default async function StoriesPage() {
         </p>
       </div>
 
-      <StoriesList stories={prd.stories} currentStoryId={currentStoryId} />
+      <StoriesList stories={prd.stories} currentStoryId={currentStoryId} versions={versions} />
     </div>
   )
 }
