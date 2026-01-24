@@ -112,10 +112,9 @@ export default function GraphPage() {
         ...edge.style,
         strokeWidth: isHighlighted ? 4 : 2,
         stroke: isHighlighted ? '#facc15' : (edge.style?.stroke || defaultEdgeColor),
-        opacity: hasHighlighting && !isHighlighted ? 0.15 : 1,
+        opacity: hasHighlighting && !isHighlighted ? 0 : 1,
       },
-      // Highlighted edges above faded nodes, non-highlighted edges at bottom
-      zIndex: isHighlighted ? 1000 : -10,
+      zIndex: isHighlighted ? 1000 : 0,
     }
   })
 
