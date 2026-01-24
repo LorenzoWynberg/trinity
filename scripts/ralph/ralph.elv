@@ -285,33 +285,6 @@ while (< $current-iteration $config[max-iterations]) {
     if $signals[complete] {
       echo ""
       ui:success "Story "$story-id" completed!"
-
-      # Run PR flow (may request feedback)
-      echo ""
-      var story-title = (prd:get-story-title $story-id)
-      var pr-result = (pr:run-flow $story-id $branch-name $story-title $current-iteration)
-
-      # Handle feedback loop - re-run Claude with feedback
-      if (eq $pr-result "feedback") {
-        var fb = (pr:get-stored-feedback)
-        if (not (eq $fb "")) {
-          echo ""
-          ui:banner "Feedback Loop - Re-running Claude"
-          ui:dim "Feedback: "$fb
-          echo ""
-
-          # Increment attempts
-          set current-state[attempts] = (+ $current-state[attempts] 1)
-          state:write $current-state
-
-          # Re-run Claude with feedback (will loop back at top of iteration)
-          # For now, just continue to next iteration which will pick up the story again
-          ui:dim "Feedback received. Re-running story with feedback..."
-          continue
-        }
-      }
-
-      # Reset state after PR handled
       ui:dim "  Resetting state to idle..."
       set current-state[current_story] = $nil
       set current-state[branch] = $nil
@@ -322,15 +295,18 @@ while (< $current-iteration $config[max-iterations]) {
       state:write $current-state
       ui:dim "  State saved."
 
-      if (eq $pr-result "merged") {
-        # Sync base branch
-        echo ""
-        git:sync-base-branch
-      }
+      # Run PR flow
+      echo ""
+      var story-title = (prd:get-story-title $story-id)
+      pr:run-flow $story-id $branch-name $story-title $current-iteration
+
+      # Sync base branch
+      echo ""
+      git:sync-base-branch
 
       # Pause before next story
       echo ""
-      ui:status "Story "$story-id" done. Continue to next story?"
+      ui:status "Pausing before next story..."
       echo "\e[33mStop loop? [y/N]\e[0m \e[2m(continues in 120s)\e[0m"
       try {
         var answer = (bash -c 'read -t 120 -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)

@@ -31,94 +31,11 @@ fn check-exists {|branch-name|
   put ""
 }
 
-# Build PR body using Claude to summarize ALL changes
-fn build-body {|story-id story-title branch-name|
-  ui:dim "  Generating PR description with Claude..." > /dev/tty
-
-  # Get ALL commits for this PR
-  var commits = ""
-  try {
-    set commits = (git -C $project-root log --oneline $base-branch".."$branch-name 2>/dev/null | slurp)
-  } catch _ { }
-
-  # Get file stats
-  var stats = ""
-  try {
-    set stats = (git -C $project-root diff --stat $base-branch".."$branch-name 2>/dev/null | slurp)
-  } catch _ { }
-
-  # Get files changed
-  var files-changed = ""
-  try {
-    set files-changed = (git -C $project-root diff --name-status $base-branch".."$branch-name 2>/dev/null | slurp)
-  } catch _ { }
-
-  # Get diff (limited)
-  var diff = ""
-  try {
-    set diff = (git -C $project-root diff $base-branch".."$branch-name 2>/dev/null | head -1000 | slurp)
-  } catch _ { }
-
-  # Build prompt
-  var prompt = "Write a comprehensive GitHub PR description based on the FULL git history below.
-
-Story: "$story-id" - "$story-title"
-
-ALL COMMITS IN THIS PR:
-"$commits"
-
-ALL FILES CHANGED:
-"$files-changed"
-
-FILE STATS:
-"$stats"
-
-DIFF (truncated):
-"$diff"
-
-Format:
-## Summary
-<2-3 sentence summary of what this PR accomplishes overall>
-
-## Changes
-<bullet points covering ALL significant changes, grouped by feature/area>
-
-## Testing
-<how to verify the changes work>
-
-Output just the formatted PR description, no preamble."
-
-  # Call Claude
-  var body = ""
-  try {
-    set body = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
-  } catch _ { }
-
-  # Fallback if Claude fails
-  if (eq (str:trim-space $body) "") {
-    ui:dim "  Claude unavailable, using basic template" > /dev/tty
-    set body = "## "$story-id": "$story-title"
-
-### Commits
-```
-"$commits"
-```
-
-### Changes
-"$stats
-  }
-
-  put $body
-}
-
-# Create a new PR with Claude-generated description
+# Create a new PR
 fn create {|branch-name story-id story-title|
   ui:status "Creating PR to "$base-branch"..." > /dev/tty
-
-  var body = (build-body $story-id $story-title $branch-name)
-
   try {
-    var url = (gh pr create --base $base-branch --head $branch-name --title $story-id": "$story-title --body $body 2>&1 | slurp)
+    var url = (gh pr create --base $base-branch --head $branch-name --title $story-id": "$story-title --body "Automated PR for "$story-id 2>&1 | slurp)
     set url = (str:trim-space $url)
     ui:success "PR created: "$url > /dev/tty
     put $url
@@ -128,15 +45,19 @@ fn create {|branch-name story-id story-title|
   }
 }
 
-# Update PR description with Claude-generated content
-fn update {|branch-name story-id story-title|
+# Update PR description
+fn update {|branch-name story-id refinements|
   ui:status "Updating PR description..." > /dev/tty
-
-  var body = (build-body $story-id $story-title $branch-name)
-
   try {
-    gh pr edit $branch-name --body $body 2>&1 | slurp
-    ui:success "PR description updated" > /dev/tty
+    var refinement-notes = ""
+    if (> (count $refinements) 0) {
+      set refinement-notes = "\n\n## Refinements\n"
+      for r $refinements {
+        set refinement-notes = $refinement-notes"- "$r"\n"
+      }
+    }
+    var new-body = "Automated PR for "$story-id$refinement-notes
+    gh pr edit $branch-name --body $new-body 2>&1 | slurp
     put $true
   } catch e {
     ui:error "Failed to update PR: "(to-string $e[reason]) > /dev/tty
@@ -185,46 +106,13 @@ fn prompt-user {|timeout|
   }
 }
 
-# Global to store feedback for main loop
-var feedback = ""
-
-# Get feedback text from user
-fn get-feedback {
-  echo "" > /dev/tty
-  ui:status "Enter feedback for Claude (press Enter twice to finish):" > /dev/tty
-  echo "\e[2m(Describe what changes are needed)\e[0m" > /dev/tty
-
-  var fb = ""
-  var line = ""
-  while $true {
-    try {
-      set line = (str:trim-space (bash -c 'read line </dev/tty 2>/dev/null; echo "$line"'))
-      if (eq $line "") {
-        break
-      }
-      if (eq $fb "") {
-        set fb = $line
-      } else {
-        set fb = $fb"\n"$line
-      }
-    } catch {
-      break
-    }
-  }
-  put $fb
-}
-
-# Get the stored feedback
-fn get-stored-feedback {
-  put $feedback
-}
-
 # Run the full PR and merge flow with feedback loops
-# Returns: "merged", "open", "skipped", or "feedback"
+# Returns: $true if flow completed, $false if skipped
 fn run-flow {|story-id branch-name story-title current-iteration|
   var pr-url = ""
   var pr-exists = $false
-  set feedback = ""  # Reset feedback
+  var refinements = []
+  var done = $false
 
   # Check if PR already exists
   set pr-url = (check-exists $branch-name)
@@ -232,84 +120,72 @@ fn run-flow {|story-id branch-name story-title current-iteration|
     set pr-exists = $true
   }
 
-  # === PR PROMPT ===
-  if $pr-exists {
-    ui:dim "PR exists: "$pr-url > /dev/tty
+  while (not $done) {
+    # === PR PROMPT ===
+    var should-handle-pr = $auto-pr
 
     if (not $auto-pr) {
-      ui:status "Review the PR. What would you like to do?" > /dev/tty
-      echo "\e[33m[Y]es update / [n]o skip / [f]eedback request changes\e[0m" > /dev/tty
+      if $pr-exists {
+        ui:status "Update PR description?"
+      } else {
+        ui:status "Create PR to "$base-branch"?"
+      }
+      echo "\e[33m[Y]es / [n]o\e[0m"
 
       var answer = (prompt-user 0)
       if (re:match '^[nN]$' $answer) {
-        ui:dim "Skipping PR update" > /dev/tty
-      } elif (re:match '^[fF]$' $answer) {
-        set feedback = (get-feedback)
-        if (not (eq $feedback "")) {
-          ui:status "Feedback received. Will re-run Claude with changes..." > /dev/tty
-          put "feedback"
-          return
-        }
+        set should-handle-pr = $false
+      } elif (re:match '^[yY]$' $answer) {
+        set should-handle-pr = $true
       } else {
-        update $branch-name $story-id $story-title
+        # Default to yes if just enter
+        set should-handle-pr = $true
+      }
+    }
+
+    # Handle PR create/update
+    if $should-handle-pr {
+      if $pr-exists {
+        update $branch-name $story-id $refinements
+        ui:success "PR updated: "$pr-url
+      } else {
+        set pr-url = (create $branch-name $story-id $story-title)
+        if (not (eq $pr-url "")) {
+          set pr-exists = $true
+        }
       }
     } else {
-      update $branch-name $story-id $story-title
+      ui:dim "Skipping PR (branch pushed: "$branch-name")"
+      set done = $true
+      continue
     }
-  } else {
-    # No PR - ask to create
-    if (not $auto-pr) {
-      ui:status "Create PR to "$base-branch"?" > /dev/tty
-      echo "\e[33m[Y]es / [n]o\e[0m" > /dev/tty
+
+    # === MERGE PROMPT ===
+    if (and $pr-exists (not $auto-merge)) {
+      echo ""
+      ui:status "Merge PR?"
+      echo "\e[33m[y]es / [N]o\e[0m"
 
       var answer = (prompt-user 0)
-      if (re:match '^[nN]$' $answer) {
-        ui:dim "Skipping PR (branch pushed: "$branch-name")" > /dev/tty
-        put "skipped"
-        return
+      if (re:match '^[yY]$' $answer) {
+        var commit = (merge $branch-name)
+        if (not (eq $commit "")) {
+          prd:mark-merged $story-id $commit
+        }
+        set done = $true
+      } else {
+        # Default to no (leave open for review)
+        ui:dim "PR left open for review"
+        set done = $true
       }
-    }
-
-    set pr-url = (create $branch-name $story-id $story-title)
-    if (not (eq $pr-url "")) {
-      set pr-exists = $true
-    }
-  }
-
-  # === MERGE PROMPT ===
-  if (and $pr-exists (not $auto-merge)) {
-    echo "" > /dev/tty
-    ui:status "What would you like to do?" > /dev/tty
-    echo "\e[33m[y]es merge / [N]o leave open / [f]eedback request changes\e[0m" > /dev/tty
-
-    var answer = (prompt-user 0)
-    if (re:match '^[yY]$' $answer) {
+    } elif $auto-merge {
       var commit = (merge $branch-name)
       if (not (eq $commit "")) {
         prd:mark-merged $story-id $commit
       }
-      put "merged"
-    } elif (re:match '^[fF]$' $answer) {
-      set feedback = (get-feedback)
-      if (not (eq $feedback "")) {
-        ui:status "Feedback received. Will re-run Claude with changes..." > /dev/tty
-        put "feedback"
-      } else {
-        ui:dim "No feedback provided, leaving PR open" > /dev/tty
-        put "open"
-      }
+      set done = $true
     } else {
-      # Default to no (leave open for review)
-      ui:dim "PR left open for review" > /dev/tty
-      put "open"
+      set done = $true
     }
-  } elif $auto-merge {
-    var commit = (merge $branch-name)
-    if (not (eq $commit "")) {
-      prd:mark-merged $story-id $commit
-    }
-    put "merged"
-  } else {
-    put "open"
   }
 }

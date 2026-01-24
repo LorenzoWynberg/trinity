@@ -13,31 +13,12 @@ Read these files first:
 - `docs/ARCHITECTURE.md` - system design and patterns
 - `docs/COMMANDS.md` - CLI command specifications
 - `docs/PROMPTS.md` - prompt system design
-- `docs/learnings/` - **read relevant files** based on task:
-  - `go.md` - Go patterns, workspaces, modules
-  - `ralph.md` - Ralph patterns, streaming, state
-  - (add more topic files as needed)
-- `scripts/ralph/progress.txt` - story history
 - `CLAUDE.md` - project conventions
 
 If attempt > 1 or refinement: check `git log` and `git diff` for previous work. Focus on the feedback if provided.
 
-**Activity Log:** Create or update `docs/activity/YYYY-MM-DD.md` (today's date). Add entry for starting work on {{CURRENT_STORY}}. Before archiving old logs: extract learnings to `docs/learnings/`. Archive logs older than 7 days to `docs/activity/archive/YYYY-MM/`.
-
-### Recent Activity Logs (Detailed Context)
-Review these recent activity logs for detailed context on recent work:
-
-{{RECENT_ACTIVITY_LOGS}}
-
-**Learning Loop:** After completing {{CURRENT_STORY}}:
-1. **Add** new learnings to the appropriate file in `docs/learnings/`
-2. **Correct** any existing learnings you discover were wrong or incomplete
-3. **Remove** outdated info that no longer applies
-
-If correcting a misconception, note it briefly in the activity log so we know what changed and why.
-
 ## 2. Scope
-Implement ONLY {{CURRENT_STORY}}. No refactoring unrelated code. Note other issues in Learnings only.
+Implement ONLY {{CURRENT_STORY}}. No refactoring unrelated code. Stay focused on acceptance criteria.
 
 ## 3. Implementation
 - Write tests when applicable (unit tests for logic)
@@ -47,7 +28,7 @@ Implement ONLY {{CURRENT_STORY}}. No refactoring unrelated code. Note other issu
 
 ## 4. Verification (Required)
 ```bash
-cd /Users/dev-wynberg/Code/trinity-ai-labs/trinity
+cd /Users/dev-wynberg/Code/trinity
 go work sync
 go build ./cli/cmd/trinity 2>&1 || true
 go test ./... 2>&1 || true
@@ -64,13 +45,11 @@ After build passes, ask: "What's missing or could improve?"
 ## 6. On SUCCESS
 
 Update these files:
-- `docs/learnings/*.md`: Add any NEW learnings to the appropriate topic file
-- `scripts/ralph/progress.txt`: APPEND entry with date, changes, learnings
+- `scripts/ralph/progress.txt`: Add entry with date, changes, learnings
 - `scripts/ralph/prd.json`: Set `"passes": true` for {{CURRENT_STORY}}
   - NOTE: Do NOT set `merged` - Ralph handles that after PR is merged
-- `docs/activity/YYYY-MM-DD.md`: Update with completed work, files modified, decisions made
 
-Then commit and push (no Co-Authored-By lines):
+Then commit and push:
 ```bash
 git add -A
 git commit -m "feat: {{CURRENT_STORY}} - <brief description>"
@@ -82,12 +61,8 @@ Output: `<story-complete>{{CURRENT_STORY}}</story-complete>`
 ## 7. On BLOCKED
 Don't commit. Don't update prd.json.
 
-**Still capture learnings from failure:**
-- `docs/learnings/*.md`: Add what you learned to the appropriate file's **Gotchas** section
-- `scripts/ralph/progress.txt`: APPEND what was tried and why blocked
-- `docs/activity/YYYY-MM-DD.md`: Detailed blocker info and what was attempted
-
-Failures are valuable learning opportunities - don't lose them!
+Document the blocker:
+- `scripts/ralph/progress.txt`: Add what was tried and why blocked
 
 Output: `<story-blocked>{{CURRENT_STORY}}</story-blocked>`
 
@@ -99,4 +74,3 @@ If ALL stories in prd.json have `"merged": true`, output: `<promise>COMPLETE</pr
 - Keep changes minimal and focused
 - Follow existing patterns in the codebase
 - Test your changes before marking complete
-- APPEND to activity/progress files, never overwrite
