@@ -29,7 +29,9 @@
         "./trinity --help shows usage"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.1"],
+      "depends_on": [
+        "STORY-1.1.1"
+      ],
       "phase": 1,
       "epic": 1,
       "story_number": 2
@@ -44,7 +46,9 @@
         "Includes build date and git commit when available"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.2"],
+      "depends_on": [
+        "STORY-1.1.2"
+      ],
       "phase": 1,
       "epic": 1,
       "story_number": 3
@@ -60,7 +64,9 @@
         "Load and Save functions implemented"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.1"],
+      "depends_on": [
+        "STORY-1.1.1"
+      ],
       "phase": 1,
       "epic": 2,
       "story_number": 1
@@ -76,7 +82,9 @@
         "GetProject, SaveProject functions work correctly"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.2.1"],
+      "depends_on": [
+        "STORY-1.2.1"
+      ],
       "phase": 1,
       "epic": 2,
       "story_number": 2
@@ -92,7 +100,10 @@
         "Changes persist to disk"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.2", "STORY-1.2.2"],
+      "depends_on": [
+        "STORY-1.1.2",
+        "STORY-1.2.2"
+      ],
       "phase": 1,
       "epic": 2,
       "story_number": 3
@@ -109,7 +120,9 @@
         "Close function properly releases connection"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.2.2"],
+      "depends_on": [
+        "STORY-1.2.2"
+      ],
       "phase": 2,
       "epic": 1,
       "story_number": 1
@@ -125,7 +138,9 @@
         "Migrations are idempotent (safe to re-run)"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.1.1"],
+      "depends_on": [
+        "STORY-2.1.1"
+      ],
       "phase": 2,
       "epic": 1,
       "story_number": 2
@@ -142,7 +157,9 @@
         "db.Phases.Update(id, changes) updates phase"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.1.2"],
+      "depends_on": [
+        "STORY-2.1.2"
+      ],
       "phase": 2,
       "epic": 1,
       "story_number": 3
@@ -159,7 +176,9 @@
         "Foreign key to phases enforced"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.1.3"],
+      "depends_on": [
+        "STORY-2.1.3"
+      ],
       "phase": 2,
       "epic": 1,
       "story_number": 4
@@ -177,7 +196,9 @@
         "Human testing fields (required, instructions, url, status) stored"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.1.4"],
+      "depends_on": [
+        "STORY-2.1.4"
+      ],
       "phase": 2,
       "epic": 1,
       "story_number": 5
@@ -193,7 +214,9 @@
         "Returns nil when no stories available"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.1.5"],
+      "depends_on": [
+        "STORY-2.1.5"
+      ],
       "phase": 2,
       "epic": 1,
       "story_number": 6
@@ -210,7 +233,9 @@
         "Name is unique constraint"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.1.2"],
+      "depends_on": [
+        "STORY-2.1.2"
+      ],
       "phase": 2,
       "epic": 2,
       "story_number": 1
@@ -226,7 +251,10 @@
         "Cascade delete when parent item removed"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.2.1", "STORY-2.1.5"],
+      "depends_on": [
+        "STORY-2.2.1",
+        "STORY-2.1.5"
+      ],
       "phase": 2,
       "epic": 2,
       "story_number": 2
@@ -243,7 +271,9 @@
         "Timestamps auto-generated"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.1.2"],
+      "depends_on": [
+        "STORY-2.1.2"
+      ],
       "phase": 2,
       "epic": 3,
       "story_number": 1
@@ -260,7 +290,9 @@
         "db.Learnings.ByTag('gotcha') filters by tag"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.2.1"],
+      "depends_on": [
+        "STORY-2.2.1"
+      ],
       "phase": 2,
       "epic": 3,
       "story_number": 2
@@ -277,7 +309,9 @@
         "db.Agents.Release(id) cleans up agent"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.1.2"],
+      "depends_on": [
+        "STORY-2.1.2"
+      ],
       "phase": 2,
       "epic": 4,
       "story_number": 1
@@ -294,7 +328,9 @@
         "Sequential processing prevents conflicts"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.4.1"],
+      "depends_on": [
+        "STORY-2.4.1"
+      ],
       "phase": 2,
       "epic": 4,
       "story_number": 2
@@ -311,7 +347,9 @@
         "Timestamps auto-generated"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.1.2"],
+      "depends_on": [
+        "STORY-2.1.2"
+      ],
       "phase": 2,
       "epic": 4,
       "story_number": 3
@@ -328,7 +366,9 @@
         "Returns clear error messages for each failure"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.1"],
+      "depends_on": [
+        "STORY-1.1.1"
+      ],
       "phase": 3,
       "epic": 1,
       "story_number": 1
@@ -345,7 +385,9 @@
         "Returns output and any error"
       ],
       "passes": false,
-      "depends_on": ["STORY-3.1.1"],
+      "depends_on": [
+        "STORY-3.1.1"
+      ],
       "phase": 3,
       "epic": 1,
       "story_number": 2
@@ -362,7 +404,9 @@
         "Still captures full output for signal parsing"
       ],
       "passes": false,
-      "depends_on": ["STORY-3.1.2"],
+      "depends_on": [
+        "STORY-3.1.2"
+      ],
       "phase": 3,
       "epic": 1,
       "story_number": 3
@@ -379,7 +423,9 @@
         "Returns parsed Signal struct with type and content"
       ],
       "passes": false,
-      "depends_on": ["STORY-3.1.2"],
+      "depends_on": [
+        "STORY-3.1.2"
+      ],
       "phase": 3,
       "epic": 1,
       "story_number": 4
@@ -396,7 +442,9 @@
         "Logs partial output before timeout"
       ],
       "passes": false,
-      "depends_on": ["STORY-3.1.2"],
+      "depends_on": [
+        "STORY-3.1.2"
+      ],
       "phase": 3,
       "epic": 1,
       "story_number": 5
@@ -412,7 +460,9 @@
         "Returns TokenUsage struct with model info"
       ],
       "passes": false,
-      "depends_on": ["STORY-3.1.3"],
+      "depends_on": [
+        "STORY-3.1.3"
+      ],
       "phase": 3,
       "epic": 1,
       "story_number": 6
@@ -429,7 +479,9 @@
         "HasConflicts(path) checks for merge conflicts"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.1"],
+      "depends_on": [
+        "STORY-1.1.1"
+      ],
       "phase": 3,
       "epic": 2,
       "story_number": 1
@@ -446,7 +498,9 @@
         "BranchExists(path, name) checks existence"
       ],
       "passes": false,
-      "depends_on": ["STORY-3.2.1"],
+      "depends_on": [
+        "STORY-3.2.1"
+      ],
       "phase": 3,
       "epic": 2,
       "story_number": 2
@@ -462,7 +516,9 @@
         "SyncWithBase(path, base) fetches and resets to base"
       ],
       "passes": false,
-      "depends_on": ["STORY-3.2.2"],
+      "depends_on": [
+        "STORY-3.2.2"
+      ],
       "phase": 3,
       "epic": 2,
       "story_number": 3
@@ -478,7 +534,9 @@
         "Templates organized: templates/, schemas/, internal/"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.1"],
+      "depends_on": [
+        "STORY-1.1.1"
+      ],
       "phase": 4,
       "epic": 1,
       "story_number": 1
@@ -495,7 +553,9 @@
         "Includes signal output instructions (story-complete, story-blocked)"
       ],
       "passes": false,
-      "depends_on": ["STORY-4.1.1"],
+      "depends_on": [
+        "STORY-4.1.1"
+      ],
       "phase": 4,
       "epic": 1,
       "story_number": 2
@@ -512,7 +572,9 @@
         "Returns structured JSON analysis"
       ],
       "passes": false,
-      "depends_on": ["STORY-4.1.1"],
+      "depends_on": [
+        "STORY-4.1.1"
+      ],
       "phase": 4,
       "epic": 1,
       "story_number": 3
@@ -529,7 +591,9 @@
         "Follows schema in prompts/schemas/plan-add.json"
       ],
       "passes": false,
-      "depends_on": ["STORY-4.1.1"],
+      "depends_on": [
+        "STORY-4.1.1"
+      ],
       "phase": 4,
       "epic": 1,
       "story_number": 4
@@ -546,10 +610,31 @@
         "Returns incremental additions only"
       ],
       "passes": false,
-      "depends_on": ["STORY-4.1.4"],
+      "depends_on": [
+        "STORY-4.1.4"
+      ],
       "phase": 4,
       "epic": 1,
       "story_number": 5
+    },
+    {
+      "id": "STORY-4.1.6",
+      "title": "Create plan-refine.md prompt template",
+      "intent": "Define prompt for refining existing PRD stories",
+      "acceptance": [
+        "prompts/templates/plan-refine.md exists",
+        "Analyzes story quality and clarity",
+        "Suggests improved acceptance criteria",
+        "Identifies stories that should be split",
+        "Returns structured refinement suggestions"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.1.5"
+      ],
+      "phase": 4,
+      "epic": 1,
+      "story_number": 6
     },
     {
       "id": "STORY-4.2.1",
@@ -562,7 +647,9 @@
         "Returns completion confirmation"
       ],
       "passes": false,
-      "depends_on": ["STORY-4.1.1"],
+      "depends_on": [
+        "STORY-4.1.1"
+      ],
       "phase": 4,
       "epic": 2,
       "story_number": 1
@@ -578,10 +665,48 @@
         "Suggests appropriate tags"
       ],
       "passes": false,
-      "depends_on": ["STORY-4.1.1"],
+      "depends_on": [
+        "STORY-4.1.1"
+      ],
       "phase": 4,
       "epic": 2,
       "story_number": 2
+    },
+    {
+      "id": "STORY-4.2.3",
+      "title": "Create internal add-story prompt",
+      "intent": "Define prompt for properly adding new stories",
+      "acceptance": [
+        "prompts/internal/add-story.md exists",
+        "Validates story fits in epic structure",
+        "Assigns proper story ID following convention",
+        "Suggests appropriate dependencies"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.1.1"
+      ],
+      "phase": 4,
+      "epic": 2,
+      "story_number": 3
+    },
+    {
+      "id": "STORY-4.2.4",
+      "title": "Create internal move-story prompt",
+      "intent": "Define prompt for handling story renumbering",
+      "acceptance": [
+        "prompts/internal/move-story.md exists",
+        "Validates new position is valid",
+        "Identifies all references to update",
+        "Returns list of changes needed"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.1.1"
+      ],
+      "phase": 4,
+      "epic": 2,
+      "story_number": 4
     },
     {
       "id": "STORY-5.1.1",
@@ -594,7 +719,10 @@
         "Clean separation of concerns"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.1.6", "STORY-3.1.4"],
+      "depends_on": [
+        "STORY-2.1.6",
+        "STORY-3.1.4"
+      ],
       "phase": 5,
       "epic": 1,
       "story_number": 1
@@ -610,7 +738,9 @@
         "Returns nil when all done"
       ],
       "passes": false,
-      "depends_on": ["STORY-5.1.1"],
+      "depends_on": [
+        "STORY-5.1.1"
+      ],
       "phase": 5,
       "epic": 1,
       "story_number": 2
@@ -626,7 +756,10 @@
         "Updates state with current branch"
       ],
       "passes": false,
-      "depends_on": ["STORY-5.1.1", "STORY-3.2.2"],
+      "depends_on": [
+        "STORY-5.1.1",
+        "STORY-3.2.2"
+      ],
       "phase": 5,
       "epic": 1,
       "story_number": 3
@@ -643,7 +776,10 @@
         "Updates story status based on result"
       ],
       "passes": false,
-      "depends_on": ["STORY-5.1.3", "STORY-4.1.2"],
+      "depends_on": [
+        "STORY-5.1.3",
+        "STORY-4.1.2"
+      ],
       "phase": 5,
       "epic": 1,
       "story_number": 4
@@ -659,7 +795,9 @@
         "Clean exit on all stories complete"
       ],
       "passes": false,
-      "depends_on": ["STORY-5.1.4"],
+      "depends_on": [
+        "STORY-5.1.4"
+      ],
       "phase": 5,
       "epic": 1,
       "story_number": 5
@@ -675,7 +813,10 @@
         "State readable on restart"
       ],
       "passes": false,
-      "depends_on": ["STORY-5.1.4", "STORY-2.4.1"],
+      "depends_on": [
+        "STORY-5.1.4",
+        "STORY-2.4.1"
+      ],
       "phase": 5,
       "epic": 2,
       "story_number": 1
@@ -691,7 +832,9 @@
         "Reset in-progress stories to pending"
       ],
       "passes": false,
-      "depends_on": ["STORY-5.2.1"],
+      "depends_on": [
+        "STORY-5.2.1"
+      ],
       "phase": 5,
       "epic": 2,
       "story_number": 2
@@ -707,7 +850,9 @@
         "Logs recovery action taken"
       ],
       "passes": false,
-      "depends_on": ["STORY-5.2.2"],
+      "depends_on": [
+        "STORY-5.2.2"
+      ],
       "phase": 5,
       "epic": 2,
       "story_number": 3
@@ -724,7 +869,11 @@
         "Offers to create CLAUDE.md in project"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.2.2", "STORY-2.1.2"],
+      "depends_on": [
+        "STORY-1.2.2",
+        "STORY-2.1.2",
+        "STORY-1.1.2"
+      ],
       "phase": 6,
       "epic": 1,
       "story_number": 1
@@ -740,7 +889,10 @@
         "Saves analysis to project config"
       ],
       "passes": false,
-      "depends_on": ["STORY-6.1.1", "STORY-4.1.3"],
+      "depends_on": [
+        "STORY-6.1.1",
+        "STORY-4.1.3"
+      ],
       "phase": 6,
       "epic": 1,
       "story_number": 2
@@ -757,7 +909,10 @@
         "Saves to database on confirm"
       ],
       "passes": false,
-      "depends_on": ["STORY-6.1.1", "STORY-4.1.4"],
+      "depends_on": [
+        "STORY-6.1.1",
+        "STORY-4.1.4"
+      ],
       "phase": 6,
       "epic": 2,
       "story_number": 1
@@ -774,7 +929,9 @@
         "Shows dependencies"
       ],
       "passes": false,
-      "depends_on": ["STORY-6.2.1"],
+      "depends_on": [
+        "STORY-6.2.1"
+      ],
       "phase": 6,
       "epic": 2,
       "story_number": 2
@@ -790,10 +947,31 @@
         "Logs the action taken"
       ],
       "passes": false,
-      "depends_on": ["STORY-6.2.2"],
+      "depends_on": [
+        "STORY-6.2.2"
+      ],
       "phase": 6,
       "epic": 2,
       "story_number": 3
+    },
+    {
+      "id": "STORY-6.2.4",
+      "title": "Implement trinity plan refine command",
+      "intent": "Allow refinement of PRD stories for better clarity",
+      "acceptance": [
+        "trinity plan refine improves all stories",
+        "trinity plan refine <ref> refines specific phase/epic",
+        "Suggests clearer acceptance criteria",
+        "Can split large stories into smaller ones",
+        "Preserves existing dependency relationships"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.2.2"
+      ],
+      "phase": 6,
+      "epic": 2,
+      "story_number": 4
     },
     {
       "id": "STORY-6.3.1",
@@ -807,7 +985,10 @@
         "Displays progress and Claude output"
       ],
       "passes": false,
-      "depends_on": ["STORY-5.1.5"],
+      "depends_on": [
+        "STORY-5.1.5",
+        "STORY-1.1.2"
+      ],
       "phase": 6,
       "epic": 3,
       "story_number": 1
@@ -823,7 +1004,9 @@
         "Summary on loop end"
       ],
       "passes": false,
-      "depends_on": ["STORY-6.3.1"],
+      "depends_on": [
+        "STORY-6.3.1"
+      ],
       "phase": 6,
       "epic": 3,
       "story_number": 2
@@ -839,7 +1022,10 @@
         "Displays any blocked items"
       ],
       "passes": false,
-      "depends_on": ["STORY-6.1.1"],
+      "depends_on": [
+        "STORY-6.1.1",
+        "STORY-1.1.2"
+      ],
       "phase": 6,
       "epic": 4,
       "story_number": 1
@@ -855,7 +1041,10 @@
         "Breaks down by story if verbose"
       ],
       "passes": false,
-      "depends_on": ["STORY-6.4.1", "STORY-2.4.3"],
+      "depends_on": [
+        "STORY-6.4.1",
+        "STORY-2.4.3"
+      ],
       "phase": 6,
       "epic": 4,
       "story_number": 2
@@ -871,7 +1060,10 @@
         "Logs completion activity"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.4.2"],
+      "depends_on": [
+        "STORY-2.4.2",
+        "STORY-1.1.2"
+      ],
       "phase": 6,
       "epic": 5,
       "story_number": 1
@@ -887,7 +1079,10 @@
         "Logs the learning"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.3.2"],
+      "depends_on": [
+        "STORY-2.3.2",
+        "STORY-1.1.2"
+      ],
       "phase": 6,
       "epic": 5,
       "story_number": 2
@@ -903,7 +1098,10 @@
         "Updates numbering as needed"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.1.5"],
+      "depends_on": [
+        "STORY-2.1.5",
+        "STORY-1.1.2"
+      ],
       "phase": 6,
       "epic": 5,
       "story_number": 3
@@ -919,10 +1117,163 @@
         "No response needed (fire and forget)"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.3.1"],
+      "depends_on": [
+        "STORY-2.3.1",
+        "STORY-1.1.2"
+      ],
       "phase": 6,
       "epic": 5,
       "story_number": 4
+    },
+    {
+      "id": "STORY-6.5.5",
+      "title": "Implement trinity internal move-story command",
+      "intent": "Allow Claude to renumber stories and update references",
+      "acceptance": [
+        "trinity internal move-story <from> <to> renumbers story",
+        "Updates all depends_on references",
+        "Maintains dependency graph integrity",
+        "Logs the move operation"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.1.5",
+        "STORY-1.1.2"
+      ],
+      "phase": 6,
+      "epic": 5,
+      "story_number": 5
+    },
+    {
+      "id": "STORY-6.6.1",
+      "title": "Implement trinity approve command",
+      "intent": "Allow human approval of stories requiring manual testing",
+      "acceptance": [
+        "trinity approve approves current pending test",
+        "trinity approve <ref> approves specific story",
+        "Updates story status to completed",
+        "Unblocks dependent stories",
+        "Logs approval activity"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.3.1"
+      ],
+      "phase": 6,
+      "epic": 6,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-6.6.2",
+      "title": "Implement trinity reject command",
+      "intent": "Allow human rejection with feedback for iteration",
+      "acceptance": [
+        "trinity reject 'feedback' rejects with reason",
+        "trinity reject <ref> 'feedback' rejects specific story",
+        "Resets story to pending with feedback attached",
+        "Claude sees feedback on next attempt",
+        "Logs rejection activity"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.6.1"
+      ],
+      "phase": 6,
+      "epic": 6,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-6.7.1",
+      "title": "Implement trinity hotfix command",
+      "intent": "Enable quick fixes outside the normal PRD flow",
+      "acceptance": [
+        "trinity hotfix 'description' creates fix branch",
+        "Runs Claude to implement fix",
+        "Creates PR to dev branch",
+        "--target main option for urgent fixes",
+        "--auto-merge merges when CI passes"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.3.1"
+      ],
+      "phase": 6,
+      "epic": 7,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-6.7.2",
+      "title": "Implement trinity release command",
+      "intent": "Ship completed work from dev to main",
+      "acceptance": [
+        "trinity release merges dev to main via PR",
+        "--dry-run shows what would be released",
+        "--tag v1.0.0 creates git tag",
+        "--direct merges without PR",
+        "Validates all stories complete before release"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.3.1"
+      ],
+      "phase": 6,
+      "epic": 7,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-6.8.1",
+      "title": "Implement trinity skills list command",
+      "intent": "Show installed Claude Code skills",
+      "acceptance": [
+        "trinity skills list shows all installed skills",
+        "Indicates global vs project-local skills",
+        "Shows skill descriptions",
+        "Works without project context"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-1.1.2"
+      ],
+      "phase": 6,
+      "epic": 8,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-6.8.2",
+      "title": "Implement trinity skills suggest command",
+      "intent": "Suggest skills based on detected project stack",
+      "acceptance": [
+        "trinity skills suggest analyzes project",
+        "Compares installed vs recommended skills",
+        "Shows which skills are missing",
+        "Based on detected tech stack (Go, React, etc.)"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.8.1",
+        "STORY-6.1.2"
+      ],
+      "phase": 6,
+      "epic": 8,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-6.8.3",
+      "title": "Implement trinity skills add/remove commands",
+      "intent": "Install and remove Claude Code skills",
+      "acceptance": [
+        "trinity skills add <names...> installs skills globally",
+        "trinity skills remove <names...> removes skills",
+        "Uses npx add-skill under the hood",
+        "Shows progress during installation"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.8.1"
+      ],
+      "phase": 6,
+      "epic": 8,
+      "story_number": 3
     },
     {
       "id": "STORY-7.1.1",
@@ -935,7 +1286,9 @@
         "All errors include troubleshooting hints"
       ],
       "passes": false,
-      "depends_on": ["STORY-6.3.1"],
+      "depends_on": [
+        "STORY-6.3.1"
+      ],
       "phase": 7,
       "epic": 1,
       "story_number": 1
@@ -953,7 +1306,9 @@
         "Colors disabled when not TTY"
       ],
       "passes": false,
-      "depends_on": ["STORY-6.3.2"],
+      "depends_on": [
+        "STORY-6.3.2"
+      ],
       "phase": 7,
       "epic": 1,
       "story_number": 2
@@ -969,7 +1324,9 @@
         "Works in quiet mode (no spinner)"
       ],
       "passes": false,
-      "depends_on": ["STORY-7.1.2"],
+      "depends_on": [
+        "STORY-7.1.2"
+      ],
       "phase": 7,
       "epic": 1,
       "story_number": 3
@@ -985,7 +1342,9 @@
         "Links to full documentation"
       ],
       "passes": false,
-      "depends_on": ["STORY-6.3.1"],
+      "depends_on": [
+        "STORY-6.3.1"
+      ],
       "phase": 7,
       "epic": 2,
       "story_number": 1
@@ -1001,7 +1360,9 @@
         "trinity help <command> works"
       ],
       "passes": false,
-      "depends_on": ["STORY-6.3.1"],
+      "depends_on": [
+        "STORY-6.3.1"
+      ],
       "phase": 7,
       "epic": 2,
       "story_number": 2
@@ -1018,7 +1379,9 @@
         "No errors in output"
       ],
       "passes": false,
-      "depends_on": ["STORY-7.1.1"],
+      "depends_on": [
+        "STORY-7.1.1"
+      ],
       "phase": 7,
       "epic": 3,
       "story_number": 1
@@ -1034,7 +1397,9 @@
         "Story completes on retry"
       ],
       "passes": false,
-      "depends_on": ["STORY-7.3.1"],
+      "depends_on": [
+        "STORY-7.3.1"
+      ],
       "phase": 7,
       "epic": 3,
       "story_number": 2
@@ -1050,7 +1415,9 @@
         "Circular dependency detection"
       ],
       "passes": false,
-      "depends_on": ["STORY-7.3.1"],
+      "depends_on": [
+        "STORY-7.3.1"
+      ],
       "phase": 7,
       "epic": 3,
       "story_number": 3
