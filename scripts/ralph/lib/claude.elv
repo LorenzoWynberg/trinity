@@ -80,26 +80,19 @@ fn check-signals {|output-file story-id|
   try {
     grep -q '<story-complete>'$story-id'</story-complete>' $output-file
     set story-complete = $true
-    ui:dim "  Found: <story-complete>"
   } catch { }
 
   try {
     grep -q '<story-blocked>'$story-id'</story-blocked>' $output-file
     set story-blocked = $true
-    ui:dim "  Found: <story-blocked>"
   } catch { }
 
   try {
     grep -q '<promise>COMPLETE</promise>' $output-file
     set all-complete = $true
-    ui:dim "  Found: <promise>COMPLETE</promise>"
   } catch { }
 
-  if (and (not $story-complete) (not $story-blocked) (not $all-complete)) {
-    ui:dim "  No completion signal found (story still in progress)"
-  }
-
-  # Return as map
+  # Return as map (no ui output inside function to avoid value capture issues)
   put [&complete=$story-complete &blocked=$story-blocked &all_complete=$all-complete]
 }
 
