@@ -127,6 +127,105 @@ fn get-story-branch {|story-id|
   put "feat/story-"$parts[0]"."$parts[1]"."$parts[2]
 }
 
+# Reset a story for retry (clears passes, merged, attempts)
+fn reset-story {|story-id|
+  var tmp = (mktemp)
+  jq '(.stories[] | select(.id == "'$story-id'")) |= . + {
+    passes: false,
+    merged: false,
+    skipped: false
+  } | del(.stories[] | select(.id == "'$story-id'") | .merge_commit, .skip_reason)' $prd-file > $tmp
+  mv $tmp $prd-file
+}
+
+# Skip a story (marks as complete for dependency purposes)
+fn skip-story {|story-id reason|
+  var tmp = (mktemp)
+  jq '(.stories[] | select(.id == "'$story-id'")) |= . + {
+    skipped: true,
+    skip_reason: "'$reason'",
+    passes: true,
+    merged: true
+  }' $prd-file > $tmp
+  mv $tmp $prd-file
+}
+
+# Get PRD status summary (phase/epic/story hierarchy with progress)
+fn show-status {
+  # Get totals
+  var total = (jq '.stories | length' $prd-file)
+  var passed = (jq '[.stories[] | select(.passes == true)] | length' $prd-file)
+  var merged = (jq '[.stories[] | select(.merged == true)] | length' $prd-file)
+  var skipped = (jq '[.stories[] | select(.skipped == true)] | length' $prd-file)
+  var blocked = (jq '[.stories[] | select(.passes != true)] | length' $prd-file)
+
+  # Calculate percentage
+  var pct = 0
+  if (> $total 0) {
+    set pct = (/ (* $merged 100) $total)
+  }
+
+  echo "═══════════════════════════════════════════════════════"
+  echo "  PRD STATUS"
+  echo "═══════════════════════════════════════════════════════"
+  echo ""
+  echo "Progress: "$merged"/"$total" merged ("$pct"%)"
+  echo "  - Passed (awaiting merge): "(- $passed $merged)
+  echo "  - Skipped: "$skipped
+  echo "  - Remaining: "(- $total $passed)
+  echo ""
+  echo "───────────────────────────────────────────────────────"
+  echo "  STORIES BY PHASE/EPIC"
+  echo "───────────────────────────────────────────────────────"
+  echo ""
+
+  # Get unique phases
+  var phases = [(jq -r '.stories | map(.phase) | unique | .[]' $prd-file)]
+
+  for phase $phases {
+    # Phase header
+    var phase-total = (jq '[.stories[] | select(.phase == '$phase')] | length' $prd-file)
+    var phase-merged = (jq '[.stories[] | select(.phase == '$phase' and .merged == true)] | length' $prd-file)
+    echo "Phase "$phase" ["$phase-merged"/"$phase-total"]"
+
+    # Get unique epics in this phase
+    var epics = [(jq -r '.stories | map(select(.phase == '$phase') | .epic) | unique | .[]' $prd-file)]
+
+    for epic $epics {
+      var epic-total = (jq '[.stories[] | select(.phase == '$phase' and .epic == '$epic')] | length' $prd-file)
+      var epic-merged = (jq '[.stories[] | select(.phase == '$phase' and .epic == '$epic' and .merged == true)] | length' $prd-file)
+      echo "  Epic "$phase"."$epic" ["$epic-merged"/"$epic-total"]"
+
+      # Get stories in this epic
+      var stories = [(jq -r '.stories[] | select(.phase == '$phase' and .epic == '$epic') | "\(.id)|\(.title)|\(.passes // false)|\(.merged // false)|\(.skipped // false)"' $prd-file)]
+
+      for story $stories {
+        var parts = [(str:split "|" $story)]
+        var sid = $parts[0]
+        var title = $parts[1]
+        var passes = $parts[2]
+        var merged = $parts[3]
+        var skipped = $parts[4]
+
+        var status-icon = "[ ]"
+        if (eq $skipped "true") {
+          set status-icon = "[~]"  # skipped
+        } elif (eq $merged "true") {
+          set status-icon = "[x]"  # merged
+        } elif (eq $passes "true") {
+          set status-icon = "[*]"  # passed, awaiting merge
+        }
+        echo "    "$status-icon" "$sid": "$title
+      }
+    }
+    echo ""
+  }
+
+  echo "───────────────────────────────────────────────────────"
+  echo "Legend: [x] merged  [*] passed  [~] skipped  [ ] pending"
+  echo "═══════════════════════════════════════════════════════"
+}
+
 # Get dependency info for a story (formatted for display)
 fn get-story-deps {|story-id|
   var deps-query = ".stories[] | select(.id == \""$story-id"\") | .depends_on // [] | .[]"

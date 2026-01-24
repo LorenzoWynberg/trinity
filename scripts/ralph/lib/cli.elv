@@ -12,6 +12,16 @@ var auto-pr = $false
 var auto-merge = $false
 var resume-mode = $false
 var reset-mode = $false
+var no-validate = $false
+var notify-enabled = $false
+var skip-story-id = ""
+var skip-reason = ""
+var custom-timeout = 0
+var retry-clean-story = ""
+var verbose-mode = $false
+var status-mode = $false
+var plan-mode = $false
+var stats-mode = $false
 
 # Parse command line arguments
 fn parse-args {|arguments|
@@ -54,6 +64,58 @@ fn parse-args {|arguments|
     } elif (eq $arg "--auto-merge") {
       set auto-merge = $true
       set i = (+ $i 1)
+    } elif (eq $arg "--no-validate") {
+      set no-validate = $true
+      set i = (+ $i 1)
+    } elif (eq $arg "--yolo") {
+      # YOLO mode: no validation, auto PR, auto merge
+      set no-validate = $true
+      set auto-pr = $true
+      set auto-merge = $true
+      set i = (+ $i 1)
+    } elif (eq $arg "--notify") {
+      set notify-enabled = $true
+      set i = (+ $i 1)
+    } elif (eq $arg "--skip") {
+      # --skip STORY-X "reason"
+      var next-idx = (+ $i 1)
+      var reason-idx = (+ $i 2)
+      if (>= $reason-idx (count $arguments)) {
+        echo "Error: --skip requires STORY-ID and \"reason\"" >&2
+        exit 1
+      }
+      set skip-story-id = $arguments[$next-idx]
+      set skip-reason = $arguments[$reason-idx]
+      set i = (+ $i 3)
+    } elif (eq $arg "--timeout") {
+      var next-idx = (+ $i 1)
+      if (>= $next-idx (count $arguments)) {
+        echo "Error: --timeout requires a number (seconds)" >&2
+        exit 1
+      }
+      set custom-timeout = (num $arguments[$next-idx])
+      set claude-timeout = $custom-timeout
+      set i = (+ $i 2)
+    } elif (eq $arg "--retry-clean") {
+      var next-idx = (+ $i 1)
+      if (>= $next-idx (count $arguments)) {
+        echo "Error: --retry-clean requires STORY-ID" >&2
+        exit 1
+      }
+      set retry-clean-story = $arguments[$next-idx]
+      set i = (+ $i 2)
+    } elif (or (eq $arg "-v") (eq $arg "--verbose")) {
+      set verbose-mode = $true
+      set i = (+ $i 1)
+    } elif (eq $arg "--status") {
+      set status-mode = $true
+      set i = (+ $i 1)
+    } elif (eq $arg "--plan") {
+      set plan-mode = $true
+      set i = (+ $i 1)
+    } elif (eq $arg "--stats") {
+      set stats-mode = $true
+      set i = (+ $i 1)
     } else {
       echo "Error: Unknown argument: "$arg >&2
       exit 1
@@ -94,5 +156,14 @@ fn get-config {
     &auto-merge=$auto-merge
     &resume-mode=$resume-mode
     &reset-mode=$reset-mode
+    &no-validate=$no-validate
+    &notify-enabled=$notify-enabled
+    &skip-story-id=$skip-story-id
+    &skip-reason=$skip-reason
+    &retry-clean-story=$retry-clean-story
+    &verbose-mode=$verbose-mode
+    &status-mode=$status-mode
+    &plan-mode=$plan-mode
+    &stats-mode=$stats-mode
   ]
 }

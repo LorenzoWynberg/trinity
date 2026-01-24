@@ -15,6 +15,7 @@ use ./lib/git
 use ./lib/prd
 use ./lib/claude
 use ./lib/pr
+use ./lib/metrics
 
 # Get script directory and paths
 var script-dir = (path:dir (src)[name])
@@ -23,6 +24,7 @@ var prompt-file = (path:join $script-dir "prompt.md")
 var prd-file = (path:join $script-dir "prd.json")
 var progress-file = (path:join $script-dir "progress.txt")
 var state-file = (path:join $script-dir "state.json")
+var metrics-file = (path:join $script-dir "metrics.json")
 
 # Parse arguments and validate
 cli:parse-args $args
@@ -41,6 +43,97 @@ git:init $project-root $config[base-branch]
 prd:init $prd-file
 claude:init $project-root $prompt-template $config[claude-timeout] $config[quiet-mode] $config[max-iterations]
 pr:init $project-root $config[base-branch] $config[auto-pr] $config[auto-merge]
+metrics:init $metrics-file
+
+# Handle status mode (show and exit)
+if $config[status-mode] {
+  echo ""
+  prd:show-status
+  # Show current state
+  var current-state = (state:read)
+  if $current-state[current_story] {
+    echo ""
+    echo "Current work:"
+    echo "  Story:  "$current-state[current_story]
+    echo "  Branch: "$current-state[branch]
+    echo "  Status: "$current-state[status]
+  }
+  exit 0
+}
+
+# Handle stats mode (show metrics and exit)
+if $config[stats-mode] {
+  echo ""
+  metrics:show-stats
+  exit 0
+}
+
+# Handle plan mode (generate plan and exit)
+if $config[plan-mode] {
+  echo ""
+  ui:box "PLAN MODE - Read-Only" "info"
+  echo ""
+
+  # Get next story (or current)
+  var current-state = (state:read)
+  var story-id = ""
+
+  if $current-state[current_story] {
+    set story-id = $current-state[current_story]
+    ui:status "Planning for current story: "$story-id
+  } else {
+    set story-id = (prd:get-next-story)
+    if (eq $story-id "") {
+      ui:warn "No stories available to plan"
+      exit 0
+    }
+    ui:status "Planning for next story: "$story-id
+  }
+
+  var story-title = (prd:get-story-title $story-id)
+  ui:dim "  Title: "$story-title
+  echo ""
+
+  # Generate plan prompt
+  var prompt-file = (claude:prepare-plan-prompt $story-id)
+
+  ui:divider "Implementation Plan"
+  echo ""
+
+  # Run Claude in print mode (no permissions needed for plan)
+  try {
+    claude --print < $prompt-file 2>/dev/null
+  } catch e {
+    ui:error "Plan generation failed: "(to-string $e[reason])
+  } finally {
+    rm -f $prompt-file
+  }
+
+  echo ""
+  ui:divider-end
+  ui:dim "Plan mode complete. No files were modified."
+  exit 0
+}
+
+# Archive old activity logs on startup
+claude:archive-old-logs
+
+# Run pre-flight checks
+if (not (claude:preflight-checks)) {
+  ui:warn "Pre-flight checks failed. Fix issues above or proceed with caution."
+  echo "\e[33mContinue anyway? [y/N]\e[0m"
+  try {
+    var answer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
+    if (not (re:match '^[yY]' $answer)) {
+      echo ""
+      ui:status "Aborted. Fix issues and run again."
+      exit 1
+    }
+  } catch {
+    exit 1
+  }
+  echo ""
+}
 
 # Print banner
 echo ""
@@ -52,6 +145,9 @@ ui:dim "Max iterations: "$config[max-iterations]
 if $config[quiet-mode] {
   ui:dim "Mode:           quiet (Claude output hidden)"
 }
+if (and $config[no-validate] $config[auto-pr] $config[auto-merge]) {
+  ui:warn "YOLO mode: No validation, auto-PR, auto-merge"
+}
 echo ""
 
 # Handle reset mode
@@ -60,6 +156,61 @@ if $config[reset-mode] {
   state:reset
   ui:success "State reset complete."
   echo ""
+}
+
+# Handle retry-clean mode
+if (not (eq $config[retry-clean-story] "")) {
+  var story-id = $config[retry-clean-story]
+  ui:status "Retry clean: "$story-id
+
+  # Get branch name for story
+  var branch-name = ""
+  try {
+    set branch-name = (prd:get-branch-name $story-id)
+  } catch _ { }
+
+  # Delete local branch if exists
+  if (not (eq $branch-name "")) {
+    ui:dim "  Deleting local branch: "$branch-name
+    try {
+      git -C $project-root branch -D $branch-name 2>/dev/null
+    } catch _ { }
+
+    # Delete remote branch if exists
+    ui:dim "  Deleting remote branch: "$branch-name
+    try {
+      git -C $project-root push origin --delete $branch-name 2>/dev/null
+    } catch _ { }
+  }
+
+  # Reset story in prd.json
+  ui:dim "  Resetting story state in PRD"
+  prd:reset-story $story-id
+
+  # Clear state.json
+  ui:dim "  Clearing Ralph state"
+  state:reset
+
+  ui:success "Story "$story-id" reset for fresh retry"
+  ui:dim "Run ./ralph.elv to start fresh"
+  exit 0
+}
+
+# Handle skip mode
+if (not (eq $config[skip-story-id] "")) {
+  ui:status "Skipping story: "$config[skip-story-id]
+  ui:dim "  Reason: "$config[skip-reason]
+  prd:skip-story $config[skip-story-id] $config[skip-reason]
+
+  # Log to activity
+  var today = (date '+%Y-%m-%d')
+  var activity-file = (path:join $project-root "docs" "activity" $today".md")
+  echo "" >> $activity-file
+  echo "## Skipped: "$config[skip-story-id] >> $activity-file
+  echo "Reason: "$config[skip-reason] >> $activity-file
+
+  ui:success "Story skipped. Dependents can now proceed."
+  exit 0
 }
 
 # Read current state
@@ -170,7 +321,44 @@ while (< $current-iteration $config[max-iterations]) {
     }
     state:write $current-state
 
+    # Verbose: show state transition
+    if $config[verbose-mode] {
+      ui:dim "VERBOSE: State transition -> in_progress"
+      ui:dim "  story="$story-id" branch="$branch-name" attempts="$current-state[attempts]
+    }
+
     git:ensure-on-branch $branch-name
+
+    # Validate story (unless --no-validate or feedback refinement)
+    if (and (not $config[no-validate]) (eq $pending-feedback "")) {
+      if (not (claude:validate-story $story-id)) {
+        echo "" > /dev/tty
+        ui:warn "Story "$story-id" needs clarification before implementation." > /dev/tty
+        echo "\e[33mSkip this story and continue? [Y/n]\e[0m" > /dev/tty
+        try {
+          var answer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
+          if (re:match '^[nN]' $answer) {
+            echo ""
+            ui:status "Stopping. Clarify the story and run again."
+            exit 0
+          }
+        } catch { }
+        echo ""
+        ui:dim "Skipping story, will try next..."
+        # Reset state so next iteration picks a new story
+        set current-state[current_story] = $nil
+        set current-state[branch] = $nil
+        set current-state[status] = "idle"
+        set current-state[attempts] = (num 0)
+        state:write $current-state
+
+        # Verbose: show state transition
+        if $config[verbose-mode] {
+          ui:dim "VERBOSE: State transition -> idle (validation skip)"
+        }
+        continue
+      }
+    }
 
     # Prepare Claude prompt (with any pending feedback)
     var prep = (claude:prepare $story-id $branch-name $current-state[attempts] $current-iteration $pending-feedback)
@@ -178,6 +366,14 @@ while (< $current-iteration $config[max-iterations]) {
     var output-file = $prep[output-file]
     var story-title = $prep[story-title]
     var claude-config = (claude:get-config)
+
+    # Verbose: show full prompt
+    if $config[verbose-mode] {
+      ui:divider "VERBOSE: Full Prompt"
+      cat $prompt-file
+      ui:divider-end
+      echo ""
+    }
 
     # Clear feedback after using it
     var mode-label = "attempt "$current-state[attempts]
@@ -207,6 +403,8 @@ while (< $current-iteration $config[max-iterations]) {
     # Run streaming pipeline at TOP LEVEL (not in a function) - this is critical for streaming to work
     cd $claude-config[project-root]
     var claude-start = (date +%s)
+    var claude-duration = 0
+    var claude-tokens = [&input=(num 0) &output=(num 0)]
 
     try {
       if $claude-config[quiet-mode] {
@@ -236,12 +434,12 @@ while (< $current-iteration $config[max-iterations]) {
         }
       }
       var claude-end = (date +%s)
-      var claude-duration = (- $claude-end $claude-start)
+      set claude-duration = (- $claude-end $claude-start)
       ui:divider-end
       ui:success "Claude execution completed in "$claude-duration"s"
     } catch e {
       var claude-end = (date +%s)
-      var claude-duration = (- $claude-end $claude-start)
+      set claude-duration = (- $claude-end $claude-start)
       ui:divider-end
       if (>= $claude-duration $claude-config[timeout]) {
         ui:error "Claude execution TIMED OUT after "$claude-config[timeout]"s"
@@ -271,6 +469,21 @@ while (< $current-iteration $config[max-iterations]) {
     }
     echo ""
 
+    # Verbose: show raw Claude output
+    if $config[verbose-mode] {
+      ui:divider "VERBOSE: Raw Claude Output"
+      try {
+        cat $output-file
+      } catch _ {
+        ui:dim "(output file empty or not readable)"
+      }
+      ui:divider-end
+      echo ""
+    }
+
+    # Extract tokens before cleanup (for metrics)
+    set claude-tokens = (metrics:extract-tokens-from-output $output-file)
+
     # Check signals
     ui:status "Checking for completion signals..."
     var signals = (claude:check-signals $output-file $story-id)
@@ -291,11 +504,27 @@ while (< $current-iteration $config[max-iterations]) {
     if $signals[complete] {
       echo ""
       ui:success "Story "$story-id" completed!"
+      if $config[notify-enabled] {
+        ui:notify "Ralph" "Story "$story-id" completed!"
+      }
+
+      # Record metrics
+      ui:dim "  Recording metrics..."
+      metrics:record $story-id $claude-duration $claude-tokens[input] $claude-tokens[output]
+      ui:dim "  Duration: "$claude-duration"s, Tokens: "(+ $claude-tokens[input] $claude-tokens[output])
+
+      # Extract learnings before PR flow
+      echo ""
+      claude:extract-learnings $story-id $branch-name
 
       # Run PR flow (may request feedback)
+      # Pass pr_url from state to skip PR prompt if already exists
       echo ""
       var story-title = (prd:get-story-title $story-id)
-      var pr-result = (pr:run-flow $story-id $branch-name $story-title $current-iteration)
+      var state-pr-url = (if $current-state[pr_url] { put $current-state[pr_url] } else { put "" })
+      var pr-flow-result = (pr:run-flow $story-id $branch-name $story-title $current-iteration &state-pr-url=$state-pr-url)
+      var pr-result = $pr-flow-result[result]
+      var pr-url = $pr-flow-result[pr_url]
 
       # Handle feedback loop - re-run Claude with feedback
       if (eq $pr-result "feedback") {
@@ -309,12 +538,19 @@ while (< $current-iteration $config[max-iterations]) {
           # Store feedback for next iteration
           set pending-feedback = $fb
 
-          # Re-set state to in_progress with current story
+          # Re-set state to in_progress with current story, preserve pr_url
           set current-state[current_story] = $story-id
           set current-state[branch] = $branch-name
+          set current-state[pr_url] = $pr-url
           set current-state[status] = "in_progress"
           set current-state[attempts] = (+ $current-state[attempts] 1)
           state:write $current-state
+
+          # Verbose: show state transition
+          if $config[verbose-mode] {
+            ui:dim "VERBOSE: State transition -> in_progress (feedback loop)"
+            ui:dim "  pr_url="$pr-url" attempts="$current-state[attempts]
+          }
 
           # Continue to re-run Claude with feedback on next iteration
           ui:dim "Feedback received. Re-running story with feedback..."
@@ -326,12 +562,18 @@ while (< $current-iteration $config[max-iterations]) {
       ui:dim "  Resetting state to idle..."
       set current-state[current_story] = $nil
       set current-state[branch] = $nil
+      set current-state[pr_url] = $nil
       set current-state[status] = "idle"
       set current-state[started_at] = $nil
       set current-state[attempts] = (num 0)
       set current-state[error] = $nil
       state:write $current-state
       ui:dim "  State saved."
+
+      # Verbose: show state transition
+      if $config[verbose-mode] {
+        ui:dim "VERBOSE: State transition -> idle (story complete)"
+      }
 
       if (eq $pr-result "merged") {
         # Sync base branch only if merged
@@ -359,6 +601,9 @@ while (< $current-iteration $config[max-iterations]) {
     } elif $signals[blocked] {
       echo ""
       ui:error "Story "$story-id" is BLOCKED"
+      if $config[notify-enabled] {
+        ui:notify "Ralph" "Story "$story-id" BLOCKED!"
+      }
       ui:dim "  Clearing story state..."
       set current-state[status] = "blocked"
       set current-state[current_story] = $nil
@@ -368,6 +613,11 @@ while (< $current-iteration $config[max-iterations]) {
       state:write $current-state
       ui:dim "  State saved."
 
+      # Verbose: show state transition
+      if $config[verbose-mode] {
+        ui:dim "VERBOSE: State transition -> blocked"
+      }
+
     } else {
       ui:dim "  Story still in progress..."
     }
@@ -375,6 +625,9 @@ while (< $current-iteration $config[max-iterations]) {
     if $signals[all_complete] {
       echo ""
       ui:box "ALL STORIES COMPLETE!" "success"
+      if $config[notify-enabled] {
+        ui:notify "Ralph" "All stories complete!"
+      }
       ui:dim "Total iterations: "$current-iteration
       exit 0
     }

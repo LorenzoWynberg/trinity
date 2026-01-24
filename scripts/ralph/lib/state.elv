@@ -11,7 +11,7 @@ fn init {|path|
 
   # Create state file if missing
   if (not (path:is-regular $state-file)) {
-    echo '{"version":1,"current_story":null,"status":"idle","branch":null,"started_at":null,"last_updated":null,"attempts":0,"error":null,"checkpoints":[]}' > $state-file
+    echo '{"version":1,"current_story":null,"status":"idle","branch":null,"pr_url":null,"started_at":null,"last_updated":null,"attempts":0,"error":null,"checkpoints":[]}' > $state-file
   }
 }
 
@@ -34,6 +34,7 @@ fn reset {
     &current_story=$nil
     &status="idle"
     &branch=$nil
+    &pr_url=$nil
     &started_at=$nil
     &last_updated=$nil
     &attempts=(num 0)
