@@ -65,8 +65,8 @@ pr_merge() {
 # Prompt user for yes/no
 # Returns: "yes", "no", or "default"
 pr_prompt_user() {
-  local answer
-  read -r answer </dev/tty 2>/dev/null || true
+  local answer=""
+  read -r answer </dev/tty 2>/dev/null || answer=""
   answer=$(echo "$answer" | tr '[:upper:]' '[:lower:]')
 
   case "$answer" in

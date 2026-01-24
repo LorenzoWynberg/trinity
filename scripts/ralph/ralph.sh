@@ -7,12 +7,8 @@ set -euo pipefail
 # Get script directory and paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-PROMPT_FILE="$SCRIPT_DIR/prompt.md"
-PRD_FILE="$SCRIPT_DIR/prd.json"
-PROGRESS_FILE="$SCRIPT_DIR/progress.txt"
-STATE_FILE="$SCRIPT_DIR/state.json"
 
-# Source library modules
+# Source library modules (before setting paths, as modules declare their own vars)
 source "$SCRIPT_DIR/lib/ui.sh"
 source "$SCRIPT_DIR/lib/cli.sh"
 source "$SCRIPT_DIR/lib/state.sh"
@@ -22,18 +18,24 @@ source "$SCRIPT_DIR/lib/activity.sh"
 source "$SCRIPT_DIR/lib/claude.sh"
 source "$SCRIPT_DIR/lib/pr.sh"
 
+# File paths (after sourcing modules)
+RALPH_PROMPT_FILE="$SCRIPT_DIR/prompt.md"
+RALPH_PRD_FILE="$SCRIPT_DIR/prd.json"
+RALPH_PROGRESS_FILE="$SCRIPT_DIR/progress.txt"
+RALPH_STATE_FILE="$SCRIPT_DIR/state.json"
+
 # Parse arguments and validate
 cli_parse_args "$@"
 cli_check_dependencies
-cli_check_files "$PROMPT_FILE" "$PRD_FILE" "$PROGRESS_FILE"
+cli_check_files "$RALPH_PROMPT_FILE" "$RALPH_PRD_FILE" "$RALPH_PROGRESS_FILE"
 
 # Load prompt template
-PROMPT_TEMPLATE=$(cat "$PROMPT_FILE")
+PROMPT_TEMPLATE=$(cat "$RALPH_PROMPT_FILE")
 
 # Initialize modules
-state_init "$STATE_FILE"
+state_init "$RALPH_STATE_FILE"
 git_init "$PROJECT_ROOT" "$BASE_BRANCH"
-prd_init "$PRD_FILE"
+prd_init "$RALPH_PRD_FILE"
 activity_init "$PROJECT_ROOT"
 claude_init "$PROJECT_ROOT" "$PROMPT_TEMPLATE" "$CLAUDE_TIMEOUT" "$QUIET_MODE" "$MAX_ITERATIONS"
 pr_init "$PROJECT_ROOT" "$BASE_BRANCH" "$AUTO_PR" "$AUTO_MERGE"
@@ -74,10 +76,13 @@ if prd_all_stories_complete; then
 fi
 
 # Check for passed-but-not-merged stories (need to merge before continuing)
-mapfile -t UNMERGED < <(prd_get_unmerged_passed)
-if [[ ${#UNMERGED[@]} -gt 0 && -n "${UNMERGED[0]}" ]]; then
-  ui_warn "Found ${#UNMERGED[@]} story(s) passed but not merged:"
-  for sid in "${UNMERGED[@]}"; do
+UNMERGED_OUTPUT=$(prd_get_unmerged_passed)
+if [[ -n "$UNMERGED_OUTPUT" ]]; then
+  # Count stories
+  UNMERGED_COUNT=$(echo "$UNMERGED_OUTPUT" | wc -l | tr -d ' ')
+  ui_warn "Found $UNMERGED_COUNT story(s) passed but not merged:"
+
+  echo "$UNMERGED_OUTPUT" | while IFS= read -r sid; do
     [[ -z "$sid" ]] && continue
     story_title=$(prd_get_story_title "$sid")
     branch=$(prd_get_story_branch "$sid")
@@ -85,7 +90,7 @@ if [[ ${#UNMERGED[@]} -gt 0 && -n "${UNMERGED[0]}" ]]; then
   done
   echo ""
 
-  for sid in "${UNMERGED[@]}"; do
+  echo "$UNMERGED_OUTPUT" | while IFS= read -r sid; do
     [[ -z "$sid" ]] && continue
     story_title=$(prd_get_story_title "$sid")
     branch=$(prd_get_story_branch "$sid")
