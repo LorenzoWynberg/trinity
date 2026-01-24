@@ -9,7 +9,6 @@ type GraphData = {
   edges: Edge[]
   stories: Story[]
   loading: boolean
-  direction: 'horizontal' | 'vertical'
 }
 
 function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatus {
@@ -50,25 +49,19 @@ function calculateDepths(stories: Story[]): Map<string, number> {
   return depths
 }
 
-export function useGraphData(): GraphData {
+export function useGraphData(direction: 'horizontal' | 'vertical' = 'horizontal'): GraphData {
   const [nodes, setNodes] = useState<Node[]>([])
   const [edges, setEdges] = useState<Edge[]>([])
   const [stories, setStories] = useState<Story[]>([])
   const [loading, setLoading] = useState(true)
-  const [direction, setDirection] = useState<'horizontal' | 'vertical'>('horizontal')
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [prdRes, stateRes, settingsRes] = await Promise.all([
+        const [prdRes, stateRes] = await Promise.all([
           fetch('/api/prd'),
           fetch('/api/state'),
-          fetch('/api/settings')
         ])
-
-        const settings = await settingsRes.json()
-        const currentDirection = settings?.graphDirection || 'horizontal'
-        setDirection(currentDirection)
 
         const prd = await prdRes.json()
         const state = await stateRes.json()
@@ -79,12 +72,12 @@ export function useGraphData(): GraphData {
           return
         }
 
-        const stories: Story[] = prd.stories
-        const depths = calculateDepths(stories)
+        const storiesData: Story[] = prd.stories
+        const depths = calculateDepths(storiesData)
 
         // Group stories by depth
         const byDepth = new Map<number, Story[]>()
-        stories.forEach(story => {
+        storiesData.forEach(story => {
           const depth = depths.get(story.id) || 0
           if (!byDepth.has(depth)) byDepth.set(depth, [])
           byDepth.get(depth)!.push(story)
@@ -102,47 +95,85 @@ export function useGraphData(): GraphData {
         // Create nodes with positions
         const NODE_WIDTH = 170
         const NODE_HEIGHT = 70
-        const H_GAP = 60
-        const V_GAP = 20
+        const H_GAP = direction === 'vertical' ? 80 : 60
+        const V_GAP = direction === 'vertical' ? 70 : 20
+        const MAX_PER_ROW = 6 // Max nodes per row in vertical mode
 
         const nodeList: Node[] = []
         const maxDepth = Math.max(...Array.from(depths.values()), 0)
 
-        for (let depth = 0; depth <= maxDepth; depth++) {
-          const group = byDepth.get(depth) || []
-          group.forEach((story, idx) => {
-            const status = getStoryStatus(story, currentStoryId)
-
-            // Calculate position based on direction
-            const position = currentDirection === 'horizontal'
-              ? { x: depth * (NODE_WIDTH + H_GAP), y: idx * (NODE_HEIGHT + V_GAP) }
-              : { x: idx * (NODE_WIDTH + H_GAP), y: depth * (NODE_HEIGHT + V_GAP) }
-
-            nodeList.push({
-              id: story.id,
-              type: 'story',
-              position,
-              data: {
-                label: story.id,
-                title: story.title,
-                status,
-                phase: story.phase,
-                epic: story.epic,
-                direction: currentDirection,
-              },
+        if (direction === 'horizontal') {
+          // Horizontal mode: simple layout
+          for (let depth = 0; depth <= maxDepth; depth++) {
+            const group = byDepth.get(depth) || []
+            group.forEach((story, idx) => {
+              const status = getStoryStatus(story, currentStoryId)
+              nodeList.push({
+                id: story.id,
+                type: 'story',
+                position: { x: depth * (NODE_WIDTH + H_GAP), y: idx * (NODE_HEIGHT + V_GAP) },
+                data: {
+                  label: story.id,
+                  title: story.title,
+                  status,
+                  phase: story.phase,
+                  epic: story.epic,
+                  direction,
+                },
+              })
             })
-          })
+          }
+        } else {
+          // Vertical mode: limit to MAX_PER_ROW per row, wrap to new rows
+          // Calculate max width for centering (capped at MAX_PER_ROW)
+          const maxRowWidth = MAX_PER_ROW * NODE_WIDTH + (MAX_PER_ROW - 1) * H_GAP
+
+          let currentRow = 0
+          for (let depth = 0; depth <= maxDepth; depth++) {
+            const group = byDepth.get(depth) || []
+
+            // Split into chunks of MAX_PER_ROW
+            for (let chunkStart = 0; chunkStart < group.length; chunkStart += MAX_PER_ROW) {
+              const chunk = group.slice(chunkStart, chunkStart + MAX_PER_ROW)
+              const chunkSize = chunk.length
+
+              // Center this chunk within the max row width
+              const rowWidth = chunkSize * NODE_WIDTH + (chunkSize - 1) * H_GAP
+              const xOffset = (maxRowWidth - rowWidth) / 2
+
+              chunk.forEach((story, idx) => {
+                const status = getStoryStatus(story, currentStoryId)
+                nodeList.push({
+                  id: story.id,
+                  type: 'story',
+                  position: {
+                    x: xOffset + idx * (NODE_WIDTH + H_GAP),
+                    y: currentRow * (NODE_HEIGHT + V_GAP)
+                  },
+                  data: {
+                    label: story.id,
+                    title: story.title,
+                    status,
+                    phase: story.phase,
+                    epic: story.epic,
+                    direction,
+                  },
+                })
+              })
+              currentRow++
+            }
+          }
         }
 
         // Create edges
         const edgeList: Edge[] = []
-        const nodeIds = new Set(stories.map(s => s.id))
+        const nodeIds = new Set(storiesData.map(s => s.id))
 
-        for (const story of stories) {
+        for (const story of storiesData) {
           if (story.depends_on) {
             for (const depId of story.depends_on) {
               if (nodeIds.has(depId)) {
-                const depStory = stories.find(s => s.id === depId)
+                const depStory = storiesData.find(s => s.id === depId)
                 const isDepMerged = depStory?.merged
 
                 edgeList.push({
@@ -168,7 +199,7 @@ export function useGraphData(): GraphData {
 
         setNodes(nodeList)
         setEdges(edgeList)
-        setStories(stories)
+        setStories(storiesData)
         setLoading(false)
       } catch (error) {
         console.error('Failed to fetch graph data:', error)
@@ -181,7 +212,7 @@ export function useGraphData(): GraphData {
     // Refresh every 5 seconds
     const interval = setInterval(fetchData, 5000)
     return () => clearInterval(interval)
-  }, [])
+  }, [direction])
 
-  return { nodes, edges, stories, loading, direction }
+  return { nodes, edges, stories, loading }
 }
