@@ -45,7 +45,6 @@ fn create-story-branch {|branch-name|
     git -C $project-root reset --hard origin/$base-branch > /dev/null 2>&1
     git -C $project-root checkout -b $branch-name > /dev/null 2>&1
   }
-  put $branch-name
 }
 
 # Ensure we're on the specified branch
