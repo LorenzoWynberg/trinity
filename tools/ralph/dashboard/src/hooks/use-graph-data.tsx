@@ -7,6 +7,7 @@ import type { Story, StoryStatus } from '@/lib/types'
 type GraphData = {
   nodes: Node[]
   edges: Edge[]
+  stories: Story[]
   loading: boolean
 }
 
@@ -18,9 +19,40 @@ function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatu
   return 'pending'
 }
 
+// Calculate depth of each node (longest path from root)
+function calculateDepths(stories: Story[]): Map<string, number> {
+  const depths = new Map<string, number>()
+  const storyMap = new Map(stories.map(s => [s.id, s]))
+
+  function getDepth(id: string, visited: Set<string> = new Set()): number {
+    if (visited.has(id)) return 0 // Cycle protection
+    if (depths.has(id)) return depths.get(id)!
+
+    visited.add(id)
+    const story = storyMap.get(id)
+    if (!story || !story.depends_on || story.depends_on.length === 0) {
+      depths.set(id, 0)
+      return 0
+    }
+
+    const maxDepDep = Math.max(
+      ...story.depends_on
+        .filter(dep => storyMap.has(dep))
+        .map(dep => getDepth(dep, visited))
+    )
+    const depth = maxDepDep + 1
+    depths.set(id, depth)
+    return depth
+  }
+
+  stories.forEach(s => getDepth(s.id))
+  return depths
+}
+
 export function useGraphData(): GraphData {
   const [nodes, setNodes] = useState<Node[]>([])
   const [edges, setEdges] = useState<Edge[]>([])
+  const [stories, setStories] = useState<Story[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -41,45 +73,44 @@ export function useGraphData(): GraphData {
         }
 
         const stories: Story[] = prd.stories
+        const depths = calculateDepths(stories)
 
-        // Group stories by phase and epic for layout
-        const groups = new Map<string, Story[]>()
-        for (const story of stories) {
-          const key = `${story.phase}-${story.epic}`
-          if (!groups.has(key)) {
-            groups.set(key, [])
-          }
-          groups.get(key)!.push(story)
-        }
-
-        // Calculate positions using a hierarchical layout
-        const nodeMap = new Map<string, Node>()
-        const HORIZONTAL_SPACING = 220
-        const VERTICAL_SPACING = 120
-        const EPIC_SPACING = 100
-
-        // Sort groups by phase then epic
-        const sortedGroups = Array.from(groups.entries()).sort((a, b) => {
-          const [aPhase, aEpic] = a[0].split('-').map(Number)
-          const [bPhase, bEpic] = b[0].split('-').map(Number)
-          if (aPhase !== bPhase) return aPhase - bPhase
-          return aEpic - bEpic
+        // Group stories by depth
+        const byDepth = new Map<number, Story[]>()
+        stories.forEach(story => {
+          const depth = depths.get(story.id) || 0
+          if (!byDepth.has(depth)) byDepth.set(depth, [])
+          byDepth.get(depth)!.push(story)
         })
 
-        let currentY = 0
-        for (const [groupKey, groupStories] of sortedGroups) {
-          // Sort stories within group by story_number
-          groupStories.sort((a, b) => a.story_number - b.story_number)
+        // Sort each depth group by phase.epic.story_number
+        byDepth.forEach(group => {
+          group.sort((a, b) => {
+            if (a.phase !== b.phase) return a.phase - b.phase
+            if (a.epic !== b.epic) return a.epic - b.epic
+            return a.story_number - b.story_number
+          })
+        })
 
-          // Position stories in a row
-          groupStories.forEach((story, index) => {
+        // Create nodes with positions
+        const NODE_WIDTH = 170
+        const NODE_HEIGHT = 70
+        const H_GAP = 60
+        const V_GAP = 20
+
+        const nodeList: Node[] = []
+        const maxDepth = Math.max(...Array.from(depths.values()), 0)
+
+        for (let depth = 0; depth <= maxDepth; depth++) {
+          const group = byDepth.get(depth) || []
+          group.forEach((story, idx) => {
             const status = getStoryStatus(story, currentStoryId)
-            const node: Node = {
+            nodeList.push({
               id: story.id,
               type: 'story',
               position: {
-                x: index * HORIZONTAL_SPACING,
-                y: currentY,
+                x: depth * (NODE_WIDTH + H_GAP),
+                y: idx * (NODE_HEIGHT + V_GAP),
               },
               data: {
                 label: story.id,
@@ -88,31 +119,34 @@ export function useGraphData(): GraphData {
                 phase: story.phase,
                 epic: story.epic,
               },
-            }
-            nodeMap.set(story.id, node)
+            })
           })
-
-          currentY += VERTICAL_SPACING + EPIC_SPACING
         }
 
-        // Create edges from dependencies
+        // Create edges
         const edgeList: Edge[] = []
+        const nodeIds = new Set(stories.map(s => s.id))
+
         for (const story of stories) {
           if (story.depends_on) {
             for (const depId of story.depends_on) {
-              if (nodeMap.has(depId)) {
+              if (nodeIds.has(depId)) {
+                const depStory = stories.find(s => s.id === depId)
+                const isDepMerged = depStory?.merged
+
                 edgeList.push({
                   id: `${depId}->${story.id}`,
                   source: depId,
                   target: story.id,
+                  type: 'smoothstep',
                   markerEnd: {
                     type: MarkerType.ArrowClosed,
-                    width: 15,
-                    height: 15,
+                    width: 12,
+                    height: 12,
                   },
                   style: {
                     strokeWidth: 2,
-                    stroke: '#6b7280',
+                    stroke: isDepMerged ? '#22c55e' : '#6b7280',
                   },
                   animated: getStoryStatus(story, currentStoryId) === 'in_progress',
                 })
@@ -121,8 +155,9 @@ export function useGraphData(): GraphData {
           }
         }
 
-        setNodes(Array.from(nodeMap.values()))
+        setNodes(nodeList)
         setEdges(edgeList)
+        setStories(stories)
         setLoading(false)
       } catch (error) {
         console.error('Failed to fetch graph data:', error)
@@ -137,5 +172,5 @@ export function useGraphData(): GraphData {
     return () => clearInterval(interval)
   }, [])
 
-  return { nodes, edges, loading }
+  return { nodes, edges, stories, loading }
 }
