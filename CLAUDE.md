@@ -164,8 +164,8 @@ trinity auth status
 # Setup
 trinity init                    # Smart init (analyzes project, creates CLAUDE.md)
 
-# Interactive
-trinity chat                    # Discuss, plan, analyze, orchestrate
+# Analysis
+trinity analyze                 # Deep dive on codebase, suggest what to build
 
 # PRD Management
 trinity prd add                 # Context-aware: creates PRD or adds to existing
@@ -277,7 +277,7 @@ prompts/
 │   ├── prd-add-init.md      # prd add when no PRD exists
 │   ├── prd-add-extend.md    # prd add when PRD exists
 │   ├── story-execute.md
-│   └── chat.md
+│   └── analyze.md
 ├── schemas/             # Expected JSON response formats
 │   ├── prd-add.json
 │   └── ...

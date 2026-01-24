@@ -43,9 +43,9 @@ trinity auth status             # Show subscription/auth status
 trinity init                    # Smart init with Claude (analyzes project)
 ```
 
-**Interactive:**
+**Analysis:**
 ```bash
-trinity chat                    # Discuss, plan, analyze, orchestrate
+trinity analyze                 # Deep dive on codebase, suggest what to build
 ```
 
 **PRD Management:**
@@ -505,26 +505,35 @@ Instead of static templates, `trinity init` uses Claude to understand the projec
 
 #### Orchestration
 
-Trinity isn't just a loop runner - it's an orchestrator with built-in "skills". Users talk to Trinity, Trinity executes the right workflow via Claude Code.
+Trinity isn't just a loop runner - it's an orchestrator. The flow is: **analyze → prd add → run**.
 
 **Example flow:**
 ```
-$ trinity chat
-> I want to add user authentication
+$ trinity analyze
 
-Trinity: Let me analyze your project first...
-[runs analyze prompt via Claude Code]
+Trinity: Analyzing your project...
+
+  Stack: Go with Chi router
+  Structure: Clean architecture (handlers/, services/, models/)
+  Tests: 47% coverage, mainly unit tests
+
+  Suggestions:
+  - Add authentication (no auth currently)
+  - Add rate limiting to API endpoints
+  - Increase test coverage for services/
+
+$ trinity prd add
+> Add user authentication
 
 Trinity: I see you're using Go with Chi router. I'd suggest:
 - JWT-based auth
 - Middleware pattern
 - 4 stories: signup, login, middleware, protected routes
 
-Want me to generate these stories? [Y/n]
-> y
+  [I]mplement  [R]efine  [S]how  [O]ver
+> i
 
-[runs prd-add prompt via Claude Code]
-Added 4 stories to your PRD. Run `trinity prd show` to see them.
+[Creates stories, starts implementation]
 ```
 
 **Prompt Templates & Response Schemas:**
@@ -533,11 +542,11 @@ prompts/
 ├── templates/                    # Prompts with {{placeholders}}
 │   ├── init-analyze.md
 │   ├── init-claude-md.md
+│   ├── analyze.md                # Deep codebase analysis
 │   ├── prd-add-init.md           # prd add when no PRD exists
 │   ├── prd-add-extend.md         # prd add when PRD exists
 │   ├── prd-refine.md
-│   ├── story-execute.md
-│   └── chat.md
+│   └── story-execute.md
 ├── schemas/                      # Expected JSON response formats
 │   ├── prd-add.json
 │   ├── prd-refine.json
@@ -663,10 +672,10 @@ trinity/
 ├── prompts/             # Embedded into CLI via go:embed
 │   ├── templates/
 │   │   ├── init-analyze.md
+│   │   ├── analyze.md
 │   │   ├── prd-add-init.md
 │   │   ├── prd-add-extend.md
-│   │   ├── story-execute.md
-│   │   └── chat.md
+│   │   └── story-execute.md
 │   ├── schemas/
 │   │   ├── prd-add.json
 │   │   └── ...
