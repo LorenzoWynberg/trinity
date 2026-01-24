@@ -511,39 +511,9 @@ Legend: [x] merged  [>] in progress  [ ] pending  [!] blocked  [-] skipped
 
 ---
 
-### 11. Webhook/Slack Notifications
-
-**Problem:** Team visibility into Ralph progress.
-
-**Solution:** Post updates to Slack or webhook on key events.
-
-**Implementation:**
-```elvish
-var webhook-url = $E:RALPH_WEBHOOK_URL
-
-fn post-webhook {|event payload|
-  if (not (eq $webhook-url "")) {
-    curl -X POST $webhook-url \
-      -H "Content-Type: application/json" \
-      -d '{"event": "'$event'", "payload": '$payload'}' \
-      2>/dev/null &
-  }
-}
-
-# Events: story_started, story_completed, story_blocked, pr_created, pr_merged
-```
-
-**Files:**
-- New `scripts/ralph/lib/notify.elv`
-- `scripts/ralph/ralph.elv`
-
-**Effort:** 1 hour
-
----
-
 ## Quick Wins
 
-### 12. Configurable Timeouts
+### 11. Configurable Timeouts
 
 **Current:** Hardcoded 1800s (30 min) for Claude.
 
@@ -556,7 +526,7 @@ fn post-webhook {|event payload|
 
 ---
 
-### 13. Verbose Mode
+### 12. Verbose Mode
 
 **Current:** Either quiet or streaming.
 
@@ -569,7 +539,7 @@ fn post-webhook {|event payload|
 
 ---
 
-### 14. Story Retry with Clean Slate
+### 13. Story Retry with Clean Slate
 
 **Current:** Resume continues from existing branch state.
 
@@ -582,7 +552,7 @@ fn post-webhook {|event payload|
 
 ---
 
-### 15. Pre-flight Checks
+### 14. Pre-flight Checks
 
 **Current:** Jumps straight into story execution.
 
@@ -628,8 +598,7 @@ fn post-webhook {|event payload|
 
 ### Phase 5: Observability (Later)
 13. Token tracking (2 hr)
-14. Webhook notifications (1 hr)
-15. Verbose mode (20 min)
+14. Verbose mode (20 min)
 
 ---
 
@@ -647,3 +616,35 @@ After implementing improvements, measure:
 - Stories blocked rate
 - Token usage per story
 - User intervention frequency
+
+---
+
+## v2 (Future)
+
+### Webhook/Slack Notifications
+
+**Problem:** Team visibility into Ralph progress.
+
+**Solution:** Post updates to Slack or webhook on key events.
+
+**Implementation:**
+```elvish
+var webhook-url = $E:RALPH_WEBHOOK_URL
+
+fn post-webhook {|event payload|
+  if (not (eq $webhook-url "")) {
+    curl -X POST $webhook-url \
+      -H "Content-Type: application/json" \
+      -d '{"event": "'$event'", "payload": '$payload'}' \
+      2>/dev/null &
+  }
+}
+
+# Events: story_started, story_completed, story_blocked, pr_created, pr_merged
+```
+
+**Files:**
+- New `scripts/ralph/lib/notify.elv`
+- `scripts/ralph/ralph.elv`
+
+**Effort:** 1 hour
