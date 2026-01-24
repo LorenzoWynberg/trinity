@@ -9,6 +9,7 @@ type GraphData = {
   edges: Edge[]
   stories: Story[]
   loading: boolean
+  direction: 'horizontal' | 'vertical'
 }
 
 function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatus {
@@ -54,14 +55,20 @@ export function useGraphData(): GraphData {
   const [edges, setEdges] = useState<Edge[]>([])
   const [stories, setStories] = useState<Story[]>([])
   const [loading, setLoading] = useState(true)
+  const [direction, setDirection] = useState<'horizontal' | 'vertical'>('horizontal')
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [prdRes, stateRes] = await Promise.all([
+        const [prdRes, stateRes, settingsRes] = await Promise.all([
           fetch('/api/prd'),
-          fetch('/api/state')
+          fetch('/api/state'),
+          fetch('/api/settings')
         ])
+
+        const settings = await settingsRes.json()
+        const currentDirection = settings?.graphDirection || 'horizontal'
+        setDirection(currentDirection)
 
         const prd = await prdRes.json()
         const state = await stateRes.json()
@@ -105,19 +112,23 @@ export function useGraphData(): GraphData {
           const group = byDepth.get(depth) || []
           group.forEach((story, idx) => {
             const status = getStoryStatus(story, currentStoryId)
+
+            // Calculate position based on direction
+            const position = currentDirection === 'horizontal'
+              ? { x: depth * (NODE_WIDTH + H_GAP), y: idx * (NODE_HEIGHT + V_GAP) }
+              : { x: idx * (NODE_WIDTH + H_GAP), y: depth * (NODE_HEIGHT + V_GAP) }
+
             nodeList.push({
               id: story.id,
               type: 'story',
-              position: {
-                x: depth * (NODE_WIDTH + H_GAP),
-                y: idx * (NODE_HEIGHT + V_GAP),
-              },
+              position,
               data: {
                 label: story.id,
                 title: story.title,
                 status,
                 phase: story.phase,
                 epic: story.epic,
+                direction: currentDirection,
               },
             })
           })
@@ -172,5 +183,5 @@ export function useGraphData(): GraphData {
     return () => clearInterval(interval)
   }, [])
 
-  return { nodes, edges, stories, loading }
+  return { nodes, edges, stories, loading, direction }
 }

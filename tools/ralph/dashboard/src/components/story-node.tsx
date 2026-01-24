@@ -11,6 +11,7 @@ type StoryNodeData = {
   status: string
   phase: number
   epic: number
+  direction?: 'horizontal' | 'vertical'
   onInfoClick?: (e: React.MouseEvent) => void
 }
 
@@ -36,10 +37,15 @@ export const StoryNode = memo(({ data, selected }: NodeProps) => {
   const nodeData = data as StoryNodeData
   const colorClass = statusColors[nodeData.status] || statusColors.pending
   const dotClass = statusDots[nodeData.status] || statusDots.pending
+  const isVertical = nodeData.direction === 'vertical'
 
   return (
     <>
-      <Handle type="target" position={Position.Left} className="!bg-muted-foreground" />
+      <Handle
+        type="target"
+        position={isVertical ? Position.Top : Position.Left}
+        className="!bg-muted-foreground"
+      />
       <div
         className={cn(
           'px-3 py-2 rounded-lg border-2 w-[160px] cursor-pointer transition-all',
@@ -62,7 +68,11 @@ export const StoryNode = memo(({ data, selected }: NodeProps) => {
         </div>
         <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2">{nodeData.title}</p>
       </div>
-      <Handle type="source" position={Position.Right} className="!bg-muted-foreground" />
+      <Handle
+        type="source"
+        position={isVertical ? Position.Bottom : Position.Right}
+        className="!bg-muted-foreground"
+      />
     </>
   )
 })
