@@ -233,35 +233,101 @@ while [[ $CURRENT_ITERATION -lt $MAX_ITERATIONS ]]; do
     echo ""
     ui_success "Story $STORY_ID completed!"
     activity_log_entry "Completed $STORY_ID" "$STORY_ID"
-    ui_dim "  Resetting state to idle..."
-    state_update "current_story=null" "branch=null" "status=idle" "started_at=null" "attempts=0" "error=null"
-    ui_dim "  State saved."
 
-    # Run PR flow
+    # Run PR flow (may request feedback)
     echo ""
     STORY_TITLE=$(prd_get_story_title "$STORY_ID")
-    pr_run_flow "$STORY_ID" "$BRANCH_NAME" "$STORY_TITLE" "$CURRENT_ITERATION"
+    PR_RESULT=$(pr_run_flow "$STORY_ID" "$BRANCH_NAME" "$STORY_TITLE" "$CURRENT_ITERATION")
 
-    # Sync base branch
-    echo ""
-    git_sync_base_branch
+    # Handle feedback loop - re-run Claude with feedback
+    if [[ "$PR_RESULT" == "feedback" && -n "$PR_FEEDBACK" ]]; then
+      echo ""
+      ui_banner "Feedback Loop - Re-running Claude"
+      ui_dim "Feedback: $PR_FEEDBACK"
+      echo ""
 
-    # Pause before next story
-    echo ""
-    ui_status "Pausing before next story..."
-    echo -e "\033[33mStop loop? [y/N]\033[0m \033[2m(continues in 120s)\033[0m"
-    if read -t 120 -n 1 answer </dev/tty 2>/dev/null; then
-      if [[ "$answer" =~ ^[yY]$ ]]; then
-        echo ""
-        ui_warn "Stopped by user."
-        ui_dim "Run again to continue."
-        exit 0
+      # Increment attempts
+      CURRENT_ATTEMPTS=$((CURRENT_ATTEMPTS + 1))
+      state_update "attempts=$CURRENT_ATTEMPTS"
+
+      # Prepare Claude with feedback
+      claude_prepare "$STORY_ID" "$BRANCH_NAME" "$CURRENT_ATTEMPTS" "$CURRENT_ITERATION" "$PR_FEEDBACK"
+
+      ui_status "Running Claude with feedback (attempt $CURRENT_ATTEMPTS)..."
+      ui_dim "  Story:  $STORY_ID"
+      ui_dim "  Branch: $BRANCH_NAME"
+      ui_dim "  Output: $CLAUDE_OUTPUT_FILE"
+      echo ""
+
+      ui_divider "Claude Working (Feedback)"
+
+      # Run Claude
+      claude_run || true
+
+      # Format Go files
+      echo ""
+      ui_status "Formatting Go files..."
+      GO_FILES=$(git_get_modified_go_files)
+      if [[ -n "$GO_FILES" ]]; then
+        while IFS= read -r f; do
+          [[ -z "$f" ]] && continue
+          gofmt -w "$PROJECT_ROOT/$f" 2>/dev/null || true
+        done <<< "$GO_FILES"
+        ui_success "  Go formatting complete"
+      else
+        ui_dim "  No Go files need formatting"
       fi
+      echo ""
+
+      # Check signals again
+      ui_status "Checking for completion signals..."
+      claude_check_signals "$CLAUDE_OUTPUT_FILE" "$STORY_ID"
+      claude_cleanup
+      echo ""
+
+      # If complete again, loop back to PR flow
+      if [[ "$SIGNAL_COMPLETE" == "true" ]]; then
+        ui_success "Feedback addressed! Running PR flow again..."
+        # Don't reset state yet - go back to top of loop to handle PR
+        continue
+      elif [[ "$SIGNAL_BLOCKED" == "true" ]]; then
+        ui_error "Story became BLOCKED after feedback"
+        activity_log_entry "BLOCKED $STORY_ID after feedback" "$STORY_ID"
+        state_update "status=blocked" "current_story=null" "branch=null" "started_at=null" "attempts=0"
+      else
+        ui_dim "Story still in progress after feedback..."
+      fi
+    elif [[ "$PR_RESULT" == "merged" ]]; then
+      # Successfully merged - reset state
+      ui_dim "  Resetting state to idle..."
+      state_update "current_story=null" "branch=null" "status=idle" "started_at=null" "attempts=0" "error=null"
+      ui_dim "  State saved."
+
+      # Sync base branch
+      echo ""
+      git_sync_base_branch
+
+      # Pause before next story
+      echo ""
+      ui_status "Pausing before next story..."
+      echo -e "\033[33mStop loop? [y/N]\033[0m \033[2m(continues in 120s)\033[0m"
+      if read -t 120 -n 1 answer </dev/tty 2>/dev/null; then
+        if [[ "$answer" =~ ^[yY]$ ]]; then
+          echo ""
+          ui_warn "Stopped by user."
+          ui_dim "Run again to continue."
+          exit 0
+        fi
+      else
+        ui_dim "(Timeout - continuing)"
+      fi
+      echo ""
+      ui_dim "Continuing to next story..."
     else
-      ui_dim "(Timeout - continuing)"
+      # PR left open or skipped
+      ui_dim "PR not merged. Resetting state..."
+      state_update "current_story=null" "branch=null" "status=idle" "started_at=null" "attempts=0" "error=null"
     fi
-    echo ""
-    ui_dim "Continuing to next story..."
 
   elif [[ "$SIGNAL_BLOCKED" == "true" ]]; then
     echo ""

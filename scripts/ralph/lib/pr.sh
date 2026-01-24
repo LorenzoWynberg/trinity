@@ -25,52 +25,92 @@ pr_check_exists() {
 }
 
 # Build PR body using Claude to summarize changes
+# If existing_body is provided, Claude will merge/extend it
 pr_build_body() {
   local story_id="$1"
   local story_title="$2"
   local branch_name="$3"
+  local existing_body="${4:-}"
 
   ui_dim "  Generating PR description with Claude..."
 
-  # Get commit messages
+  # Get ALL commit messages for this PR (full history from base)
   local commits
-  commits=$(git -C "$PR_PROJECT_ROOT" log --oneline "$PR_BASE_BRANCH".."$branch_name" 2>/dev/null | head -20)
+  commits=$(git -C "$PR_PROJECT_ROOT" log --oneline "$PR_BASE_BRANCH".."$branch_name" 2>/dev/null)
 
-  # Get diff (limited to avoid token explosion)
-  local diff
-  diff=$(git -C "$PR_PROJECT_ROOT" diff "$PR_BASE_BRANCH".."$branch_name" 2>/dev/null | head -500)
-
-  # Get file stats
+  # Get full file stats (shows all changed files)
   local stats
   stats=$(git -C "$PR_PROJECT_ROOT" diff --stat "$PR_BASE_BRANCH".."$branch_name" 2>/dev/null)
 
+  # Get file list with change types
+  local files_changed
+  files_changed=$(git -C "$PR_PROJECT_ROOT" diff --name-status "$PR_BASE_BRANCH".."$branch_name" 2>/dev/null)
+
+  # Get diff - limit per file to avoid token explosion but include all files
+  local diff
+  diff=$(git -C "$PR_PROJECT_ROOT" diff "$PR_BASE_BRANCH".."$branch_name" 2>/dev/null | head -1000)
+
   # Build prompt for Claude
-  local prompt="Write a concise GitHub PR description for these changes.
+  local prompt
+  if [[ -n "$existing_body" ]]; then
+    prompt="Update this GitHub PR description to reflect ALL changes in the PR. Merge with existing content.
 
 Story: $story_id - $story_title
 
-Commits:
+EXISTING PR DESCRIPTION:
+$existing_body
+
+ALL COMMITS IN THIS PR:
 $commits
 
-File changes:
+ALL FILES CHANGED:
+$files_changed
+
+FILE STATS:
 $stats
 
-Diff (truncated):
+DIFF (truncated for large changes):
+$diff
+
+Instructions:
+- Update the description to cover ALL changes listed above
+- Merge existing content with new information (don't lose previous context)
+- The summary should reflect the full scope of the PR
+- List ALL significant changes in the Changes section
+- Keep it organized and concise
+
+Output the complete updated PR description, no preamble."
+  else
+    prompt="Write a comprehensive GitHub PR description summarizing ALL changes in this PR.
+
+Story: $story_id - $story_title
+
+ALL COMMITS:
+$commits
+
+ALL FILES CHANGED:
+$files_changed
+
+FILE STATS:
+$stats
+
+DIFF (truncated for large changes):
 $diff
 
 Format your response as:
 ## Summary
-<1-2 sentence summary of what this PR does>
+<1-2 sentence summary covering the full scope of what this PR does>
 
 ## Changes
-<bullet points of key changes>
+<bullet points covering ALL key changes - files added, modified, deleted>
 
 ## Testing
 <how to verify the changes work>
 
-Keep it concise. No preamble, just the formatted PR description."
+Be comprehensive but concise. No preamble, just the formatted PR description."
+  fi
 
-  # Call Claude to generate description (quick, no permissions needed for read-only)
+  # Call Claude to generate description
   local body
   body=$(echo "$prompt" | claude --dangerously-skip-permissions --print 2>/dev/null)
 
@@ -114,7 +154,7 @@ pr_create() {
   fi
 }
 
-# Update PR description based on commits
+# Update PR description based on commits (merges with existing)
 pr_update_description() {
   local branch_name="$1"
   local story_id="$2"
@@ -122,8 +162,12 @@ pr_update_description() {
 
   ui_status "Updating PR description..."
 
+  # Fetch existing PR body to merge with
+  local existing_body
+  existing_body=$(gh pr view "$branch_name" --json body -q '.body' 2>/dev/null || true)
+
   local body
-  body=$(pr_build_body "$story_id" "$story_title" "$branch_name")
+  body=$(pr_build_body "$story_id" "$story_title" "$branch_name" "$existing_body")
 
   if gh pr edit "$branch_name" --body "$body" &>/dev/null; then
     ui_success "PR description updated"
@@ -166,7 +210,41 @@ pr_prompt_user() {
   esac
 }
 
+# Global to pass feedback back to main loop
+PR_FEEDBACK=""
+
+# Prompt for feedback text
+pr_get_feedback() {
+  echo ""
+  ui_status "Enter feedback for Claude (press Enter twice to finish):"
+  echo -e "\033[2m(Describe what changes are needed)\033[0m"
+
+  local feedback=""
+  local line=""
+  local empty_lines=0
+
+  while true; do
+    IFS= read -r line </dev/tty 2>/dev/null || break
+    if [[ -z "$line" ]]; then
+      empty_lines=$((empty_lines + 1))
+      if [[ $empty_lines -ge 1 ]]; then
+        break
+      fi
+    else
+      empty_lines=0
+      if [[ -n "$feedback" ]]; then
+        feedback="$feedback"$'\n'"$line"
+      else
+        feedback="$line"
+      fi
+    fi
+  done
+
+  echo "$feedback"
+}
+
 # Run the full PR and merge flow with feedback loops
+# Returns: "merged", "open", "skipped", or "feedback:<text>"
 pr_run_flow() {
   local story_id="$1"
   local branch_name="$2"
@@ -175,6 +253,7 @@ pr_run_flow() {
 
   local pr_url=""
   local pr_exists=false
+  PR_FEEDBACK=""
 
   # Check if PR already exists
   pr_url=$(pr_check_exists "$branch_name")
@@ -225,40 +304,64 @@ pr_run_flow() {
         fi
       else
         ui_dim "Skipping PR (branch pushed: $branch_name)"
-        done=true
-        continue
+        echo "skipped"
+        return 0
       fi
     fi
 
-    # === MERGE PROMPT ===
+    # === MERGE / FEEDBACK PROMPT ===
     if [[ "$pr_exists" == "true" && "$PR_AUTO_MERGE" != "true" ]]; then
       echo ""
-      ui_status "Merge PR?"
-      echo -e "\033[33m[y]es / [N]o\033[0m"
+      ui_status "What would you like to do?"
+      echo -e "\033[33m[y]es merge / [N]o leave open / [f]eedback request changes\033[0m"
 
-      local answer
-      answer=$(pr_prompt_user)
-      if [[ "$answer" == "yes" ]]; then
-        local commit
-        commit=$(pr_merge "$branch_name")
-        if [[ -n "$commit" ]]; then
-          prd_mark_merged "$story_id" "$commit"
-        fi
-        done=true
-      else
-        # Default to no (leave open for review)
-        ui_dim "PR left open for review"
-        done=true
-      fi
+      local answer=""
+      read -r answer </dev/tty 2>/dev/null || answer=""
+      answer=$(echo "$answer" | tr '[:upper:]' '[:lower:]')
+
+      case "$answer" in
+        y|yes)
+          local commit
+          commit=$(pr_merge "$branch_name")
+          if [[ -n "$commit" ]]; then
+            prd_mark_merged "$story_id" "$commit"
+          fi
+          echo "merged"
+          return 0
+          ;;
+        f|feedback)
+          # Get feedback from user
+          local feedback
+          feedback=$(pr_get_feedback)
+          if [[ -n "$feedback" ]]; then
+            PR_FEEDBACK="$feedback"
+            ui_status "Feedback received. Will re-run Claude with changes..."
+            echo "feedback"
+            return 0
+          else
+            ui_dim "No feedback provided, leaving PR open"
+            echo "open"
+            return 0
+          fi
+          ;;
+        *)
+          # Default to no (leave open for review)
+          ui_dim "PR left open for review"
+          echo "open"
+          return 0
+          ;;
+      esac
     elif [[ "$PR_AUTO_MERGE" == "true" ]]; then
       local commit
       commit=$(pr_merge "$branch_name")
       if [[ -n "$commit" ]]; then
         prd_mark_merged "$story_id" "$commit"
       fi
-      done=true
+      echo "merged"
+      return 0
     else
-      done=true
+      echo "open"
+      return 0
     fi
   done
 }
