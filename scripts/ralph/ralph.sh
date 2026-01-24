@@ -18,6 +18,7 @@ source "$SCRIPT_DIR/lib/cli.sh"
 source "$SCRIPT_DIR/lib/state.sh"
 source "$SCRIPT_DIR/lib/git.sh"
 source "$SCRIPT_DIR/lib/prd.sh"
+source "$SCRIPT_DIR/lib/activity.sh"
 source "$SCRIPT_DIR/lib/claude.sh"
 source "$SCRIPT_DIR/lib/pr.sh"
 
@@ -33,6 +34,7 @@ PROMPT_TEMPLATE=$(cat "$PROMPT_FILE")
 state_init "$STATE_FILE"
 git_init "$PROJECT_ROOT" "$BASE_BRANCH"
 prd_init "$PRD_FILE"
+activity_init "$PROJECT_ROOT"
 claude_init "$PROJECT_ROOT" "$PROMPT_TEMPLATE" "$CLAUDE_TIMEOUT" "$QUIET_MODE" "$MAX_ITERATIONS"
 pr_init "$PROJECT_ROOT" "$BASE_BRANCH" "$AUTO_PR" "$AUTO_MERGE"
 
@@ -160,6 +162,9 @@ while [[ $CURRENT_ITERATION -lt $MAX_ITERATIONS ]]; do
 
   git_ensure_on_branch "$BRANCH_NAME"
 
+  # Log activity
+  activity_log_entry "Started $STORY_ID (attempt $CURRENT_ATTEMPTS)" "$STORY_ID"
+
   # Prepare Claude prompt
   claude_prepare "$STORY_ID" "$BRANCH_NAME" "$CURRENT_ATTEMPTS" "$CURRENT_ITERATION" ""
 
@@ -220,6 +225,7 @@ while [[ $CURRENT_ITERATION -lt $MAX_ITERATIONS ]]; do
   if [[ "$SIGNAL_COMPLETE" == "true" ]]; then
     echo ""
     ui_success "Story $STORY_ID completed!"
+    activity_log_entry "Completed $STORY_ID" "$STORY_ID"
     ui_dim "  Resetting state to idle..."
     state_update "current_story=null" "branch=null" "status=idle" "started_at=null" "attempts=0" "error=null"
     ui_dim "  State saved."
@@ -253,6 +259,7 @@ while [[ $CURRENT_ITERATION -lt $MAX_ITERATIONS ]]; do
   elif [[ "$SIGNAL_BLOCKED" == "true" ]]; then
     echo ""
     ui_error "Story $STORY_ID is BLOCKED"
+    activity_log_entry "BLOCKED $STORY_ID" "$STORY_ID"
     ui_dim "  Clearing story state..."
     state_update "status=blocked" "current_story=null" "branch=null" "started_at=null" "attempts=0"
     ui_dim "  State saved."
