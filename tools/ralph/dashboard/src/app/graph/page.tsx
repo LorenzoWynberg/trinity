@@ -117,6 +117,7 @@ export default function GraphPage() {
   // Apply highlighting styles to nodes and add info click handler
   const styledNodes: Node[] = nodes.map(node => {
     const isHighlighted = highlightedNodes.has(node.id)
+    const hasHighlighting = highlightedNodes.size > 0
     return {
       ...node,
       data: {
@@ -125,9 +126,10 @@ export default function GraphPage() {
       },
       style: {
         ...node.style,
-        opacity: highlightedNodes.size > 0 && !isHighlighted ? 0.3 : 1,
+        opacity: hasHighlighting && !isHighlighted ? 0.3 : 1,
       },
-      zIndex: isHighlighted ? 1001 : 0,
+      // Highlighted nodes on top, non-highlighted nodes below highlighted edges
+      zIndex: isHighlighted ? 1001 : (hasHighlighting ? -1 : 0),
     }
   })
 
