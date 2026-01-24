@@ -13,52 +13,52 @@ Track implementation progress for the Next.js PRD dashboard.
 ## Phase 1: Foundation
 
 ### Project Setup
-- [ ] Initialize Next.js 14 project with TypeScript
-- [ ] Configure Tailwind CSS
-- [ ] Install shadcn/ui CLI
-- [ ] Add base shadcn components (button, card, badge, table, tabs)
-- [ ] Set up project structure (app/, components/, lib/)
+- [x] Initialize Next.js 14 project with TypeScript
+- [x] Configure Tailwind CSS
+- [x] Install shadcn/ui CLI
+- [x] Add base shadcn components (button, card, badge, table, tabs)
+- [x] Set up project structure (app/, components/, lib/)
 
 ### Layout & Navigation
-- [ ] Create root layout with sidebar
-- [ ] Build sidebar component with navigation links
-- [ ] Add Lucide icons
+- [x] Create root layout with sidebar
+- [x] Build sidebar component with navigation links
+- [x] Add Lucide icons
 - [ ] Implement dark mode toggle
 - [ ] Create responsive mobile menu
 
 ### Data Layer
-- [ ] Create TypeScript types for PRD, metrics, state
-- [ ] Implement `getPRD()` - read prd.json
-- [ ] Implement `getMetrics()` - read metrics.json
-- [ ] Implement `getState()` - read state.json
-- [ ] Implement `getActivityLogs()` - parse activity markdown
-- [ ] Implement `getLearnings()` - parse learnings markdown
+- [x] Create TypeScript types for PRD, metrics, state
+- [x] Implement `getPRD()` - read prd.json
+- [x] Implement `getMetrics()` - read metrics.json
+- [x] Implement `getState()` - read state.json
+- [x] Implement `getActivityLogs()` - parse activity markdown
+- [x] Implement `getLearnings()` - parse learnings markdown
 
 ---
 
 ## Phase 2: Core Pages
 
 ### Dashboard Home (`/`)
-- [ ] Stats cards row (total stories, merged, tokens, time)
-- [ ] Phase progress bars
-- [ ] Current work card (from state.json)
+- [x] Stats cards row (total stories, merged, tokens, time)
+- [x] Phase progress bars
+- [x] Current work card (from state.json)
 - [ ] Recent activity feed (last 5 entries)
 
 ### Stories List (`/stories`)
-- [ ] Story card component
-- [ ] List view with all stories
-- [ ] Filter by status (pending, in_progress, passed, merged, skipped)
-- [ ] Filter by phase
+- [x] Story card component
+- [x] List view with all stories
+- [x] Filter by status (pending, in_progress, passed, merged, skipped)
+- [x] Filter by phase
 - [ ] Filter by epic
 - [ ] Search stories by title/ID
 - [ ] Sort options (ID, status, phase)
 
 ### Story Detail (`/stories/[id]`)
-- [ ] Story header with title and status badge
-- [ ] Acceptance criteria list
-- [ ] Dependencies section with links
-- [ ] Blocked-by / Blocks relationships
-- [ ] Branch and PR info
+- [x] Story header with title and status badge
+- [x] Acceptance criteria list
+- [x] Dependencies section with links
+- [x] Blocked-by / Blocks relationships
+- [x] Branch and PR info
 - [ ] Story activity history
 
 ---
@@ -70,20 +70,20 @@ Track implementation progress for the Next.js PRD dashboard.
 - [ ] Token usage over time (line chart)
 - [ ] Time per story (bar chart)
 - [ ] Stories completed per day (area chart)
-- [ ] Metrics table with all recorded data
-- [ ] Summary stats cards
+- [x] Metrics table with all recorded data
+- [x] Summary stats cards
 
 ### Activity Page (`/activity`)
-- [ ] Activity log list component
-- [ ] Date picker for filtering
+- [x] Activity log list component
+- [x] Date picker for filtering (tabs)
 - [ ] Search within logs
-- [ ] Markdown rendering for log content
+- [x] Markdown rendering for log content
 - [ ] Auto-scroll to latest
 
 ### Learnings Page (`/learnings`)
-- [ ] Learnings card component
-- [ ] Category tabs (gotchas, patterns, conventions)
-- [ ] Markdown rendering with syntax highlighting
+- [x] Learnings card component
+- [x] Category tabs (gotchas, patterns, conventions)
+- [x] Markdown rendering with syntax highlighting
 - [ ] Search across all learnings
 
 ### Dependency Graph
@@ -100,12 +100,12 @@ Track implementation progress for the Next.js PRD dashboard.
 ### UX Improvements
 - [ ] Loading skeletons for all pages
 - [ ] Error boundaries and error states
-- [ ] Empty states for no data
+- [x] Empty states for no data
 - [ ] Keyboard navigation (j/k for lists)
 - [ ] Breadcrumb navigation
 
 ### Auto-Refresh
-- [ ] Implement polling for state.json
+- [x] Implement polling for state.json (5s revalidation)
 - [ ] Auto-refresh toggle in UI
 - [ ] Visual indicator when data updates
 - [ ] Configurable refresh interval
@@ -144,10 +144,15 @@ Track implementation progress for the Next.js PRD dashboard.
 
 ## Notes
 
-_Add implementation notes, blockers, or decisions here as you work._
+- Using Next.js 14 App Router with server components
+- 5-second revalidation for auto-refresh on all pages
+- Reading files directly from scripts/ralph/ and docs/
 
 ---
 
 ## Completed
 
-_Move completed items here with date for reference._
+### 2026-01-24
+- Phase 1 Foundation complete
+- Phase 2 Core Pages complete (basic versions)
+- Phase 3 started (metrics table, activity/learnings viewers)
