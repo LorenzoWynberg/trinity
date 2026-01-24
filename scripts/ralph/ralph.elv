@@ -26,6 +26,7 @@ var quiet-mode = $false
 var claude-timeout = 1800  # 30 minutes
 var auto-pr = $true        # Auto-create PR on story complete
 var auto-merge = $false    # Prompt before merging PR
+var interrupted = $false   # Track if we were interrupted
 
 # ANSI color codes
 var C_RESET = "\e[0m"
@@ -428,6 +429,33 @@ fn get-story-deps {|story-id|
   }
 }
 
+# Graceful exit handler
+fn graceful-exit {
+  echo ""
+  echo ""
+  echo $C_YELLOW$C_BOLD"╔════════════════════════════════════════════════════════╗"$C_RESET
+  echo $C_YELLOW$C_BOLD"║              INTERRUPTED - Saving State                ║"$C_RESET
+  echo $C_YELLOW$C_BOLD"╚════════════════════════════════════════════════════════╝"$C_RESET
+
+  # Save current state
+  try {
+    var state = (read-state)
+    if $state[current_story] {
+      ralph-dim "Current story: "$state[current_story]
+      ralph-dim "Branch:        "$state[branch]
+      ralph-dim "Status:        "$state[status]
+    }
+    ralph-dim "State preserved in state.json"
+    ralph-dim "Run './ralph.elv --resume' to continue"
+  } catch {
+    ralph-dim "Could not read state (may not have been initialized)"
+  }
+
+  echo ""
+  ralph-warn "Exiting gracefully..."
+  exit 130  # Standard exit code for SIGINT
+}
+
 # Read prompt template
 var prompt-template = (cat $prompt-file | slurp)
 
@@ -471,8 +499,9 @@ if (all-stories-complete) {
   exit 0
 }
 
-# Main loop
-while (< $current-iteration $max-iterations) {
+# Main loop with interrupt handling
+try {
+  while (< $current-iteration $max-iterations) {
   set current-iteration = (+ $current-iteration 1)
 
   echo ""
@@ -880,10 +909,14 @@ while (< $current-iteration $max-iterations) {
   sleep 2
 }
 
-echo ""
-echo $C_YELLOW$C_BOLD"╔════════════════════════════════════════════════════════╗"$C_RESET
-echo $C_YELLOW$C_BOLD"║              MAX ITERATIONS REACHED                    ║"$C_RESET
-echo $C_YELLOW$C_BOLD"╚════════════════════════════════════════════════════════╝"$C_RESET
-ralph-dim "Iterations: "$max-iterations
-ralph-dim "Run again to continue from current state."
-exit 0
+  echo ""
+  echo $C_YELLOW$C_BOLD"╔════════════════════════════════════════════════════════╗"$C_RESET
+  echo $C_YELLOW$C_BOLD"║              MAX ITERATIONS REACHED                    ║"$C_RESET
+  echo $C_YELLOW$C_BOLD"╚════════════════════════════════════════════════════════╝"$C_RESET
+  ralph-dim "Iterations: "$max-iterations
+  ralph-dim "Run again to continue from current state."
+  exit 0
+} catch e {
+  # Handle interrupt (Ctrl+C) and other exceptions
+  graceful-exit
+}

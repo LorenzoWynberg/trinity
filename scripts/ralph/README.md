@@ -123,6 +123,15 @@ To reset: `./ralph.elv --reset`
 - `claude` - Claude Code CLI
 - `go` - Go compiler
 
+## Graceful Exit
+
+Press `Ctrl+C` at any time to gracefully interrupt Ralph. It will:
+- Save current state to `state.json`
+- Display current story and branch info
+- Exit with code 130 (standard SIGINT exit)
+
+Resume with `./ralph.elv --resume` to continue from where you left off.
+
 ## Troubleshooting
 
 **Story stuck?** Run with `--reset` to start fresh, or manually edit `state.json`.
