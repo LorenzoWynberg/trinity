@@ -39,11 +39,13 @@ fn get-current-version {
 # List all available version files in prd directory
 fn list-versions {
   var versions = []
-  for file [(path:glob $prd-dir"/v*.json")] {
-    var basename = (path:base $file)
-    var version = (re:replace '\.json$' '' $basename)
-    set versions = [$@versions $version]
-  }
+  try {
+    var files = [(ls $prd-dir 2>/dev/null | grep -E '^v[0-9]+\.[0-9]+\.json$')]
+    for file $files {
+      var version = (re:replace '\.json$' '' $file)
+      set versions = [$@versions $version]
+    }
+  } catch _ { }
   # Sort versions (simple string sort works for vX.Y format)
   put $@versions | order
 }
@@ -515,4 +517,80 @@ fn show-version-status {
 # Get story's target version
 fn get-story-version {|story-id|
   jq -r '.stories[] | select(.id == "'$story-id'") | .target_version // "v1.0"' $prd-file
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# RELEASE SUPPORT
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Get count of completed (merged) stories in current PRD
+fn get-story-count {
+  jq '[.stories[] | select(.merged == true)] | length' $prd-file
+}
+
+# Get stories summary for release PR body
+fn get-stories-summary {
+  var summary = ""
+
+  # Get unique phases
+  var phases = [(jq -r '.stories | map(.phase) | unique | .[]' $prd-file)]
+
+  for phase $phases {
+    # Get phase name from first story in phase (or use "Phase N")
+    var phase-name = "Phase "$phase
+
+    # Count merged stories in this phase
+    var phase-merged = (jq '[.stories[] | select(.phase == '$phase' and .merged == true)] | length' $prd-file)
+    if (== $phase-merged 0) {
+      continue
+    }
+
+    set summary = $summary"### "$phase-name"\n"
+
+    # Get unique epics in this phase
+    var epics = [(jq -r '.stories | map(select(.phase == '$phase') | .epic) | unique | .[]' $prd-file)]
+
+    for epic $epics {
+      var epic-merged = (jq '[.stories[] | select(.phase == '$phase' and .epic == '$epic' and .merged == true)] | length' $prd-file)
+      if (== $epic-merged 0) {
+        continue
+      }
+
+      set summary = $summary"**Epic "$phase"."$epic"**\n"
+
+      # Get merged stories in this epic
+      var stories = [(jq -r '.stories[] | select(.phase == '$phase' and .epic == '$epic' and .merged == true) | "- \(.id): \(.title)"' $prd-file)]
+
+      for story $stories {
+        set summary = $summary$story"\n"
+      }
+      set summary = $summary"\n"
+    }
+  }
+
+  put $summary
+}
+
+# Mark version as released in PRD
+fn mark-version-released {|version tag commit|
+  var tmp = (mktemp)
+  var timestamp = (date -u +"%Y-%m-%dT%H:%M:%SZ")
+  jq '. + {
+    released: true,
+    released_at: "'$timestamp'",
+    release_tag: "'$tag'",
+    release_commit: "'$commit'"
+  }' $prd-file > $tmp
+  mv $tmp $prd-file
+}
+
+# Check if version is released
+fn is-version-released {|version|
+  var file = (get-version-file $version)
+  if (not (path:is-regular $file)) {
+    put $false
+    return
+  }
+  var released = (jq -r '.released // false' $file)
+  eq $released "true"
 }
