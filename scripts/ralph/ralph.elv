@@ -24,6 +24,8 @@ var current-iteration = 0
 var base-branch = "dev"
 var quiet-mode = $false
 var claude-timeout = 1800  # 30 minutes
+var auto-pr = $true        # Auto-create PR on story complete
+var auto-merge = $false    # Prompt before merging PR
 
 # ANSI color codes
 var C_RESET = "\e[0m"
@@ -71,6 +73,8 @@ USAGE:
 OPTIONS:
   --max-iterations <n>    Maximum iterations before auto-stop (default: 100)
   --base-branch <name>    Base branch to create story branches from (default: dev)
+  --no-auto-pr            Prompt before creating PR (default: auto-create)
+  --auto-merge            Auto-merge PR without prompting (default: prompt)
   --resume                Resume from last state (skip story selection)
   --reset                 Reset state and start fresh
   -q, --quiet             Quiet mode - hide Claude output, show only Ralph status
@@ -81,15 +85,18 @@ FEATURES:
   - State persistence: Tracks current story across invocations
   - Branch naming: Creates feat/story-<phase>.<epic>.<story> branches
   - Self-review cycle: Agent reviews work, suggests improvements, iterates
+  - PR automation: Auto-create and optionally auto-merge PRs
   - Error recovery: Can resume interrupted work
 
 WORKFLOW:
   1. Pick next story (respecting dependencies)
-  2. Create branch from main (always syncs with latest)
+  2. Create branch from dev (always syncs with latest)
   3. Implement story with verification
   4. Self-review until done
   5. Commit and push
-  6. Move to next story
+  6. Create PR to dev (auto, or prompt if --no-auto-pr)
+  7. Merge PR (if --auto-merge, or prompt)
+  8. Move to next story
 
 FILES:
   - prompt.md     : Agent instructions template
@@ -141,6 +148,12 @@ while (< $i (count $args)) {
   } elif (or (eq $arg "-q") (eq $arg "--quiet")) {
     set quiet-mode = $true
     set i = (+ $i 1)
+  } elif (eq $arg "--no-auto-pr") {
+    set auto-pr = $false
+    set i = (+ $i 1)
+  } elif (eq $arg "--auto-merge") {
+    set auto-merge = $true
+    set i = (+ $i 1)
   } else {
     echo "Error: Unknown argument: "$arg >&2
     exit 1
@@ -148,13 +161,13 @@ while (< $i (count $args)) {
 }
 
 # Check for required dependencies
-for cmd [jq git claude go] {
+for cmd [jq git claude go gh] {
   if (not (has-external $cmd)) {
     ralph-error "Required command '"$cmd"' not found in PATH"
     exit 1
   }
 }
-ralph-dim "Dependencies: jq, git, claude, go ✓"
+ralph-dim "Dependencies: jq, git, claude, go, gh ✓"
 
 # Validate required files
 for file [$prompt-file $prd-file $progress-file] {
@@ -621,24 +634,86 @@ while (< $current-iteration $max-iterations) {
     write-state $state
     ralph-dim "  State saved locally."
 
-    # Sync local main with remote
-    ralph-dim "  Syncing local main with remote..."
+    # PR Creation
+    echo ""
+    var should-create-pr = $auto-pr
+    if (not $auto-pr) {
+      ralph-status "Create PR to "$base-branch"?"
+      echo $C_YELLOW"Create PR? [Y/n] "$C_DIM"(auto-yes in 120s)"$C_RESET
+      try {
+        var answer = (bash -c 'read -t 120 -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
+        if (re:match '^[nN]' $answer) {
+          set should-create-pr = $false
+        }
+      } catch {
+        ralph-dim "(Timeout - creating PR)"
+      }
+    }
+
+    var pr-url = ""
+    if $should-create-pr {
+      ralph-status "Creating PR to "$base-branch"..."
+      try {
+        var story-title = (jq -r ".stories[] | select(.id == \""$story-id"\") | .title" $prd-file)
+        set pr-url = (gh pr create --base $base-branch --head $branch-name --title $story-id": "$story-title --body "Automated PR for "$story-id 2>&1 | slurp)
+        set pr-url = (str:trim-space $pr-url)
+        ralph-success "PR created: "$pr-url
+      } catch e {
+        ralph-error "Failed to create PR: "(to-string $e[reason])
+      }
+    } else {
+      ralph-dim "Skipping PR creation (branch pushed: "$branch-name")"
+    }
+
+    # PR Merge
+    if (and (not (eq $pr-url "")) $should-create-pr) {
+      var should-merge = $auto-merge
+      if (not $auto-merge) {
+        echo ""
+        ralph-status "Merge PR?"
+        echo $C_YELLOW"Merge PR? [y/N] "$C_DIM"(auto-no in 120s)"$C_RESET
+        try {
+          var answer = (bash -c 'read -t 120 -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
+          if (re:match '^[yY]' $answer) {
+            set should-merge = $true
+          }
+        } catch {
+          ralph-dim "(Timeout - skipping merge)"
+        }
+      }
+
+      if $should-merge {
+        ralph-status "Merging PR..."
+        try {
+          gh pr merge $branch-name --squash --delete-branch 2>&1
+          ralph-success "PR merged and branch deleted"
+        } catch e {
+          ralph-error "Failed to merge PR: "(to-string $e[reason])
+        }
+      } else {
+        ralph-dim "PR left open for review"
+      }
+    }
+
+    # Sync local dev with remote
+    echo ""
+    ralph-dim "  Syncing local "$base-branch" with remote..."
     try {
-      git -C $project-root fetch origin main > /dev/null 2>&1
-      git -C $project-root checkout main > /dev/null 2>&1
-      git -C $project-root reset --hard origin/main > /dev/null 2>&1
-      ralph-success "  Local main synced with remote."
+      git -C $project-root fetch origin $base-branch > /dev/null 2>&1
+      git -C $project-root checkout $base-branch > /dev/null 2>&1
+      git -C $project-root reset --hard origin/$base-branch > /dev/null 2>&1
+      ralph-success "  Local "$base-branch" synced with remote."
     } catch {
-      ralph-dim "  (main sync skipped - may need manual intervention)"
+      ralph-dim "  ("$base-branch" sync skipped - may need manual intervention)"
     }
 
     # Interactive prompt
     echo ""
     ralph-status "Pausing before next story..."
-    echo $C_YELLOW"Stop loop? [y/N] "$C_DIM"(continues in 20s)"$C_RESET
+    echo $C_YELLOW"Stop loop? [y/N] "$C_DIM"(continues in 120s)"$C_RESET
     var should-stop = $false
     try {
-      var answer = (bash -c 'read -t 20 -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
+      var answer = (bash -c 'read -t 120 -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
       if (re:match '^[yY]' $answer) {
         set should-stop = $true
       }
