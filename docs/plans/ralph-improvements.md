@@ -91,41 +91,96 @@ Output ONLY the commit message, no explanation.
 
 ---
 
-### 3. PR Review Comment Integration
+### 3. PR Comment-Based Feedback System
 
-**Problem:** If PR gets review comments on GitHub, user must manually copy them as feedback.
+**Problem:**
+- Feedback given to Ralph is invisible on GitHub
+- PR reviews on GitHub require manual copy/paste into Ralph
+- No audit trail of feedback loops
 
-**Solution:** Auto-fetch PR review comments and inject as feedback.
+**Solution:** Use PR comments as the source of truth for all feedback:
 
-**Implementation:**
-```elvish
-fn get-pr-review-comments {|branch-name|
-  var comments = ""
-  try {
-    # Get review comments
-    set comments = (gh pr view $branch-name --json reviews,comments --jq '
-      [.reviews[].body, .comments[].body] | map(select(. != "")) | join("\n\n---\n\n")
-    ' | slurp)
-  } catch _ { }
-  put $comments
-}
+1. When user gives feedback → post as PR comment (free)
+2. When Claude fixes → post resolution comment (free)
+3. GitHub reviews also appear as comments → Ralph reads them
+4. PR description only updated at merge time (one Claude call)
 
-# In run-flow, before merge prompt:
-var review-comments = (get-pr-review-comments $branch-name)
-if (not (eq $review-comments "")) {
-  ui:status "PR has review comments:" > /dev/tty
-  echo $review-comments > /dev/tty
-  echo "" > /dev/tty
-  ui:status "Include as feedback? [Y/n]" > /dev/tty
-  # ...
+**Flow:**
+```
+Story completes → Create PR (Claude generates initial description)
+User picks [f]eedback → Post as PR comment: "**Feedback Requested:** ..."
+Claude fixes → Post resolution: "**Changes Applied:** ..."
+Loop as needed... (all comments, no Claude calls)
+User picks [y]es merge → Update PR description (one Claude call) → Merge
+```
+
+**State Tracking:**
+Add `pr_url` to state.json so feedback loop skips PR prompt:
+```json
+{
+  "current_story": "STORY-1.1.2",
+  "branch": "feat/story-1.1.2",
+  "pr_url": "https://github.com/foo/bar/pull/42",
+  "status": "in_progress"
 }
 ```
 
-**New Flag:** `--resume-from-pr` - Fetches PR comments as feedback automatically
+**Token Efficiency:**
+| Action | Tokens |
+|--------|--------|
+| Initial PR description | Claude call |
+| Post feedback comment | Free (gh cli) |
+| Post resolution comment | Free (gh cli) |
+| Read all PR comments | Free (gh cli) |
+| Update description at merge | Claude call |
 
-**Files:** `scripts/ralph/lib/pr.elv`
+5 feedback rounds = 2 Claude calls (not 6)
 
-**Effort:** 1 hour
+**Implementation:**
+```elvish
+# Post feedback as PR comment
+fn post-feedback-comment {|branch-name feedback|
+  gh pr comment $branch-name --body "**Feedback Requested:**\n\n"$feedback
+}
+
+# Post resolution after Claude fixes
+fn post-resolution-comment {|branch-name summary|
+  gh pr comment $branch-name --body "**Changes Applied:**\n\n"$summary
+}
+
+# Get ALL PR comments (feedback + reviews)
+fn get-all-pr-comments {|branch-name|
+  gh pr view $branch-name --json comments,reviews --jq '...'
+}
+
+# Claude prompt for PR description reads comments to summarize feedback addressed
+```
+
+**What the PR Looks Like:**
+```markdown
+PR #42: STORY-1.1.2 - Create CLI entrypoint
+
+## Summary
+...
+
+---
+💬 @ralph-bot: **Feedback Requested:** Add error handling for nil case
+
+💬 @ralph-bot: **Changes Applied:** Added nil check at cli/cmd/root.go:45
+
+💬 @teammate: Can we also add a --verbose flag?
+
+💬 @ralph-bot: **Feedback Requested:** Add --verbose flag
+
+💬 @ralph-bot: **Changes Applied:** Added --verbose flag with debug output
+```
+
+**Files:**
+- `scripts/ralph/lib/pr.elv` - Comment functions, state-based flow
+- `scripts/ralph/lib/state.elv` - Add pr_url field
+- `scripts/ralph/ralph.elv` - Pass pr_url to run-flow
+
+**Effort:** 2 hours
 
 ---
 
@@ -451,24 +506,31 @@ fn post-webhook {|event payload|
 
 ## Implementation Priority
 
-### Phase 1: Polish (This Week)
-1. Editor-based feedback input (15 min)
-2. Desktop notifications (15 min)
-3. Status command (1.5 hr)
-4. Skip story command (30 min)
+### Phase 1: PR Flow Refinement (Now)
+1. PR comment-based feedback system (2 hr)
+   - Post feedback as PR comments
+   - Post resolution comments
+   - Add pr_url to state.json
+   - Skip PR prompt when PR exists
+   - Update description only at merge
+2. Editor-based feedback input (15 min)
 
-### Phase 2: Robustness (Next Week)
-5. Pre-flight checks (30 min)
-6. Auto-archive logs (20 min)
-7. Retry clean slate (20 min)
-8. Configurable timeouts (10 min)
+### Phase 2: Polish (This Week)
+3. Desktop notifications (15 min)
+4. Status command (1.5 hr)
+5. Skip story command (30 min)
 
-### Phase 3: Intelligence (Following Week)
-9. Claude commit messages (1 hr)
-10. PR review integration (1 hr)
+### Phase 3: Robustness (Next Week)
+6. Pre-flight checks (30 min)
+7. Auto-archive logs (20 min)
+8. Retry clean slate (20 min)
+9. Configurable timeouts (10 min)
+
+### Phase 4: Intelligence (Following Week)
+10. Claude commit messages (1 hr)
 11. Dry run mode (1 hr)
 
-### Phase 4: Observability (Later)
+### Phase 5: Observability (Later)
 12. Token tracking (2 hr)
 13. Webhook notifications (1 hr)
 14. Verbose mode (20 min)
