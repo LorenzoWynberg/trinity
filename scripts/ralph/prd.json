@@ -914,8 +914,6 @@
       "title": "Implement iteration control",
       "intent": "Control loop iterations with max limit and pause points",
       "acceptance": [
-        "--max-iterations flag on trinity run (default 100)",
-        "Loop stops after max iterations reached",
         "Pause between stories (configurable via config)",
         "Option to stop after each story completion (--once flag)",
         "Clean exit on all stories complete",
@@ -1147,7 +1145,6 @@
         "trinity run starts loop with next available story",
         "trinity run <ref> runs specific story/epic/phase",
         "trinity run --all runs until all complete",
-        "--max-iterations N limits loop iterations (default 100)",
         "--with-deps includes dependencies",
         "Displays progress and Claude output"
       ],

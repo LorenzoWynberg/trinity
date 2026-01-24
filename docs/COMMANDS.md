@@ -125,7 +125,6 @@ trinity run mvp                   # Run whole phase
 trinity run mvp:auth              # Run specific epic
 trinity run mvp:auth:STORY-1.1.2  # Run specific story
 trinity run --all                 # All valid work in parallel
-trinity run --max-iterations 50   # Limit loop iterations (default 100)
 trinity run --with-deps           # Run dependencies first, then target
 trinity run --once                # Single story only, then exit
 trinity run --docker              # Run in isolated Docker container
