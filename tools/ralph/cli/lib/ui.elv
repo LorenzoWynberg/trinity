@@ -100,6 +100,11 @@ OPTIONS:
   -v, --verbose           Verbose mode - show full prompts, responses, state transitions
   -h, --help              Show this help message
 
+RELEASE OPTIONS:
+  --skip-release          Skip release workflow when all stories complete
+  --auto-release          Auto-release without human approval gate
+  --release-tag <tag>     Custom tag name (default: version from PRD, e.g., v1.0)
+
 WORKFLOW:
   1. Pick next story (respecting dependencies)
   2. Create branch from dev

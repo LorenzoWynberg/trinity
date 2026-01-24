@@ -2,98 +2,98 @@
 
 ## Phase 1: Foundation
 
-- [ ] Add CLI flags to `lib/cli.elv`
-  - [ ] `--skip-release` flag
-  - [ ] `--auto-release` flag
-  - [ ] `--release-tag <tag>` flag
-  - [ ] Update `get-config` to include new flags
+- [x] Add CLI flags to `lib/cli.elv`
+  - [x] `--skip-release` flag
+  - [x] `--auto-release` flag
+  - [x] `--release-tag <tag>` flag
+  - [x] Update `get-config` to include new flags
 
-- [ ] Create `lib/release.elv` module skeleton
-  - [ ] Module imports and variables
-  - [ ] `init` function
-  - [ ] Function stubs for all release operations
+- [x] Create `lib/release.elv` module skeleton
+  - [x] Module imports and variables
+  - [x] `init` function
+  - [x] Function stubs for all release operations
 
-- [ ] Add PRD schema extensions to `lib/prd.elv`
-  - [ ] `mark-version-released` function
-  - [ ] `is-version-released` function
-  - [ ] `get-version-stories` function
+- [x] Add PRD schema extensions to `lib/prd.elv`
+  - [x] `mark-version-released` function
+  - [x] `is-version-released` function
+  - [x] `get-stories-summary` function
+  - [x] `get-story-count` function
 
 ## Phase 2: Release Summary & Human Gate
 
-- [ ] Implement `release:show-summary`
-  - [ ] Count completed stories by epic
-  - [ ] Get commit count (dev ahead of main)
-  - [ ] Get files changed stats
-  - [ ] Format and display summary
+- [x] Implement `release:show-summary`
+  - [x] Count completed stories by epic
+  - [x] Get commit count (dev ahead of main)
+  - [x] Get files changed stats
+  - [x] Format and display summary
 
-- [ ] Implement `release:prompt-approval`
-  - [ ] Display options: [Y]es / [n]o / [e]dit tag / [f]eedback
-  - [ ] Handle tag editing
-  - [ ] Return action map with choice and tag
+- [x] Implement `release:prompt-approval`
+  - [x] Display options: [Y]es / [n]o / [e]dit tag / [f]eedback
+  - [x] Handle tag editing
+  - [x] Return action map with choice and tag
 
 ## Phase 3: Hotfix Flow
 
-- [ ] Implement `release:run-hotfix`
-  - [ ] Open editor for feedback input
-  - [ ] Create hotfix branch from dev
-  - [ ] Build Claude prompt with feedback
-  - [ ] Run Claude (with --dangerously-skip-permissions)
-  - [ ] Commit changes to hotfix branch
-  - [ ] Create PR: hotfix → dev
-  - [ ] Merge PR
-  - [ ] Delete hotfix branch
-  - [ ] Return success/failure
+- [x] Implement `release:run-hotfix`
+  - [x] Open editor for feedback input
+  - [x] Create hotfix branch from dev
+  - [x] Build Claude prompt with feedback
+  - [x] Run Claude (with --dangerously-skip-permissions)
+  - [x] Commit changes to hotfix branch
+  - [x] Create PR: hotfix → dev
+  - [x] Merge PR
+  - [x] Delete hotfix branch
+  - [x] Return success/failure
 
 ## Phase 4: Release Execution
 
-- [ ] Implement `release:create-release-pr`
-  - [ ] Generate PR title: "Release {version}"
-  - [ ] Generate PR body from completed stories
-  - [ ] Create PR: dev → main
-  - [ ] Return PR URL/number
+- [x] Implement `release:create-release-pr`
+  - [x] Generate PR title: "Release {version}"
+  - [x] Generate PR body from completed stories
+  - [x] Create PR: dev → main
+  - [x] Return PR URL/number
 
-- [ ] Implement `release:merge-release-pr`
-  - [ ] Squash merge the PR
-  - [ ] Return merge commit SHA
+- [x] Implement `release:merge-release-pr`
+  - [x] Merge the PR (using --merge, not squash)
+  - [x] Return merge commit SHA
 
-- [ ] Implement `release:create-tag`
-  - [ ] Checkout main
-  - [ ] Pull latest
-  - [ ] Create annotated tag at merge commit
-  - [ ] `git tag -a {tag} -m "Release {tag}"`
+- [x] Implement `release:create-tag`
+  - [x] Checkout main
+  - [x] Pull latest
+  - [x] Create annotated tag at merge commit
+  - [x] `git tag -a {tag} -m "Release {tag}"`
 
-- [ ] Implement `release:push-tag`
-  - [ ] Push tag to origin
-  - [ ] `git push origin {tag}`
+- [x] Implement `release:push-tag`
+  - [x] Push tag to origin
+  - [x] `git push origin {tag}`
 
-- [ ] Implement `release:mark-released`
-  - [ ] Update prd.json with:
-    - [ ] `released: true`
-    - [ ] `released_at: timestamp`
-    - [ ] `release_tag: tag`
-    - [ ] `release_commit: sha`
+- [x] Implement `release:mark-released` (via prd.elv)
+  - [x] Update prd.json with:
+    - [x] `released: true`
+    - [x] `released_at: timestamp`
+    - [x] `release_tag: tag`
+    - [x] `release_commit: sha`
 
-- [ ] Implement `release:run` (orchestrator)
-  - [ ] Call create-release-pr
-  - [ ] Call merge-release-pr
-  - [ ] Call create-tag
-  - [ ] Call push-tag
-  - [ ] Checkout back to dev
-  - [ ] Call mark-released
-  - [ ] Return result map
+- [x] Implement `release:run` (orchestrator)
+  - [x] Call create-release-pr
+  - [x] Call merge-release-pr
+  - [x] Call create-tag
+  - [x] Call push-tag
+  - [x] Checkout back to dev
+  - [x] Call mark-released
+  - [x] Return result map
 
 ## Phase 5: Integration
 
-- [ ] Update `ralph.elv` main loop
-  - [ ] Add release module import
-  - [ ] Add release check after all-stories-complete
-  - [ ] Integrate human gate flow
-  - [ ] Integrate hotfix loop
-  - [ ] Integrate release execution
+- [x] Update `ralph.elv` main loop
+  - [x] Add release module import
+  - [x] Add release check after all-stories-complete
+  - [x] Integrate human gate flow
+  - [x] Integrate hotfix loop
+  - [x] Integrate release execution
 
-- [ ] Update `lib/ui.elv`
-  - [ ] Add release-related UI helpers
-  - [ ] Update help text with release options
+- [x] Update `lib/ui.elv`
+  - [x] Update help text with release options
 
 ## Phase 6: Testing
 
@@ -112,8 +112,8 @@
 
 | File | Status |
 |------|--------|
-| `lib/release.elv` | [ ] Create |
-| `lib/cli.elv` | [ ] Modify |
-| `lib/prd.elv` | [ ] Modify |
-| `ralph.elv` | [ ] Modify |
-| `lib/ui.elv` | [ ] Modify |
+| `lib/release.elv` | [x] Create |
+| `lib/cli.elv` | [x] Modify |
+| `lib/prd.elv` | [x] Modify |
+| `ralph.elv` | [x] Modify |
+| `lib/ui.elv` | [x] Modify |

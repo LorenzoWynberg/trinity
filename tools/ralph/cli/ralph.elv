@@ -16,6 +16,7 @@ use ./lib/prd
 use ./lib/claude
 use ./lib/pr
 use ./lib/metrics
+use ./lib/release
 
 # Get script directory and paths
 var script-dir = (path:dir (src)[name])
@@ -60,6 +61,7 @@ git:init $project-root $config[base-branch]
 claude:init $project-root $prompt-template $config[claude-timeout] $config[quiet-mode] $config[max-iterations]
 pr:init $project-root $config[base-branch] $config[auto-pr] $config[auto-merge]
 metrics:init $metrics-file
+release:init $project-root $config[base-branch] "main" $config[claude-timeout]
 
 # Handle status mode (show and exit)
 if $config[status-mode] {
@@ -146,7 +148,13 @@ if $config[plan-mode] {
 claude:archive-old-logs
 
 # Run pre-flight checks
-if (not (claude:preflight-checks)) {
+var preflight-ok = $true
+try {
+  set preflight-ok = (claude:preflight-checks | take 1)
+} catch _ {
+  set preflight-ok = $false
+}
+if (not $preflight-ok) {
   ui:warn "Pre-flight checks failed. Fix issues above or proceed with caution."
   echo "\e[33mContinue anyway? [y/N]\e[0m"
   try {
@@ -252,7 +260,81 @@ echo ""
 
 # Check if all stories are already complete
 if (prd:all-stories-complete) {
-  ui:success "All stories are complete!"
+  echo ""
+  ui:box "ALL STORIES COMPLETE - READY FOR RELEASE" "success"
+
+  # Skip release flow if requested
+  if $config[skip-release] {
+    ui:dim "Release skipped (--skip-release)"
+    echo "<promise>COMPLETE</promise>"
+    exit 0
+  }
+
+  # Check if already released
+  if (prd:is-version-released $active-version) {
+    ui:success $active-version" already released!"
+    echo "<promise>COMPLETE</promise>"
+    exit 0
+  }
+
+  # Run release flow
+  var release-tag = $config[release-tag]
+  if (eq $release-tag "") {
+    set release-tag = $active-version
+  }
+
+  while $true {
+    # Show summary
+    release:show-summary $active-version
+
+    # Human gate (unless --auto-release)
+    if $config[auto-release] {
+      ui:dim "Auto-release enabled, proceeding..."
+    } else {
+      var approval = (release:prompt-approval $release-tag)
+
+      if (eq $approval[action] "cancel") {
+        ui:dim "Release cancelled. Run again when ready."
+        exit 0
+      }
+
+      if (eq $approval[action] "feedback") {
+        # Run hotfix directly (not a PRD story)
+        ui:status "Running hotfix for release feedback..."
+        var hotfix-result = (release:run-hotfix $active-version $approval[feedback])
+        if $hotfix-result[success] {
+          ui:success "Hotfix merged to dev"
+          echo ""
+          ui:box "RELEASE GATE - Try Again" "info"
+          # Loop back to release prompt
+          continue
+        } else {
+          ui:error "Hotfix failed: "$hotfix-result[error]
+          exit 1
+        }
+      }
+
+      # Update tag if edited
+      set release-tag = $approval[tag]
+    }
+
+    # Execute release
+    var result = (release:run $active-version $release-tag)
+
+    if $result[success] {
+      echo ""
+      ui:box "RELEASED: "$active-version" ("$result[tag]")" "success"
+      if $config[notify-enabled] {
+        ui:notify "Ralph" "Released "$active-version" as "$result[tag]
+      }
+    } else {
+      ui:error "Release failed: "$result[error]
+      exit 1
+    }
+
+    break
+  }
+
   echo "<promise>COMPLETE</promise>"
   exit 0
 }
@@ -657,11 +739,82 @@ while (< $current-iteration $config[max-iterations]) {
 
     if $signals[all_complete] {
       echo ""
-      ui:box "ALL STORIES COMPLETE!" "success"
+      ui:box "ALL STORIES COMPLETE - READY FOR RELEASE" "success"
       if $config[notify-enabled] {
         ui:notify "Ralph" "All stories complete!"
       }
       ui:dim "Total iterations: "$current-iteration
+
+      # Skip release flow if requested
+      if $config[skip-release] {
+        ui:dim "Release skipped (--skip-release)"
+        exit 0
+      }
+
+      # Check if already released
+      if (prd:is-version-released $active-version) {
+        ui:success $active-version" already released!"
+        exit 0
+      }
+
+      # Run release flow
+      var release-tag = $config[release-tag]
+      if (eq $release-tag "") {
+        set release-tag = $active-version
+      }
+
+      while $true {
+        # Show summary
+        release:show-summary $active-version
+
+        # Human gate (unless --auto-release)
+        if $config[auto-release] {
+          ui:dim "Auto-release enabled, proceeding..."
+        } else {
+          var approval = (release:prompt-approval $release-tag)
+
+          if (eq $approval[action] "cancel") {
+            ui:dim "Release cancelled. Run again when ready."
+            exit 0
+          }
+
+          if (eq $approval[action] "feedback") {
+            # Run hotfix directly (not a PRD story)
+            ui:status "Running hotfix for release feedback..."
+            var hotfix-result = (release:run-hotfix $active-version $approval[feedback])
+            if $hotfix-result[success] {
+              ui:success "Hotfix merged to dev"
+              echo ""
+              ui:box "RELEASE GATE - Try Again" "info"
+              # Loop back to release prompt
+              continue
+            } else {
+              ui:error "Hotfix failed: "$hotfix-result[error]
+              exit 1
+            }
+          }
+
+          # Update tag if edited
+          set release-tag = $approval[tag]
+        }
+
+        # Execute release
+        var result = (release:run $active-version $release-tag)
+
+        if $result[success] {
+          echo ""
+          ui:box "RELEASED: "$active-version" ("$result[tag]")" "success"
+          if $config[notify-enabled] {
+            ui:notify "Ralph" "Released "$active-version" as "$result[tag]
+          }
+        } else {
+          ui:error "Release failed: "$result[error]
+          exit 1
+        }
+
+        break
+      }
+
       exit 0
     }
 

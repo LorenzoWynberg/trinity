@@ -24,6 +24,9 @@ var plan-mode = $false
 var stats-mode = $false
 var version-status-mode = $false
 var target-version = ""
+var skip-release = $false
+var auto-release = $false
+var release-tag = ""
 
 # Parse command line arguments
 fn parse-args {|arguments|
@@ -129,6 +132,20 @@ fn parse-args {|arguments|
       }
       set target-version = $arguments[$next-idx]
       set i = (+ $i 2)
+    } elif (eq $arg "--skip-release") {
+      set skip-release = $true
+      set i = (+ $i 1)
+    } elif (eq $arg "--auto-release") {
+      set auto-release = $true
+      set i = (+ $i 1)
+    } elif (eq $arg "--release-tag") {
+      var next-idx = (+ $i 1)
+      if (>= $next-idx (count $arguments)) {
+        echo "Error: --release-tag requires a tag name (e.g., v1.0.0)" >&2
+        exit 1
+      }
+      set release-tag = $arguments[$next-idx]
+      set i = (+ $i 2)
     } else {
       echo "Error: Unknown argument: "$arg >&2
       exit 1
@@ -180,5 +197,8 @@ fn get-config {
     &stats-mode=$stats-mode
     &version-status-mode=$version-status-mode
     &target-version=$target-version
+    &skip-release=$skip-release
+    &auto-release=$auto-release
+    &release-tag=$release-tag
   ]
 }
