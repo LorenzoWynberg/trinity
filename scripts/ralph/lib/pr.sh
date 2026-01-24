@@ -94,39 +94,34 @@ pr_run_flow() {
 
   local done=false
   while [[ "$done" == "false" ]]; do
-    # === PR PROMPT ===
-    local should_handle_pr="$PR_AUTO_PR"
+    # === PR CREATION (only if doesn't exist) ===
+    if [[ "$pr_exists" == "true" ]]; then
+      ui_success "PR already exists: $pr_url"
+    else
+      local should_create_pr="$PR_AUTO_PR"
 
-    if [[ "$PR_AUTO_PR" != "true" ]]; then
-      if [[ "$pr_exists" == "true" ]]; then
-        ui_status "Update PR description?"
-      else
+      if [[ "$PR_AUTO_PR" != "true" ]]; then
         ui_status "Create PR to $PR_BASE_BRANCH?"
+        echo -e "\033[33m[Y]es / [n]o\033[0m"
+
+        local answer
+        answer=$(pr_prompt_user)
+        case "$answer" in
+          no) should_create_pr=false ;;
+          *) should_create_pr=true ;;
+        esac
       fi
-      echo -e "\033[33m[Y]es / [n]o\033[0m"
 
-      local answer
-      answer=$(pr_prompt_user)
-      case "$answer" in
-        no) should_handle_pr=false ;;
-        *) should_handle_pr=true ;;
-      esac
-    fi
-
-    # Handle PR create/update
-    if [[ "$should_handle_pr" == "true" ]]; then
-      if [[ "$pr_exists" == "true" ]]; then
-        ui_success "PR already exists: $pr_url"
-      else
+      if [[ "$should_create_pr" == "true" ]]; then
         pr_url=$(pr_create "$branch_name" "$story_id" "$story_title")
         if [[ -n "$pr_url" ]]; then
           pr_exists=true
         fi
+      else
+        ui_dim "Skipping PR (branch pushed: $branch_name)"
+        done=true
+        continue
       fi
-    else
-      ui_dim "Skipping PR (branch pushed: $branch_name)"
-      done=true
-      continue
     fi
 
     # === MERGE PROMPT ===
