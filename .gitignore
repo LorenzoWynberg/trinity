@@ -6,7 +6,6 @@ dist/
 *.dll
 *.so
 *.dylib
-*state.json
 
 # Build output
 /trinity
