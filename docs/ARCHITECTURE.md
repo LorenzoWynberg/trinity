@@ -140,6 +140,9 @@ learning_tags (learning_id, tag_id)
 queue (id, type, payload, status, agent_id, created_at, processed_at)
 -- type: 'complete', 'learn', 'add-story', 'log', 'move-story'
 -- status: 'pending', 'processing', 'done', 'failed'
+
+-- Token Usage (cost tracking)
+token_usage (id, story_id, timestamp, input_tokens, output_tokens, model)
 ```
 
 ### DB API (`core/db`)
@@ -378,6 +381,118 @@ cmd.Stdin = promptReader
 cmd.Dir = worktreePath
 output, err := cmd.Output()
 // Parse output for signals, update state
+```
+
+---
+
+## Reliability & Recovery
+
+### Dependency Checks
+
+Before any operation, Trinity validates the environment:
+
+```go
+// core/claude/checks.go
+func ValidateEnvironment() error {
+    // 1. Claude CLI installed and accessible
+    if _, err := exec.LookPath("claude"); err != nil {
+        return errors.New("claude CLI not found - install from https://claude.ai/code")
+    }
+
+    // 2. Claude CLI responds (not broken install)
+    cmd := exec.Command("claude", "--version")
+    if err := cmd.Run(); err != nil {
+        return errors.New("claude CLI not working")
+    }
+
+    // 3. Git available
+    if _, err := exec.LookPath("git"); err != nil {
+        return errors.New("git not found")
+    }
+
+    return nil
+}
+```
+
+### Git State Validation
+
+Before `trinity run`, validate git state:
+
+```go
+// core/git/validate.go
+func ValidateRepoState(repoPath string) error {
+    // 1. Is a git repo
+    // 2. Working tree clean (no uncommitted changes)
+    // 3. On expected branch (dev or feature branch)
+    // 4. No merge conflicts
+    // 5. Remote is reachable (warning only)
+}
+```
+
+If dirty, Trinity prompts: stash, commit, or abort.
+
+### Crash Recovery
+
+Trinity persists state to DB before each phase. On restart, it resumes:
+
+```sql
+-- Story state tracking
+stories.status = 'in_progress'     -- Was working on this
+agents.current_story = 'STORY-1.2.3'
+agents.started_at = timestamp
+```
+
+Recovery flow:
+1. `trinity run` checks for in-progress stories
+2. If found, checks if agent process still running (PID check)
+3. If stale (crashed), resets story to `pending` or resumes from last checkpoint
+4. Prompts user: resume, restart story, or skip
+
+### Timeout Handling
+
+Configurable timeout prevents hung Claude sessions:
+
+```go
+// Default: 30 minutes per story
+ctx, cancel := context.WithTimeout(context.Background(), cfg.StoryTimeout)
+defer cancel()
+
+cmd := exec.CommandContext(ctx, "claude", ...)
+```
+
+Configuration:
+```bash
+trinity config set story_timeout 30m    # Default
+trinity config set story_timeout 1h     # Long stories
+```
+
+On timeout:
+1. Kill Claude process
+2. Log partial output
+3. Mark story as `pending` with error note
+4. Continue to next story or pause (configurable)
+
+### Token Tracking
+
+Track Claude usage for cost visibility:
+
+```sql
+-- New table
+token_usage (
+    id INTEGER PRIMARY KEY,
+    story_id TEXT,
+    timestamp DATETIME,
+    input_tokens INTEGER,
+    output_tokens INTEGER,
+    model TEXT
+)
+```
+
+Parsed from Claude's output (when using `--output-format stream-json`).
+
+```bash
+trinity status --cost           # Show token usage summary
+trinity status --cost --today   # Today's usage
 ```
 
 ---

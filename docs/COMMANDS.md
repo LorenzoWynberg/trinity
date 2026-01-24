@@ -158,6 +158,8 @@ Show current state overview.
 trinity status                    # Overview: agents, progress, blocked
 trinity status --watch            # Live updating status
 trinity status --json             # Output as JSON
+trinity status --cost             # Show token usage summary
+trinity status --cost --today     # Today's usage only
 ```
 
 ---
@@ -181,6 +183,7 @@ trinity config reset              # Reset to defaults
 - `dev_cmd` - Command to start dev server
 - `dev_port` - Dev server port (default: `3000`)
 - `dev_ready_signal` - Stdout signal that dev server is ready
+- `story_timeout` - Max time per story before timeout (default: `30m`)
 - `db.provider` - Database provider: `sqlite` (default), `managed`, `turso`, `postgres`, `mysql` (v0.3+)
 - `db.connection` - Connection string or API key for remote databases (v0.3+)
 

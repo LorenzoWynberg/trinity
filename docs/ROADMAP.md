@@ -19,6 +19,11 @@ Core autonomous development loop.
 - [ ] Claude Code integration (`core/claude/`)
 - [ ] Loop logic (`core/loop/`)
 - [ ] Prompt templates (`prompts/`)
+- [ ] Crash recovery / checkpoints (`core/loop/`)
+- [ ] Dependency checks - verify `claude` CLI installed
+- [ ] Git state validation - clean tree, correct branch
+- [ ] Timeout handling - configurable per-story timeout
+- [ ] Token tracking - log usage per story for cost visibility
 - [ ] Test on real project
 
 ---

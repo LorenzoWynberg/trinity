@@ -88,6 +88,9 @@ learning_tags (learning_id, tag_id)
 
 -- Command Queue (internal commands from Claude)
 queue (id, type, payload, status, agent_id, created_at, processed_at)
+
+-- Token Usage (cost tracking)
+token_usage (id, story_id, timestamp, input_tokens, output_tokens, model)
 ```
 
 **DB API (`core/db`):**
