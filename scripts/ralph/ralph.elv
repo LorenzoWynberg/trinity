@@ -18,6 +18,9 @@ var prd-file = (path:join $script-dir "prd.json")
 var progress-file = (path:join $script-dir "progress.txt")
 var state-file = (path:join $script-dir "state.json")
 
+# Load prompt template early (needed by run-refinement function)
+var prompt-template = (cat $prompt-file | slurp)
+
 # Default configuration
 var max-iterations = 100
 var current-iteration = 0
@@ -285,40 +288,53 @@ fn ensure-on-branch {|branch|
   }
 }
 
-# Run Claude with user feedback for refinement
-fn run-refinement {|story-id branch-name feedback|
+# Run Claude with user feedback for refinement (uses full prompt template)
+fn run-refinement {|story-id branch-name feedback iteration|
   ralph-status "Running Claude with feedback..."
   ralph-dim "  Feedback: "$feedback
   echo ""
 
-  # Build refinement prompt
-  var refinement-prompt = "# Refinement Request - "$story-id"
+  # Build feedback section for the prompt
+  var feedback-section = "## User Feedback (Refinement Request)
 
-## User Feedback
-The user has requested the following changes before creating the PR:
+The user has reviewed your work and requested the following changes:
 
 > "$feedback"
 
-## Context
-- Branch: "$branch-name"
-- Story: "$story-id"
-
-## Instructions
-1. Review the user's feedback carefully
+**Instructions:**
+1. Read the feedback carefully
 2. Make the requested changes
-3. Ensure build passes: `go build ./cli/cmd/trinity`
-4. Commit and push the changes
-5. Output `<story-complete>"$story-id"</story-complete>` when done
+3. Run the full verification (build, test, self-review)
+4. Commit and push when done
+5. Output the completion signal
 
-## Important
-- Stay focused on the feedback - don't refactor unrelated code
-- Keep changes minimal and targeted
-- No AI attribution in code or commits
+Stay focused on the feedback - don't refactor unrelated code.
 "
+
+  # Use the full prompt template with feedback injected
+  var refinement-prompt = (str:replace &max=-1 "{{ITERATION}}" (to-string $iteration) $prompt-template)
+  set refinement-prompt = (str:replace &max=-1 "{{MAX_ITERATIONS}}" (to-string $max-iterations) $refinement-prompt)
+  set refinement-prompt = (str:replace &max=-1 "{{CURRENT_STORY}}" $story-id $refinement-prompt)
+  set refinement-prompt = (str:replace &max=-1 "{{BRANCH}}" $branch-name $refinement-prompt)
+  set refinement-prompt = (str:replace &max=-1 "{{ATTEMPT}}" "refinement" $refinement-prompt)
+  set refinement-prompt = (str:replace &max=-1 "{{FEEDBACK}}" $feedback-section $refinement-prompt)
+
+  # Add dependency info
+  var deps-info = (get-story-deps $story-id | slurp)
+  set refinement-prompt = (str:replace &max=-1 "{{DEPENDENCIES}}" $deps-info $refinement-prompt)
 
   var output-file = (mktemp)
   var prompt-tmp = (mktemp)
   echo $refinement-prompt > $prompt-tmp
+
+  # Get story title for display
+  var story-title = (jq -r ".stories[] | select(.id == \""$story-id"\") | .title" $prd-file)
+
+  ralph-status "Running Claude (refinement)..."
+  ralph-dim "  Story:    "$story-id
+  ralph-dim "  Title:    "$story-title
+  ralph-dim "  Feedback: "$feedback
+  echo ""
 
   echo $C_DIM"────────────────── Claude Refining ──────────────────"$C_RESET
 
@@ -455,9 +471,6 @@ fn graceful-exit {
   ralph-warn "Exiting gracefully..."
   exit 130  # Standard exit code for SIGINT
 }
-
-# Read prompt template
-var prompt-template = (cat $prompt-file | slurp)
 
 # Print banner
 echo ""
@@ -731,114 +744,158 @@ try {
     write-state $state
     ralph-dim "  State saved locally."
 
-    # PR Creation with Feedback Loop
+    # PR and Merge Flow with Feedback Loops
     echo ""
-    var should-create-pr = $auto-pr
     var pr-url = ""
-    var pr-loop = $true
+    var pr-exists = $false
+    var refinements = []
+    var story-title = (jq -r ".stories[] | select(.id == \""$story-id"\") | .title" $prd-file)
+    var done-with-pr-flow = $false
 
-    while $pr-loop {
-      set pr-loop = $false
+    while (not $done-with-pr-flow) {
+      # === PR PROMPT ===
+      var should-handle-pr = $auto-pr
+      var pr-action = "create"  # or "update"
+
+      # Check if PR already exists
+      if (not $pr-exists) {
+        try {
+          var existing = (gh pr view $branch-name --json url -q '.url' 2>/dev/null | slurp)
+          if (not (eq (str:trim-space $existing) "")) {
+            set pr-url = (str:trim-space $existing)
+            set pr-exists = $true
+          }
+        } catch _ { }
+      }
+
+      if $pr-exists {
+        set pr-action = "update"
+      }
 
       if (not $auto-pr) {
-        ralph-status "Create PR to "$base-branch"?"
-        echo $C_YELLOW"[Y]es / [n]o / or type feedback for changes"$C_RESET
+        if $pr-exists {
+          ralph-status "Update PR description?"
+          echo $C_YELLOW"[Y]es / [n]o / or type feedback for changes"$C_RESET
+        } else {
+          ralph-status "Create PR to "$base-branch"?"
+          echo $C_YELLOW"[Y]es / [n]o / or type feedback for changes"$C_RESET
+        }
         echo $C_DIM"(auto-yes in 120s)"$C_RESET
+
         try {
           var answer = (str:trim-space (bash -c 'read -t 120 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null))
           if (eq $answer "") {
-            # Empty = yes (default)
-            set should-create-pr = $true
+            set should-handle-pr = $true
           } elif (re:match '^[nN]$' $answer) {
-            set should-create-pr = $false
+            set should-handle-pr = $false
           } elif (re:match '^[yY]$' $answer) {
-            set should-create-pr = $true
+            set should-handle-pr = $true
           } else {
-            # Treat as feedback - run refinement
+            # Feedback - run refinement and loop back
             ralph-warn "Received feedback, running refinement..."
-            run-refinement $story-id $branch-name $answer
-            set pr-loop = $true
-            set should-create-pr = $false
+            set refinements = [$@refinements $answer]
+            run-refinement $story-id $branch-name $answer $current-iteration
+            ralph-dim "Pushing refinement changes..."
+            try {
+              git -C $project-root push origin $branch-name 2>&1 | slurp
+              ralph-success "Changes pushed"
+            } catch _ { }
             echo ""
+            continue  # Loop back to PR prompt
           }
         } catch {
-          ralph-dim "(Timeout - creating PR)"
-          set should-create-pr = $true
+          ralph-dim "(Timeout - proceeding with PR)"
+          set should-handle-pr = $true
         }
       }
-    }
 
-    if $should-create-pr {
-      ralph-status "Creating PR to "$base-branch"..."
-      try {
-        var story-title = (jq -r ".stories[] | select(.id == \""$story-id"\") | .title" $prd-file)
-        set pr-url = (gh pr create --base $base-branch --head $branch-name --title $story-id": "$story-title --body "Automated PR for "$story-id 2>&1 | slurp)
-        set pr-url = (str:trim-space $pr-url)
-        ralph-success "PR created: "$pr-url
-      } catch e {
-        ralph-error "Failed to create PR: "(to-string $e[reason])
-      }
-    } else {
-      if (not $pr-loop) {
-        ralph-dim "Skipping PR creation (branch pushed: "$branch-name")"
-      }
-    }
-
-    # PR Merge with Feedback Loop
-    if (and (not (eq $pr-url "")) $should-create-pr) {
-      var should-merge = $auto-merge
-      var merge-loop = $true
-
-      while $merge-loop {
-        set merge-loop = $false
-
-        if (not $auto-merge) {
-          echo ""
-          ralph-status "Merge PR?"
-          echo $C_YELLOW"[y]es / [N]o / or type feedback for changes"$C_RESET
-          echo $C_DIM"(auto-no in 120s)"$C_RESET
+      # Handle PR create/update
+      if $should-handle-pr {
+        if $pr-exists {
+          # Update existing PR
+          ralph-status "Updating PR description..."
           try {
-            var answer = (str:trim-space (bash -c 'read -t 120 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null))
-            if (eq $answer "") {
-              # Empty = no (default)
-              set should-merge = $false
-            } elif (re:match '^[nN]$' $answer) {
-              set should-merge = $false
-            } elif (re:match '^[yY]$' $answer) {
-              set should-merge = $true
-            } else {
-              # Treat as feedback - run refinement
-              ralph-warn "Received feedback, running refinement..."
-              run-refinement $story-id $branch-name $answer
-              # Push updated changes
-              ralph-dim "Pushing refinement changes..."
-              try {
-                git -C $project-root push origin $branch-name 2>&1 | slurp
-                ralph-success "Changes pushed"
-              } catch _ { }
-              set merge-loop = $true
-              set should-merge = $false
-              echo ""
+            var refinement-notes = ""
+            if (> (count $refinements) 0) {
+              set refinement-notes = "\n\n## Refinements\n"
+              for r $refinements {
+                set refinement-notes = $refinement-notes"- "$r"\n"
+              }
             }
-          } catch {
-            ralph-dim "(Timeout - skipping merge)"
-            set should-merge = $false
+            var new-body = "Automated PR for "$story-id$refinement-notes
+            gh pr edit $branch-name --body $new-body 2>&1 | slurp
+            ralph-success "PR updated: "$pr-url
+          } catch e {
+            ralph-error "Failed to update PR: "(to-string $e[reason])
+          }
+        } else {
+          # Create new PR
+          ralph-status "Creating PR to "$base-branch"..."
+          try {
+            set pr-url = (gh pr create --base $base-branch --head $branch-name --title $story-id": "$story-title --body "Automated PR for "$story-id 2>&1 | slurp)
+            set pr-url = (str:trim-space $pr-url)
+            set pr-exists = $true
+            ralph-success "PR created: "$pr-url
+          } catch e {
+            ralph-error "Failed to create PR: "(to-string $e[reason])
           }
         }
+      } else {
+        ralph-dim "Skipping PR (branch pushed: "$branch-name")"
+        set done-with-pr-flow = $true
+        continue
       }
 
-      if $should-merge {
-        ralph-status "Merging PR..."
+      # === MERGE PROMPT ===
+      if (and $pr-exists (not $auto-merge)) {
+        echo ""
+        ralph-status "Merge PR?"
+        echo $C_YELLOW"[y]es / [N]o / or type feedback for changes"$C_RESET
+        echo $C_DIM"(auto-no in 120s)"$C_RESET
+
+        try {
+          var answer = (str:trim-space (bash -c 'read -t 120 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null))
+          if (re:match '^[yY]$' $answer) {
+            # Merge
+            ralph-status "Merging PR..."
+            try {
+              gh pr merge $branch-name --squash --delete-branch 2>&1
+              ralph-success "PR merged and branch deleted"
+            } catch e {
+              ralph-error "Failed to merge PR: "(to-string $e[reason])
+            }
+            set done-with-pr-flow = $true
+          } elif (or (eq $answer "") (re:match '^[nN]$' $answer)) {
+            ralph-dim "PR left open for review"
+            set done-with-pr-flow = $true
+          } else {
+            # Feedback - run refinement and go back to PR prompt
+            ralph-warn "Received feedback, running refinement..."
+            set refinements = [$@refinements $answer]
+            run-refinement $story-id $branch-name $answer $current-iteration
+            ralph-dim "Pushing refinement changes..."
+            try {
+              git -C $project-root push origin $branch-name 2>&1 | slurp
+              ralph-success "Changes pushed"
+            } catch _ { }
+            echo ""
+            # Loop back to PR prompt to update description
+          }
+        } catch {
+          ralph-dim "(Timeout - leaving PR open)"
+          set done-with-pr-flow = $true
+        }
+      } elif $auto-merge {
+        ralph-status "Auto-merging PR..."
         try {
           gh pr merge $branch-name --squash --delete-branch 2>&1
           ralph-success "PR merged and branch deleted"
         } catch e {
           ralph-error "Failed to merge PR: "(to-string $e[reason])
         }
+        set done-with-pr-flow = $true
       } else {
-        if (not $merge-loop) {
-          ralph-dim "PR left open for review"
-        }
+        set done-with-pr-flow = $true
       }
     }
 
