@@ -15,7 +15,7 @@ Go monorepo with workspaces:
 ```
 trinity/
 ├── go.work              # Go workspace
-├── core/                # Shared logic (config, loop, claude, prd)
+├── core/                # Shared logic (config, loop, claude, prd, db)
 ├── cli/                 # CLI app (cmd/trinity/main.go)
 ├── gui/                 # Wails desktop app (v0.2)
 ├── prompts/             # Meta-prompts (embedded via go:embed)
@@ -48,27 +48,91 @@ Everything lives in `~/.trinity/` - user projects stay clean:
 ├── projects/
 │   └── <project-hash>/
 │       ├── config.json               # Project config
-│       ├── trinity.db                # All PRD, agents, activity, learnings
+│       ├── trinity.db                # All state: PRD, agents, activity, learnings
 │       └── workspaces/
 │           ├── trunk/                # Default workspace (actual repo)
-│           └── feature-<name>/       # Isolated clone
+│           └── feature-<name>/       # Isolated clone (auto-managed)
 │               └── repo/
 ```
 
 User's project gets no scaffolded files. The output is commits/code.
 
-**SQLite** (`trinity.db`):
-- All PRD state, agents, activity, learnings in one DB
-- Claude never writes directly - calls `trinity internal` commands
-- Trinity queues signals, processes sequentially (no conflicts)
-- Each command has its own prompt (`prompts/internal/*.md`) for intelligent handling
+## Database Layer
+
+All state lives in SQLite (`trinity.db`). Trinity provides a clean API layer:
 
 **Schema:**
-- PRD: phases, epics, stories (with optional priority: critical/high/medium/low)
-- Tags: shared tags table + phase_tags, epic_tags, story_tags, learning_tags (many-to-many)
-- Agents: tracking table
-- Activity: activity_logs
-- Knowledge: learnings + learning_tags
+```sql
+-- PRD Structure
+phases (id, name, status, depends_on, priority)
+epics (id, phase_id, name, path, status, depends_on, priority)
+stories (id, epic_id, title, intent, acceptance, status, depends_on, priority,
+         human_testing_required, human_testing_instructions, human_testing_url)
+
+-- Tags (shared, many-to-many)
+tags (id, name)
+phase_tags, epic_tags, story_tags, learning_tags
+
+-- Agents
+agents (id, workspace, epic, current_story, pid, status, started_at)
+
+-- Activity
+activity_logs (id, timestamp, agent, action, message, story_ref)
+
+-- Knowledge
+learnings (id, content, created_at, updated_at)
+learning_tags (learning_id, tag_id)
+```
+
+**DB API (`core/db`):**
+```go
+// PRD operations
+db.Phases.List(opts)                    // Filter by status, tags
+db.Phases.Get(id)
+db.Epics.List(phaseID, opts)
+db.Epics.GetByPath("mvp:auth")
+db.Stories.List(epicID, opts)
+db.Stories.GetNext()                    // Next runnable (deps met)
+db.Stories.Insert(story)
+db.Stories.Update(id, changes)
+db.Stories.Move(from, to)               // Renumber, update refs
+
+// Dependency resolution
+db.Dependencies.Check(ref)              // Returns unmet deps
+db.Dependencies.Resolve(ref)            // Mark as satisfied
+
+// Tag queries
+db.Tags.Find("auth")
+db.Stories.ByTag("auth", "frontend")    // AND query
+db.Learnings.ByTag("gotcha")
+
+// Activity
+db.Activity.Log(agent, action, message)
+db.Activity.Recent(limit)
+db.Activity.ForStory(storyID)
+
+// Learnings
+db.Learnings.Search(keywords)           // Full-text search
+db.Learnings.Insert(content, tags)
+db.Learnings.Related(storyID)           // By shared tags
+
+// Agents
+db.Agents.Register(workspace, epic)
+db.Agents.Heartbeat(id)
+db.Agents.Stale(timeout)                // Find crashed agents
+db.Agents.Release(id)
+```
+
+**Internal commands (Claude calls these):**
+```bash
+trinity internal complete <story>           # Mark story done
+trinity internal add-story <epic> "title"   # Add story
+trinity internal log "message"              # Write to activity
+trinity internal learn "content" --tags x,y # Add learning
+trinity internal move-story <from> <to>     # Renumber, update refs
+```
+
+Claude never writes to DB directly - calls internal commands. Trinity queues and processes sequentially (no conflicts).
 
 ## PRD Structure
 
@@ -87,34 +151,61 @@ User's project gets no scaffolded files. The output is commits/code.
 
 A phase can depend on just a story. An epic can depend on just a story. Maximum flexibility, minimum blocking.
 
-`index.json` tracks: phases, epics, dependencies, agent assignments (for crash recovery).
+## CLI Commands
 
-## Activity & Learnings
-
-```
-~/.trinity/projects/<hash>/
-├── activity/
-│   └── YYYY-MM-DD.md         # Daily decisions, issues, progress
-└── learnings/
-    ├── index.json            # Keyword lookup
-    └── *.md                  # Topic files
-```
-
-AI reads relevant learnings before acting (via index), logs decisions to activity, updates learnings when patterns discovered. Uses Was/Now/Why format for corrections.
-
-## Parallel Features
+Trinity has a minimal, focused command set:
 
 ```bash
-trinity feature list --available      # Shows what can start (deps met)
-trinity feature suggest               # Parallelization opportunities
-trinity feature create "auth"
-trinity feature create "notifications"  # No deps - can run parallel
-trinity run --all                     # Both run simultaneously
-trinity run mvp:auth:STORY-1.1.2      # Run specific story to unblock deps
-trinity recover                       # Restart crashed agents
+# Auth
+trinity auth login              # Browser OAuth (required)
+trinity auth logout
+trinity auth status
+
+# Setup
+trinity init                    # Smart init (analyzes project, creates CLAUDE.md)
+
+# Interactive
+trinity chat                    # Discuss, plan, analyze, orchestrate
+
+# PRD Management
+trinity prd add                 # Context-aware: creates PRD or adds to existing
+trinity prd show                # Full PRD tree with status
+trinity prd show mvp:auth       # Specific phase/epic/story
+trinity prd show --next         # What runs next
+trinity prd show --blocked      # Show blocked items
+trinity prd show --awaiting-review  # Human testing pending
+trinity prd refine              # AI review and improve stories
+trinity prd skip <ref>          # Mark as skipped
+trinity prd retry <ref>         # Reset to pending
+
+# Execution
+trinity run                     # Run loop (auto-manages workspaces)
+trinity run --all               # All valid work in parallel
+trinity run mvp:auth            # Run specific epic
+trinity run <ref> --with-deps   # Run deps first, then target
+trinity run --docker            # Run in isolated container
+trinity run --attach            # Attach to running loop
+trinity run --stop              # Graceful stop after current story
+trinity run --kill              # Hard stop
+
+# Human Testing
+trinity approve                 # Approve current pending test
+trinity reject "feedback"       # Reject with feedback
+
+# Status & Config
+trinity status                  # Overview: agents, progress, blocked items
+trinity config show
+trinity config set KEY VALUE
+
+# Ship
+trinity hotfix "desc"           # Fast lane for quick fixes
+trinity release                 # Merge dev → main
+
+# Internal (Claude's API)
+trinity internal complete/add-story/log/learn/move-story
 ```
 
-Defaults: `--auto-pr=true`, `--auto-merge=false` (user reviews PRs).
+**Auto workspace management:** `trinity run` automatically creates/manages workspaces. No manual `feature create/delete/switch` needed.
 
 ## Docker Isolation (Optional)
 
@@ -122,7 +213,7 @@ For users who want extra safety, Trinity can run Claude Code in isolated Docker 
 
 ```bash
 trinity run --docker            # Run in isolated container
-trinity run --all --docker      # All features in containers
+trinity run --all --docker      # All work in containers
 ```
 
 **What it provides:**
@@ -132,8 +223,6 @@ trinity run --all --docker      # All features in containers
 
 **Data safety:** Project and `~/.trinity/` are mounted volumes, so all state persists. Only uncommitted WIP is at risk if container crashes (same as local).
 
-**Requirements:** Docker installed, Claude CLI in container image, git credentials available.
-
 ## Branching Strategy
 
 ```
@@ -141,25 +230,24 @@ main (stable)
   ↑
 dev (integration) ← features merge here
   ↑
-feature branches
+feature branches (auto-managed)
 ```
 
 - Features auto-merge to `dev` when complete
 - Dependencies resolve when code is in `dev`
-- New features clone from `dev` (get all merged code)
+- New features branch from `dev` (get all merged code)
 - `trinity release` merges `dev` → `main`
 
 ## Core Concepts
 
 ### Autonomous Dev Loop
-1. Read PRD from `~/.trinity/projects/<hash>/prd/`
-2. Pick next story based on dependencies
-3. Create feature branch
-4. Run Claude Code to implement
-5. Self-review and iterate
-6. **If `human_testing.required`**: pause for manual verification
-7. Create PR, merge to dev
-8. Repeat until all stories complete
+1. Query DB for next story (deps met, not blocked)
+2. Create feature branch (auto-managed workspace)
+3. Run Claude Code to implement
+4. Self-review and iterate
+5. **If `human_testing.required`**: pause for manual verification
+6. Create PR, merge to dev
+7. Repeat until all stories complete
 
 ### Story Format
 ```json
@@ -178,25 +266,6 @@ feature branches
 }
 ```
 
-The `human_testing` field is optional. When present and `required: true`, Trinity pauses after implementation for manual verification.
-
-### Orchestration
-
-Trinity isn't just a loop runner - it's an orchestrator with built-in "skills":
-
-```bash
-trinity chat                    # Interactive - discuss, plan, orchestrate
-trinity analyze                 # Deep dive on codebase
-trinity plan "add auth"         # Generate implementation plan
-trinity prd create              # Wizard: gather → generate → refine loop → implement
-trinity prd add                 # Add with AI placement suggestions + renumbering
-trinity prd refine              # AI review and improve stories
-trinity run                     # Execute the implementation loop
-trinity hotfix "desc"           # Fast lane for quick fixes (no PRD overhead)
-```
-
-Users talk to Trinity, Trinity executes workflows via Claude Code with the right meta-prompts.
-
 ### Claude Code Integration
 Trinity shells out to `claude` CLI - it's the execution engine, not just an API. Claude Code handles file I/O, bash commands, and context management.
 
@@ -205,12 +274,11 @@ Trinity shells out to `claude` CLI - it's the execution engine, not just an API.
 ```
 prompts/
 ├── templates/           # Prompts with {{placeholders}}
-│   ├── prd-create.md
-│   ├── prd-add.md
+│   ├── prd-add-init.md      # prd add when no PRD exists
+│   ├── prd-add-extend.md    # prd add when PRD exists
 │   ├── story-execute.md
 │   └── chat.md
 ├── schemas/             # Expected JSON response formats
-│   ├── prd-create.json
 │   ├── prd-add.json
 │   └── ...
 └── internal/            # Internal command prompts
@@ -220,8 +288,6 @@ prompts/
 ```
 
 **Flow:** CLI fills template → sends to Claude → Claude returns JSON → CLI parses and renders UI.
-
-Session state stored in `~/.trinity/sessions/<id>.json` for wizard progress.
 
 **Token optimization:** Minimal context in, structured JSON out. No prose, no fluff. Schema-constrained responses.
 
