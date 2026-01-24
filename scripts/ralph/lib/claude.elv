@@ -100,9 +100,12 @@ Stay focused on the feedback - don't refactor unrelated code.
       var stream-text = 'select(.type == "assistant").message.content[]? | select(.type == "text").text // empty | gsub("\n"; "\r\n") | . + "\r\n\n"'
       var final-result = 'select(.type == "result").result // empty'
 
-      try {
-        timeout $claude-timeout claude --dangerously-skip-permissions --verbose --print --output-format stream-json < $prompt-tmp 2>&1 | grep --line-buffered '^{' | tee $output-file | jq --unbuffered -rj $stream-text 2>/dev/null
-      } catch _ { }
+      # Run streaming pipeline - output goes directly to terminal
+      # Note: Output may take a moment to appear as Claude starts processing
+      timeout $claude-timeout claude --dangerously-skip-permissions --verbose --print --output-format stream-json < $prompt-tmp 2>&1 | ^
+        grep --line-buffered '^{' | ^
+        tee $output-file | ^
+        jq --unbuffered -rj $stream-text
 
       # Extract final result text for signal detection
       try {
