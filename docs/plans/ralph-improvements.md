@@ -624,7 +624,35 @@ Legend: [x] merged  [>] in progress  [ ] pending  [!] blocked  [-] skipped
 
 ---
 
-### 13. Verbose Mode
+### 13. YOLO Mode
+
+**Problem:** Sometimes you just want Ralph to run fully autonomous without any prompts.
+
+**Solution:** Add `--yolo` flag as alias for `--no-validate --auto-pr --auto-merge`.
+
+**Usage:**
+```bash
+./ralph.elv --yolo  # Full send. No prompts, no validation, auto-merge everything.
+```
+
+**Implementation:**
+```elvish
+if $config[yolo-mode] {
+  set config[no-validate] = $true
+  set config[auto-pr] = $true
+  set config[auto-merge] = $true
+  ui:warn "YOLO mode enabled. No prompts, no validation, auto-merge."
+}
+```
+
+**Files:**
+- `scripts/ralph/lib/cli.elv`
+
+**Effort:** 5 min
+
+---
+
+### 15. Verbose Mode
 
 **Current:** Either quiet or streaming.
 
@@ -637,7 +665,7 @@ Legend: [x] merged  [>] in progress  [ ] pending  [!] blocked  [-] skipped
 
 ---
 
-### 14. Story Retry with Clean Slate
+### 16. Story Retry with Clean Slate
 
 **Current:** Resume continues from existing branch state.
 
@@ -650,7 +678,7 @@ Legend: [x] merged  [>] in progress  [ ] pending  [!] blocked  [-] skipped
 
 ---
 
-### 15. Pre-flight Checks
+### 17. Pre-flight Checks
 
 **Current:** Jumps straight into story execution.
 
@@ -668,39 +696,29 @@ Legend: [x] merged  [>] in progress  [ ] pending  [!] blocked  [-] skipped
 
 ### Phase 1: Core Intelligence (Now)
 1. PR comment-based feedback system (2 hr)
-   - Post feedback as PR comments
-   - Post resolution comments
-   - Add pr_url to state.json
-   - Skip PR prompt when PR exists
-   - Update description only at merge
 2. Automatic learning extraction (1.5 hr)
-   - Runs after every story completion
-   - Analyzes activity + diff for patterns
-   - Appends to docs/learnings/*.md
 3. Story validation (1 hr)
-   - Validates acceptance criteria before execution
-   - Enabled by default, `--no-validate` to skip
-   - Catches ambiguous stories early
 4. Editor-based feedback input (15 min)
 
 ### Phase 2: Polish (This Week)
-4. Desktop notifications (15 min)
-5. Status command (1.5 hr)
-6. Skip story command (30 min)
+5. Desktop notifications (15 min)
+6. Status command (1.5 hr)
+7. Skip story command (30 min)
+8. YOLO mode `--yolo` (5 min)
 
 ### Phase 3: Robustness (Next Week)
-7. Pre-flight checks (30 min)
-8. Auto-archive logs (20 min)
-9. Retry clean slate (20 min)
-10. Configurable timeouts (10 min)
+9. Pre-flight checks (30 min)
+10. Auto-archive logs (20 min)
+11. Retry clean slate (20 min)
+12. Configurable timeouts (10 min)
 
 ### Phase 4: More Intelligence (Following Week)
-11. Claude commit messages (1 hr)
-12. Plan mode `--plan` (1 hr)
+13. Claude commit messages (1 hr)
+14. Plan mode `--plan` (1 hr)
 
 ### Phase 5: Observability (Later)
-13. Metrics tracking `--stats` (2 hr)
-14. Verbose mode (20 min)
+15. Metrics tracking `--stats` (2 hr)
+16. Verbose mode (20 min)
 
 ---
 
