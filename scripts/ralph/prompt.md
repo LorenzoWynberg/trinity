@@ -7,16 +7,12 @@ Dependencies (completed): {{DEPENDENCIES}}
 
 {{FEEDBACK}}
 
-## Recent Activity
-{{RECENT_ACTIVITY_LOGS}}
-
 ## 1. Load Context
 Read these files first:
 - `scripts/ralph/prd.json` - acceptance criteria for {{CURRENT_STORY}}
 - `docs/ARCHITECTURE.md` - system design and patterns
 - `docs/COMMANDS.md` - CLI command specifications
 - `docs/PROMPTS.md` - prompt system design
-- `docs/learnings/` - topic-based patterns and gotchas (check relevant files)
 - `CLAUDE.md` - project conventions
 
 If attempt > 1 or refinement: check `git log` and `git diff` for previous work. Focus on the feedback if provided.
@@ -49,13 +45,9 @@ After build passes, ask: "What's missing or could improve?"
 ## 6. On SUCCESS
 
 Update these files:
-- `scripts/ralph/progress.txt`: APPEND entry with date, changes, learnings (do NOT overwrite)
+- `scripts/ralph/progress.txt`: Add entry with date, changes, learnings
 - `scripts/ralph/prd.json`: Set `"passes": true` for {{CURRENT_STORY}}
   - NOTE: Do NOT set `merged` - Ralph handles that after PR is merged
-- `docs/activity/YYYY-MM-DD.md`: APPEND timestamped entry (do NOT overwrite existing content)
-  - Read the file first, then add your entry at the end
-  - Keep all existing entries from other stories
-- `docs/learnings/*.md`: APPEND any new patterns or gotchas (do NOT overwrite)
 
 Then commit and push:
 ```bash
