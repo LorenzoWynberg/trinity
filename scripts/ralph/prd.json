@@ -17,7 +17,7 @@
       "epic": 1,
       "story_number": 1,
       "merged": true,
-      "merge_commit": "\u001b[34m► \u001b[0mMerging PR...\n! Pull request trinity-ai-labs/trinity#16 was already merged\n\u001b[32m\u001b[1m✓ \u001b[0m\u001b[32mPR merged (commit: 0d32e3ecb02a94a1d2f5dc570f5d647de00cc9d0)\u001b[0m\n0d32e3ecb02a94a1d2f5dc570f5d647de00cc9d0"
+      "merge_commit": "0d32e3ecb02a94a1d2f5dc570f5d647de00cc9d0"
     },
     {
       "id": "STORY-1.1.2",

@@ -274,15 +274,16 @@ fn clear-feedback-history {
 
 # Merge PR - returns merge commit SHA or empty string on failure
 fn merge {|branch-name|
-  ui:status "Merging PR..." > /dev/tty
+  # Use echo directly to /dev/tty to avoid capture issues
+  echo "\e[34m► \e[0mMerging PR..." > /dev/tty
   try {
-    gh pr merge $branch-name --squash --delete-branch 2>&1 | slurp
+    gh pr merge $branch-name --squash --delete-branch 2>&1 > /dev/null
     # Get the merge commit SHA from base branch
     var merge-commit = (str:trim-space (git -C $project-root rev-parse $base-branch | slurp))
-    ui:success "PR merged (commit: "$merge-commit")" > /dev/tty
+    echo "\e[32m\e[1m✓ \e[0m\e[32mPR merged (commit: "$merge-commit")\e[0m" > /dev/tty
     put $merge-commit
   } catch e {
-    ui:error "Failed to merge PR: "(to-string $e[reason]) > /dev/tty
+    echo "\e[31m\e[1m✗ \e[0mFailed to merge PR: "(to-string $e[reason]) > /dev/tty
     put ""
   }
 }
