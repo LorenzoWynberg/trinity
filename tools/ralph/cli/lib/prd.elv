@@ -129,11 +129,87 @@ fn get-branch-name {|story-id|
   put "feat/story-"$parts[0]"."$parts[1]"."$parts[2]
 }
 
+# ═══════════════════════════════════════════════════════════════════════════
+# DEPENDENCY CHECKING (supports cross-version)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Dependency syntax:
+#   STORY-X.Y.Z         → specific story in current version
+#   X                   → whole phase X in current version
+#   X:Y                 → phase X, epic Y in current version
+#   vN.N:STORY-X.Y.Z    → specific story in version N.N
+#   vN.N:X              → whole phase X in version N.N
+#   vN.N:X:Y            → phase X, epic Y in version N.N
+#   vN.N                → entire version N.N
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Check if a single dependency is met (all matching stories merged)
+fn check-dep-met {|dep|
+  var version = $current-version
+  var target = $dep
+  var file = $prd-file
+
+  # Check for version prefix (e.g., "v1.0:..." or just "v1.0")
+  if (re:match '^v[0-9]+\.[0-9]+' $dep) {
+    # Extract version
+    if (re:match '^v[0-9]+\.[0-9]+:' $dep) {
+      # Has target after version (v1.0:something)
+      var parts = [(str:split ":" $dep)]
+      set version = $parts[0]
+      set target = (str:join ":" $parts[1..])
+    } else {
+      # Just version (v1.0 = entire version must be complete)
+      set version = $dep
+      set target = ""
+    }
+    set file = (get-version-file $version)
+    if (not (path:is-regular $file)) {
+      # Version file doesn't exist - dependency not met
+      put $false
+      return
+    }
+  }
+
+  # Now check the target within the file
+  if (eq $target "") {
+    # Entire version must be complete
+    var not-merged = (jq '[.stories[] | select(.merged != true)] | length' $file)
+    put (eq $not-merged "0")
+  } elif (re:match '^STORY-' $target) {
+    # Specific story
+    var merged = (jq -r '.stories[] | select(.id == "'$target'") | .merged // false' $file)
+    put (eq $merged "true")
+  } elif (re:match '^[0-9]+:[0-9]+$' $target) {
+    # Phase:Epic (e.g., "1:2")
+    var parts = [(str:split ":" $target)]
+    var phase = $parts[0]
+    var epic = $parts[1]
+    var not-merged = (jq '[.stories[] | select(.phase == '$phase' and .epic == '$epic' and .merged != true)] | length' $file)
+    put (eq $not-merged "0")
+  } elif (re:match '^[0-9]+$' $target) {
+    # Just phase (e.g., "1")
+    var phase = $target
+    var not-merged = (jq '[.stories[] | select(.phase == '$phase' and .merged != true)] | length' $file)
+    put (eq $not-merged "0")
+  } else {
+    # Unknown format - treat as not met
+    put $false
+  }
+}
+
+# Check if all dependencies for a story are met
+fn check-all-deps-met {|deps-list|
+  for dep $deps-list {
+    if (not (check-dep-met $dep)) {
+      put $false
+      return
+    }
+  }
+  put $true
+}
+
 # Get next available story (respects dependencies - deps must be MERGED)
 fn get-next-story {
-  # Get all MERGED story IDs (dependencies must be merged, not just passed)
-  var merged = [(jq -r '.stories[] | select(.merged == true) | .id' $prd-file)]
-
   # Get stories that haven't passed yet (available for work)
   var candidates = [(jq -r '.stories[] | select(.passes != true) | "\(.id)|\(.depends_on // [] | join(","))"' $prd-file)]
 
@@ -142,23 +218,11 @@ fn get-next-story {
     var sid = $parts[0]
     var deps-str = $parts[1]
 
-    # Check if all dependencies are MERGED
+    # Check if all dependencies are met
     var deps-met = $true
     if (not (eq $deps-str "")) {
       var deps = [(str:split "," $deps-str)]
-      for dep $deps {
-        var found = $false
-        for m $merged {
-          if (eq $m $dep) {
-            set found = $true
-            break
-          }
-        }
-        if (not $found) {
-          set deps-met = $false
-          break
-        }
-      }
+      set deps-met = (check-all-deps-met $deps)
     }
 
     if $deps-met {
@@ -324,6 +388,7 @@ fn show-status {
 }
 
 # Get dependency info for a story (formatted for display)
+# Supports new syntax: v1.0, v1.0:1, v1.0:1:2, v1.0:STORY-X, 1, 1:2, STORY-X
 fn get-story-deps {|story-id|
   var deps-query = ".stories[] | select(.id == \""$story-id"\") | .depends_on // [] | .[]"
   var deps = [(jq -r $deps-query $prd-file)]
@@ -331,20 +396,33 @@ fn get-story-deps {|story-id|
   if (eq (count $deps) 0) {
     echo "None (this story has no dependencies)"
   } else {
-    for did $deps {
-      var info-query = ".stories[] | select(.id == \""$did"\") | \"\\(.title)|\\(.passes // false)|\\(.merged // false)\""
-      var dep-info = (jq -r $info-query $prd-file)
-      var parts = [(str:split "|" $dep-info)]
-      var title = $parts[0]
-      var passes = $parts[1]
-      var merged = $parts[2]
+    for dep $deps {
+      var is-met = (check-dep-met $dep)
       var status = "PENDING"
-      if (eq $merged "true") {
-        set status = "MERGED"
-      } elif (eq $passes "true") {
-        set status = "PASSED (not merged)"
+      if $is-met {
+        set status = "MET"
       }
-      echo "- "$did": "$title" ["$status"]"
+
+      # Format based on dependency type
+      if (re:match '^v[0-9]+\.[0-9]+$' $dep) {
+        # Entire version
+        echo "- "$dep" (entire version) ["$status"]"
+      } elif (re:match '^v[0-9]+\.[0-9]+:' $dep) {
+        # Cross-version with target
+        echo "- "$dep" (cross-version) ["$status"]"
+      } elif (re:match '^STORY-' $dep) {
+        # Specific story - get title
+        var title = (jq -r '.stories[] | select(.id == "'$dep'") | .title // "Unknown"' $prd-file)
+        echo "- "$dep": "$title" ["$status"]"
+      } elif (re:match '^[0-9]+:[0-9]+$' $dep) {
+        # Phase:Epic
+        echo "- Phase:Epic "$dep" ["$status"]"
+      } elif (re:match '^[0-9]+$' $dep) {
+        # Just phase
+        echo "- Phase "$dep" ["$status"]"
+      } else {
+        echo "- "$dep" ["$status"]"
+      }
     }
   }
 }
@@ -359,45 +437,28 @@ fn get-versions {
 }
 
 # Get next available story for a specific version
+# (used when --target-version is specified)
 fn get-next-story-for-version {|version|
-  # Get all MERGED story IDs
-  var merged = [(jq -r '.stories[] | select(.merged == true) | .id' $prd-file)]
-
-  # Get stories for this version that haven't passed yet
-  var candidates = [(jq -r '.stories[] | select(.passes != true and (.target_version // "v1.0") == "'$version'") | "\(.id)|\(.depends_on // [] | join(","))"' $prd-file)]
-
-  for candidate $candidates {
-    var parts = [(str:split "|" $candidate)]
-    var sid = $parts[0]
-    var deps-str = $parts[1]
-
-    # Check if all dependencies are MERGED
-    var deps-met = $true
-    if (not (eq $deps-str "")) {
-      var deps = [(str:split "," $deps-str)]
-      for dep $deps {
-        var found = $false
-        for m $merged {
-          if (eq $m $dep) {
-            set found = $true
-            break
-          }
-        }
-        if (not $found) {
-          set deps-met = $false
-          break
-        }
-      }
-    }
-
-    if $deps-met {
-      put $sid
-      return
-    }
+  var file = (get-version-file $version)
+  if (not (path:is-regular $file)) {
+    put ""
+    return
   }
 
-  # No story found
-  put ""
+  # Temporarily set prd-file to the target version's file
+  var saved-file = $prd-file
+  var saved-version = $current-version
+  set prd-file = $file
+  set current-version = $version
+
+  # Use the standard get-next-story with cross-version dep support
+  var result = (get-next-story)
+
+  # Restore
+  set prd-file = $saved-file
+  set current-version = $saved-version
+
+  put $result
 }
 
 # Check if all stories for a version are merged
