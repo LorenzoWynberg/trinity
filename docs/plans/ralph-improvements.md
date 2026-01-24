@@ -633,22 +633,9 @@ fn post-webhook {|event payload|
 
 ---
 
-## Open Questions (Ralph scope)
+## Open Questions
 
 1. **Story validation:** Should Claude pre-validate that acceptance criteria are clear before starting? Could catch ambiguous stories early. (Optional nice-to-have)
-
-2. **Rollback mechanism:** If a merged story breaks something, how do we handle rollback? Revert commit + re-open story? (Note: deps already require `merged: true`, so reverting a story auto-blocks dependents)
-
----
-
-## Deferred to Trinity
-
-These are out of scope for Ralph but will be handled by Trinity (the Go implementation):
-
-1. **Parallel execution:** Multiple stories in parallel using git worktrees, multi-agent coordination
-2. **Branch strategy:** Stacked PRs, branching from unmerged features, complex dependency graphs
-3. **Team features:** Multi-user, Turso/Postgres backends, OAuth
-4. **Docker isolation:** Running Claude in isolated containers
 
 ---
 
