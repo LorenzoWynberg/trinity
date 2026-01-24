@@ -18,7 +18,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useTheme } from 'next-themes'
-import { ArrowRight, ArrowDown, Save, Trash2, X } from 'lucide-react'
+import { ArrowRight, ArrowDown, Save, Trash2, Loader2, Star, Maximize2 } from 'lucide-react'
 import { StoryNode } from '@/components/story-node'
 import { VersionNode } from '@/components/version-node'
 import { StoryModal } from '@/components/story-modal'
@@ -47,8 +47,16 @@ const nodeTypes = {
 
 function GraphContent() {
   const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === 'dark'
+  const [mounted, setMounted] = useState(false)
   const [selectedVersion, setSelectedVersion] = useState<string>('all')
+  const [isVersionLoading, setIsVersionLoading] = useState(false)
+  const [isLayoutLoading, setIsLayoutLoading] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const isDark = mounted ? resolvedTheme === 'dark' : true
   const {
     nodes: initialNodes,
     edges: initialEdges,
@@ -96,8 +104,13 @@ function GraphContent() {
       if (shouldFitViewRef.current) {
         setTimeout(() => {
           fitView({ padding: 0.1, duration: 200 })
+          setIsVersionLoading(false)
+          setIsLayoutLoading(false)
         }, 50)
         shouldFitViewRef.current = false
+      } else {
+        setIsVersionLoading(false)
+        setIsLayoutLoading(false)
       }
     }
   }, [initialNodes, initialEdges, setNodes, setEdges, fitView])
@@ -109,17 +122,14 @@ function GraphContent() {
       return
     }
 
+    setIsLayoutLoading(true)
+
     const newData: GraphLayoutData = {
       ...layoutData,
       active: value,
     }
     await saveLayoutData(newData)
-
-    // Fit view after layout change
-    setTimeout(() => {
-      fitView({ padding: 0.1, duration: 200 })
-    }, 50)
-  }, [layoutData, saveLayoutData, fitView])
+  }, [layoutData, saveLayoutData])
 
   // Save current positions as a new custom layout
   const handleSaveNewLayout = useCallback(async () => {
@@ -132,6 +142,7 @@ function GraphContent() {
 
     const newData: GraphLayoutData = {
       active: newLayoutName.trim(),
+      defaultLayout: layoutData.defaultLayout,
       customLayouts: {
         ...layoutData.customLayouts,
         [newLayoutName.trim()]: { positions },
@@ -182,6 +193,20 @@ function GraphContent() {
   const handleDeleteLayout = useCallback(async (name: string) => {
     await deleteCustomLayout(name)
   }, [deleteCustomLayout])
+
+  // Set current layout as default for this version
+  const handleSetDefault = useCallback(async () => {
+    const newData: GraphLayoutData = {
+      ...layoutData,
+      defaultLayout: layoutData.active,
+    }
+    await saveLayoutData(newData)
+  }, [layoutData, saveLayoutData])
+
+  // Recenter/fit the view
+  const handleRecenter = useCallback(() => {
+    fitView({ padding: 0.1, duration: 300 })
+  }, [fitView])
 
   // Get all ancestors (dependencies) recursively
   const getAncestors = useCallback((nodeId: string, visited: Set<string> = new Set()): Set<string> => {
@@ -277,26 +302,45 @@ function GraphContent() {
     }
   })
 
-  // Get list of custom layout names
-  const customLayoutNames = Object.keys(layoutData.customLayouts || {})
+  // Get list of custom layout names (filter out any empty/undefined keys)
+  const customLayoutNames = Object.keys(layoutData.customLayouts || {}).filter(name => name && name !== 'undefined')
 
-  if (loading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <p className="text-muted-foreground">Loading graph...</p>
-      </div>
-    )
-  }
+  // Determine if we're in auto-layout mode (no manual positioning allowed)
+  const isAutoLayout = layoutData.active === 'horizontal' || layoutData.active === 'vertical'
 
   return (
     <>
       <div className="h-[calc(100vh-2rem)] w-full relative">
+        {/* Initial loading overlay */}
+        {(!mounted || loading) && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Loading graph...</p>
+            </div>
+          </div>
+        )}
+
         {/* Version Selector - Left */}
         {versions.length >= 1 && (
           <div className="absolute top-4 left-4 z-10">
-            <Select value={selectedVersion} onValueChange={setSelectedVersion}>
-              <SelectTrigger className="w-[120px] h-9 bg-background">
-                <SelectValue placeholder="All versions" />
+            <Select
+              value={selectedVersion}
+              onValueChange={(v) => {
+                setIsVersionLoading(true)
+                setSelectedVersion(v)
+              }}
+              disabled={isVersionLoading || isLayoutLoading}
+            >
+              <SelectTrigger className="w-[140px] h-9 bg-background">
+                {isVersionLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Loading...</span>
+                  </div>
+                ) : (
+                  <SelectValue placeholder="All versions" />
+                )}
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All versions</SelectItem>
@@ -312,9 +356,20 @@ function GraphContent() {
 
         {/* Layout Selector - Right */}
         <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-          <Select value={layoutData.active} onValueChange={handleLayoutChange}>
+          <Select
+            value={layoutData.active}
+            onValueChange={handleLayoutChange}
+            disabled={isVersionLoading || isLayoutLoading}
+          >
             <SelectTrigger className="w-[160px] h-9 bg-background">
-              <SelectValue />
+              {isLayoutLoading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Loading...</span>
+                </div>
+              ) : (
+                <SelectValue />
+              )}
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="horizontal">
@@ -349,6 +404,32 @@ function GraphContent() {
             </SelectContent>
           </Select>
 
+          {/* Recenter button */}
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9"
+            onClick={handleRecenter}
+            title="Fit to view"
+            disabled={isVersionLoading || isLayoutLoading}
+          >
+            <Maximize2 className="h-4 w-4" />
+          </Button>
+
+          {/* Set as default button */}
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9"
+            onClick={handleSetDefault}
+            title={layoutData.active === layoutData.defaultLayout ? "Current default" : "Set as default"}
+            disabled={isVersionLoading || isLayoutLoading || layoutData.active === layoutData.defaultLayout}
+          >
+            <Star
+              className={`h-4 w-4 ${layoutData.active === layoutData.defaultLayout ? 'fill-yellow-500 text-yellow-500' : 'text-muted-foreground'}`}
+            />
+          </Button>
+
           {/* Delete button for custom layouts */}
           {layoutData.active !== 'horizontal' && layoutData.active !== 'vertical' && (
             <Button
@@ -357,6 +438,7 @@ function GraphContent() {
               className="h-9 w-9"
               onClick={() => handleDeleteLayout(layoutData.active)}
               title="Delete this layout"
+              disabled={isVersionLoading || isLayoutLoading}
             >
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
@@ -385,9 +467,10 @@ function GraphContent() {
             size={1}
             color={isDark ? '#333' : '#ccc'}
           />
-          <Controls />
+          <Controls showInteractive={!isAutoLayout} />
           <MiniMap
             nodeColor={(node) => {
+              if (node.type === 'version') return isDark ? '#a855f7' : '#9333ea'
               const status = node.data?.status as string
               switch (status) {
                 case 'merged': return '#22c55e'

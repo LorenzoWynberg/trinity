@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Node, Edge, MarkerType } from '@xyflow/react'
 import type { Story, StoryStatus, VersionInfo } from '@/lib/types'
 
 export type GraphLayoutData = {
   active: string // 'horizontal' | 'vertical' | custom layout name
+  defaultLayout: string // default layout to use when loading this version
   customLayouts: Record<string, { positions: Record<string, { x: number; y: number }> }>
 }
 
@@ -161,7 +162,8 @@ export function calculateAutoPositions(
   const positions: Record<string, { x: number; y: number }> = {}
   const NODE_WIDTH = 170
   const NODE_HEIGHT = 70
-  const VERSION_HEADER_HEIGHT = 60
+  const VERSION_HEADER_WIDTH = 180
+  const VERSION_HEADER_HEIGHT = 70
   const VERSION_GAP = 100
   const H_GAP = direction === 'vertical' ? 80 : 60
   const V_GAP = direction === 'vertical' ? 70 : 20
@@ -173,14 +175,31 @@ export function calculateAutoPositions(
       const verStories = byVersion.get(ver) || []
       if (verStories.length === 0) continue
 
-      if (includeVersionHeaders) {
-        positions[`version:${ver}`] = { x: currentX, y: -VERSION_HEADER_HEIGHT - 20 }
-      }
+      // Start position for stories (leave room for version header on left)
+      const storiesStartX = includeVersionHeaders ? currentX + VERSION_HEADER_WIDTH + H_GAP : currentX
 
-      const verPositions = calculateSingleVersionPositions(verStories, direction, currentX, 0)
+      const verPositions = calculateSingleVersionPositions(verStories, direction, storiesStartX, 0)
       Object.assign(positions, verPositions)
 
-      const maxX = Math.max(...Object.values(verPositions).map(p => p.x))
+      if (includeVersionHeaders) {
+        // Find root stories (depth 0 = no dependencies)
+        const depths = calculateDepths(verStories)
+        const rootStories = verStories.filter(s => (depths.get(s.id) || 0) === 0)
+
+        // Position version header to the left, vertically centered with root stories
+        if (rootStories.length > 0) {
+          const rootYs = rootStories.map(s => verPositions[s.id]?.y || 0)
+          const minY = Math.min(...rootYs)
+          const maxY = Math.max(...rootYs)
+          const centerY = (minY + maxY + NODE_HEIGHT - VERSION_HEADER_HEIGHT) / 2
+          positions[`version:${ver}`] = { x: currentX, y: centerY }
+        } else {
+          positions[`version:${ver}`] = { x: currentX, y: 0 }
+        }
+      }
+
+      const posValues = Object.values(verPositions)
+      const maxX = posValues.length > 0 ? Math.max(...posValues.map(p => p.x)) : currentX
       currentX = maxX + NODE_WIDTH + VERSION_GAP
     }
   } else {
@@ -190,15 +209,46 @@ export function calculateAutoPositions(
       const verStories = byVersion.get(ver) || []
       if (verStories.length === 0) continue
 
+      // Calculate positions first to find centering info
+      const tempPositions = calculateSingleVersionPositions(verStories, direction, 0, 0)
+      const tempPosValues = Object.values(tempPositions)
+
+      // Find root stories (no dependencies within this version)
+      const storyIds = new Set(verStories.map(s => s.id))
+      const rootStories = verStories.filter(s => {
+        if (!s.depends_on || s.depends_on.length === 0) return true
+        // Check if any deps are within this version
+        return !s.depends_on.some(depId => {
+          const actualId = depId.includes(':') ? depId.split(':').pop()! : depId
+          return storyIds.has(actualId)
+        })
+      })
+
+      // Center version header above root stories, or all stories as fallback
+      let centerX = 0
+      const storiesToCenter = rootStories.length > 0 ? rootStories : verStories
+      if (storiesToCenter.length > 0) {
+        const xs = storiesToCenter.map(s => {
+          const pos = tempPositions[s.id]
+          return pos ? pos.x : 0
+        }).filter(x => x !== undefined)
+        if (xs.length > 0) {
+          const minX = Math.min(...xs)
+          const maxX = Math.max(...xs)
+          centerX = (minX + maxX + NODE_WIDTH - VERSION_HEADER_WIDTH) / 2
+        }
+      }
+
       if (includeVersionHeaders) {
-        positions[`version:${ver}`] = { x: 0, y: currentY }
-        currentY += VERSION_HEADER_HEIGHT + 20
+        positions[`version:${ver}`] = { x: centerX, y: currentY }
+        currentY += VERSION_HEADER_HEIGHT + V_GAP
       }
 
       const verPositions = calculateSingleVersionPositions(verStories, direction, 0, currentY)
       Object.assign(positions, verPositions)
 
-      const maxY = Math.max(...Object.values(verPositions).map(p => p.y))
+      const posValues = Object.values(verPositions)
+      const maxY = posValues.length > 0 ? Math.max(...posValues.map(p => p.y)) : currentY
       currentY = maxY + NODE_HEIGHT + VERSION_GAP
     }
   }
@@ -208,6 +258,7 @@ export function calculateAutoPositions(
 
 const defaultLayoutData: GraphLayoutData = {
   active: 'horizontal',
+  defaultLayout: 'horizontal',
   customLayouts: {}
 }
 
@@ -219,6 +270,22 @@ export function useGraphData(version: string = 'all'): GraphData {
   const [versionProgress, setVersionProgress] = useState<VersionInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [layoutData, setLayoutData] = useState<GraphLayoutData>(defaultLayoutData)
+  const isInitialLoadRef = useRef(true)
+  const prevVersionRef = useRef(version)
+  const currentLayoutRef = useRef<GraphLayoutData>(defaultLayoutData)
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    currentLayoutRef.current = layoutData
+  }, [layoutData])
+
+  // Reset initial load flag when version changes
+  useEffect(() => {
+    if (prevVersionRef.current !== version) {
+      isInitialLoadRef.current = true
+      prevVersionRef.current = version
+    }
+  }, [version])
 
   // Save layout data to API
   const saveLayoutData = useCallback(async (data: GraphLayoutData) => {
@@ -268,7 +335,25 @@ export function useGraphData(version: string = 'all'): GraphData {
 
         setVersions(versionsData.versions || [])
         setVersionProgress(versionsData.progress || [])
-        setLayoutData(savedLayoutData)
+
+        // Determine which layout to use
+        let currentLayoutData: GraphLayoutData
+        if (isInitialLoadRef.current) {
+          // On initial load, use defaultLayout
+          currentLayoutData = {
+            ...savedLayoutData,
+            active: savedLayoutData.defaultLayout || savedLayoutData.active || 'horizontal',
+          }
+          setLayoutData(currentLayoutData)
+          currentLayoutRef.current = currentLayoutData
+          isInitialLoadRef.current = false
+        } else {
+          // On refresh, use current layout from ref (always up-to-date)
+          currentLayoutData = {
+            ...currentLayoutRef.current,
+            customLayouts: savedLayoutData.customLayouts, // Get any updates to custom layouts
+          }
+        }
 
         if (!prd?.stories) {
           setLoading(false)
@@ -279,18 +364,18 @@ export function useGraphData(version: string = 'all'): GraphData {
         setStories(storiesData)
 
         const isAllVersions = version === 'all'
-        const showVersionHeaders = isAllVersions && (versionsData.versions?.length || 0) > 1
+        const showVersionHeaders = isAllVersions && (versionsData.versions?.length || 0) >= 1
 
         // Determine positions based on active layout
         let positions: Record<string, { x: number; y: number }>
-        const activeLayout = savedLayoutData.active || 'horizontal'
+        const activeLayout = currentLayoutData.active || 'horizontal'
 
         if (activeLayout === 'horizontal' || activeLayout === 'vertical') {
           // Auto-calculate positions
           positions = calculateAutoPositions(storiesData, activeLayout, showVersionHeaders)
         } else {
           // Use custom layout positions
-          const customLayout = savedLayoutData.customLayouts[activeLayout]
+          const customLayout = currentLayoutData.customLayouts[activeLayout]
           if (customLayout && Object.keys(customLayout.positions).length > 0) {
             // Merge with auto positions for any new stories
             const autoPositions = calculateAutoPositions(storiesData, 'horizontal', showVersionHeaders)
@@ -303,6 +388,7 @@ export function useGraphData(version: string = 'all'): GraphData {
 
         // Create nodes
         const nodeList: Node[] = []
+        const isAutoLayout = activeLayout === 'horizontal' || activeLayout === 'vertical'
 
         // Add version header nodes if showing all versions
         if (showVersionHeaders) {
@@ -312,7 +398,7 @@ export function useGraphData(version: string = 'all'): GraphData {
               id: `version:${progress.version}`,
               type: 'version',
               position: pos,
-              draggable: true,
+              draggable: !isAutoLayout,
               data: {
                 label: progress.version,
                 total: progress.total,
@@ -332,6 +418,7 @@ export function useGraphData(version: string = 'all'): GraphData {
             id: story.id,
             type: 'story',
             position: pos,
+            draggable: !isAutoLayout,
             data: {
               label: story.id,
               title: story.title,
@@ -346,6 +433,35 @@ export function useGraphData(version: string = 'all'): GraphData {
         // Create edges
         const edgeList: Edge[] = []
         const nodeIds = new Set(storiesData.map(s => s.id))
+
+        // Add edges from version headers to root stories (stories with no deps)
+        if (showVersionHeaders) {
+          for (const story of storiesData) {
+            const hasDeps = story.depends_on && story.depends_on.length > 0 &&
+              story.depends_on.some(depId => {
+                const actualDepId = depId.includes(':') ? depId.split(':').pop()! : depId
+                return nodeIds.has(actualDepId)
+              })
+
+            if (!hasDeps && story.target_version) {
+              edgeList.push({
+                id: `version:${story.target_version}->${story.id}`,
+                source: `version:${story.target_version}`,
+                target: story.id,
+                type: 'smoothstep',
+                markerEnd: {
+                  type: MarkerType.ArrowClosed,
+                  width: 12,
+                  height: 12,
+                },
+                style: {
+                  strokeWidth: 2,
+                  stroke: '#6b7280',
+                },
+              })
+            }
+          }
+        }
 
         for (const story of storiesData) {
           if (story.depends_on) {
