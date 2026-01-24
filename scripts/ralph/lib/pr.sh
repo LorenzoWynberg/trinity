@@ -24,6 +24,33 @@ pr_check_exists() {
   echo "$existing"
 }
 
+# Build PR body from commits and changes
+pr_build_body() {
+  local story_id="$1"
+  local story_title="$2"
+  local branch_name="$3"
+
+  # Get commit messages since branching from base
+  local commits
+  commits=$(git -C "$PR_PROJECT_ROOT" log --oneline "$PR_BASE_BRANCH".."$branch_name" 2>/dev/null | head -20)
+
+  # Get changed files
+  local files_changed
+  files_changed=$(git -C "$PR_PROJECT_ROOT" diff --stat "$PR_BASE_BRANCH".."$branch_name" 2>/dev/null | tail -1)
+
+  cat << EOF
+## $story_id: $story_title
+
+### Commits
+\`\`\`
+$commits
+\`\`\`
+
+### Summary
+$files_changed
+EOF
+}
+
 # Create a new PR
 # Returns PR URL or empty string
 pr_create() {
@@ -33,8 +60,11 @@ pr_create() {
 
   ui_status "Creating PR to $PR_BASE_BRANCH..."
 
+  local body
+  body=$(pr_build_body "$story_id" "$story_title" "$branch_name")
+
   local url
-  if url=$(gh pr create --base "$PR_BASE_BRANCH" --head "$branch_name" --title "$story_id: $story_title" --body "Automated PR for $story_id" 2>&1); then
+  if url=$(gh pr create --base "$PR_BASE_BRANCH" --head "$branch_name" --title "$story_id: $story_title" --body "$body" 2>&1); then
     url=$(echo "$url" | tr -d '[:space:]' | grep -o 'https://.*')
     ui_success "PR created: $url"
     echo "$url"
@@ -52,24 +82,8 @@ pr_update_description() {
 
   ui_status "Updating PR description..."
 
-  # Get commit messages since branching from base
-  local commits
-  commits=$(git -C "$PR_PROJECT_ROOT" log --oneline "$PR_BASE_BRANCH".."$branch_name" 2>/dev/null | head -20)
-
-  # Get changed files
-  local files_changed
-  files_changed=$(git -C "$PR_PROJECT_ROOT" diff --stat "$PR_BASE_BRANCH".."$branch_name" 2>/dev/null | tail -1)
-
-  # Build PR body
-  local body="## $story_id: $story_title
-
-### Commits
-\`\`\`
-$commits
-\`\`\`
-
-### Summary
-$files_changed"
+  local body
+  body=$(pr_build_body "$story_id" "$story_title" "$branch_name")
 
   if gh pr edit "$branch_name" --body "$body" &>/dev/null; then
     ui_success "PR description updated"
