@@ -233,6 +233,15 @@ while (< $current-iteration $config[max-iterations]) {
     # Check signals
     ui:status "Checking for completion signals..."
     var signals = (claude:check-signals $output-file $story-id)
+    if $signals[complete] {
+      ui:dim "  Found: <story-complete>"
+    } elif $signals[blocked] {
+      ui:dim "  Found: <story-blocked>"
+    } elif $signals[all_complete] {
+      ui:dim "  Found: <promise>COMPLETE</promise>"
+    } else {
+      ui:dim "  No completion signal found (story still in progress)"
+    }
     claude:cleanup $output-file
     echo ""
 
