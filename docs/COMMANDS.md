@@ -181,6 +181,8 @@ trinity config reset              # Reset to defaults
 - `dev_cmd` - Command to start dev server
 - `dev_port` - Dev server port (default: `3000`)
 - `dev_ready_signal` - Stdout signal that dev server is ready
+- `db.provider` - Database provider: `sqlite` (default), `managed`, `turso`, `postgres`, `mysql` (v0.3+)
+- `db.connection` - Connection string or API key for remote databases (v0.3+)
 
 ---
 

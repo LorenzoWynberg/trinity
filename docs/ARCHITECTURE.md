@@ -47,11 +47,28 @@ All Trinity data lives in `~/.trinity/` - user projects stay clean.
 │   └── <id>.json
 ├── projects/
 │   └── <project-hash>/               # Hash = slugify(name)-timestamp
-│       ├── config.json               # Project config
-│       └── trinity.db                # SQLite: PRD, agents, activity, learnings, queue
+│       ├── config.json               # Project config (includes db.provider)
+│       └── trinity.db                # SQLite: PRD, agents, activity, learnings, queue (solo mode)
 ```
 
 **User's project:** Only gets optional CLAUDE.md. All other state in `~/.trinity/`.
+
+### Database Providers (v0.3+)
+
+| Mode | Provider | Use Case |
+|------|----------|----------|
+| Solo (default) | SQLite | Local development, single developer |
+| Managed | Turso | Teams, we provision, included in subscription |
+| BYOD Turso | Turso | Teams, user provides their own API key |
+| BYOD DB | Postgres/MySQL | Enterprise, self-hosted, compliance requirements |
+
+Configuration:
+```bash
+trinity config set db.provider managed|turso|postgres|mysql
+trinity config set db.connection <connection-string-or-api-key>
+```
+
+Solo mode uses SQLite in `~/.trinity/projects/<hash>/trinity.db`. Team modes connect to remote database - no local trinity.db file.
 
 ### Git Worktrees
 
@@ -89,7 +106,7 @@ Each worktree is a complete working directory with its own branch. Agents don't 
 
 ## Database Layer
 
-All state lives in SQLite (`trinity.db`). Trinity provides a typed Go API.
+All state lives in the database. Trinity provides a typed Go API with an adapter layer supporting multiple backends (SQLite for solo, Turso/Postgres/MySQL for teams).
 
 ### Schema
 
@@ -416,7 +433,8 @@ Use `trinity init --skip-skills` to disable auto-install.
 |-----------|------------|-----------|
 | CLI | Go | Fast, single binary, good CLI ecosystem |
 | GUI (v0.5) | Wails | Go-based, auto TS bindings, lighter than Electron |
-| Database | SQLite | Embedded, single file, handles concurrent writes |
+| Database (solo) | SQLite | Embedded, single file, no setup |
+| Database (teams) | Turso / Postgres / MySQL | Managed or BYOD, adapter layer in core/db |
 | AI | Claude Code CLI | Execution engine, not just API |
 
 ---

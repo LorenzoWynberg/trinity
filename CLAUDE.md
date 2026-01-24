@@ -52,7 +52,7 @@ Everything lives in `~/.trinity/` - user projects stay clean:
 ├── projects/
 │   └── <project-hash>/               # Hash = slugify(name)-timestamp
 │       ├── config.json               # Project config
-│       ├── trinity.db                # All state: PRD, agents, activity, learnings, queue
+│       ├── trinity.db                # All state: PRD, agents, activity, learnings, queue (solo mode)
 │       └── worktrees/                # Git worktrees for parallel agents
 │           ├── feature-auth/         # Agent 1 workspace
 │           └── feature-payments/     # Agent 2 workspace (parallel)
@@ -62,7 +62,7 @@ User's project gets no scaffolded files. The output is commits/code.
 
 ## Database Layer
 
-All state lives in SQLite (`trinity.db`). Trinity provides a clean API layer:
+All state lives in the database. Solo mode uses SQLite (`trinity.db`). Teams use Turso (managed or BYOD) or Postgres/MySQL (v0.3+). Trinity provides a clean API layer with adapter support:
 
 **Schema:**
 ```sql
