@@ -52,6 +52,9 @@ ui:dim "Max iterations: "$config[max-iterations]
 if $config[quiet-mode] {
   ui:dim "Mode:           quiet (Claude output hidden)"
 }
+if (and $config[no-validate] $config[auto-pr] $config[auto-merge]) {
+  ui:warn "YOLO mode: No validation, auto-PR, auto-merge"
+}
 echo ""
 
 # Handle reset mode

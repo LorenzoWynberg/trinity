@@ -71,7 +71,7 @@ Track implementation progress. Update status as features are completed.
 ### 8. YOLO Mode
 - [x] Add `--yolo` flag to `lib/cli.elv`
 - [x] Set no-validate, auto-pr, auto-merge when enabled
-- [ ] Add warning message on activation
+- [x] Add warning message on activation
 
 ---
 
@@ -98,9 +98,9 @@ Track implementation progress. Update status as features are completed.
 - [ ] Clear state.json
 
 ### 12. Configurable Timeouts
-- [ ] Add `--timeout N` flag
-- [ ] Pass to Claude invocation
-- [ ] Update default from 1800s
+- [x] Add `--timeout N` flag
+- [x] Pass to Claude invocation (via claude-timeout config)
+- [x] Default remains 1800s
 
 ---
 

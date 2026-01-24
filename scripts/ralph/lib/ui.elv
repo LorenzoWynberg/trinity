@@ -87,6 +87,7 @@ OPTIONS:
   --yolo                  Full auto: --no-validate + --auto-pr + --auto-merge
   --notify                Send desktop notifications on story complete/blocked
   --skip ID "reason"      Skip a story, allowing dependents to proceed
+  --timeout <seconds>     Claude timeout (default: 1800 = 30 min)
   --resume                Resume from last state (skip story selection)
   --reset                 Reset state and start fresh
   -q, --quiet             Quiet mode - hide Claude output, show only Ralph status

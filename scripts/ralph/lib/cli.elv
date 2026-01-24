@@ -16,6 +16,7 @@ var no-validate = $false
 var notify-enabled = $false
 var skip-story-id = ""
 var skip-reason = ""
+var custom-timeout = 0
 
 # Parse command line arguments
 fn parse-args {|arguments|
@@ -81,6 +82,15 @@ fn parse-args {|arguments|
       set skip-story-id = $arguments[$next-idx]
       set skip-reason = $arguments[$reason-idx]
       set i = (+ $i 3)
+    } elif (eq $arg "--timeout") {
+      var next-idx = (+ $i 1)
+      if (>= $next-idx (count $arguments)) {
+        echo "Error: --timeout requires a number (seconds)" >&2
+        exit 1
+      }
+      set custom-timeout = (num $arguments[$next-idx])
+      set claude-timeout = $custom-timeout
+      set i = (+ $i 2)
     } else {
       echo "Error: Unknown argument: "$arg >&2
       exit 1
