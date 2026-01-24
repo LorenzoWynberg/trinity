@@ -5,6 +5,8 @@ Story: {{CURRENT_STORY}} | Branch: {{BRANCH}} | Attempt: {{ATTEMPT}} | Iteration
 
 Dependencies (completed): {{DEPENDENCIES}}
 
+{{FEEDBACK}}
+
 ## 1. Load Context
 Read these files first:
 - `scripts/ralph/prd.json` - acceptance criteria for {{CURRENT_STORY}}

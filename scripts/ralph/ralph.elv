@@ -284,6 +284,74 @@ fn ensure-on-branch {|branch|
   }
 }
 
+# Run Claude with user feedback for refinement
+fn run-refinement {|story-id branch-name feedback|
+  ralph-status "Running Claude with feedback..."
+  ralph-dim "  Feedback: "$feedback
+  echo ""
+
+  # Build refinement prompt
+  var refinement-prompt = "# Refinement Request - "$story-id"
+
+## User Feedback
+The user has requested the following changes before creating the PR:
+
+> "$feedback"
+
+## Context
+- Branch: "$branch-name"
+- Story: "$story-id"
+
+## Instructions
+1. Review the user's feedback carefully
+2. Make the requested changes
+3. Ensure build passes: `go build ./cli/cmd/trinity`
+4. Commit and push the changes
+5. Output `<story-complete>"$story-id"</story-complete>` when done
+
+## Important
+- Stay focused on the feedback - don't refactor unrelated code
+- Keep changes minimal and targeted
+- No AI attribution in code or commits
+"
+
+  var output-file = (mktemp)
+  var prompt-tmp = (mktemp)
+  echo $refinement-prompt > $prompt-tmp
+
+  echo $C_DIM"────────────────── Claude Refining ──────────────────"$C_RESET
+
+  cd $project-root
+  var claude-start = (date +%s)
+
+  try {
+    if $quiet-mode {
+      timeout $claude-timeout bash -c 'claude --dangerously-skip-permissions --print < "$1"' _ $prompt-tmp > $output-file 2>&1
+    } else {
+      var stream-text = 'select(.type == "assistant").message.content[]? | select(.type == "text").text // empty | gsub("\n"; "\r\n") | . + "\r\n\n"'
+      try {
+        timeout $claude-timeout claude --dangerously-skip-permissions --verbose --print --output-format stream-json < $prompt-tmp 2>&1 | grep --line-buffered '^{' | tee $output-file | jq --unbuffered -rj $stream-text 2>/dev/null
+      } catch _ { }
+    }
+    var claude-end = (date +%s)
+    var claude-duration = (- $claude-end $claude-start)
+    echo $C_DIM"───────────────────────────────────────────────────"$C_RESET
+    ralph-success "Refinement completed in "$claude-duration"s"
+  } catch e {
+    var claude-end = (date +%s)
+    var claude-duration = (- $claude-end $claude-start)
+    echo $C_DIM"───────────────────────────────────────────────────"$C_RESET
+    if (>= $claude-duration $claude-timeout) {
+      ralph-error "Claude refinement TIMED OUT after "$claude-timeout"s"
+    } else {
+      ralph-error "Claude refinement error: "(to-string $e[reason])
+    }
+  } finally {
+    rm -f $prompt-tmp
+    rm -f $output-file
+  }
+}
+
 # Get next story from prd.json (respects dependencies)
 fn get-next-story {
   var pf = $prd-file
@@ -634,23 +702,43 @@ while (< $current-iteration $max-iterations) {
     write-state $state
     ralph-dim "  State saved locally."
 
-    # PR Creation
+    # PR Creation with Feedback Loop
     echo ""
     var should-create-pr = $auto-pr
-    if (not $auto-pr) {
-      ralph-status "Create PR to "$base-branch"?"
-      echo $C_YELLOW"Create PR? [Y/n] "$C_DIM"(auto-yes in 120s)"$C_RESET
-      try {
-        var answer = (bash -c 'read -t 120 -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
-        if (re:match '^[nN]' $answer) {
-          set should-create-pr = $false
+    var pr-url = ""
+    var pr-loop = $true
+
+    while $pr-loop {
+      set pr-loop = $false
+
+      if (not $auto-pr) {
+        ralph-status "Create PR to "$base-branch"?"
+        echo $C_YELLOW"[Y]es / [n]o / or type feedback for changes"$C_RESET
+        echo $C_DIM"(auto-yes in 120s)"$C_RESET
+        try {
+          var answer = (str:trim-space (bash -c 'read -t 120 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null))
+          if (eq $answer "") {
+            # Empty = yes (default)
+            set should-create-pr = $true
+          } elif (re:match '^[nN]$' $answer) {
+            set should-create-pr = $false
+          } elif (re:match '^[yY]$' $answer) {
+            set should-create-pr = $true
+          } else {
+            # Treat as feedback - run refinement
+            ralph-warn "Received feedback, running refinement..."
+            run-refinement $story-id $branch-name $answer
+            set pr-loop = $true
+            set should-create-pr = $false
+            echo ""
+          }
+        } catch {
+          ralph-dim "(Timeout - creating PR)"
+          set should-create-pr = $true
         }
-      } catch {
-        ralph-dim "(Timeout - creating PR)"
       }
     }
 
-    var pr-url = ""
     if $should-create-pr {
       ralph-status "Creating PR to "$base-branch"..."
       try {
@@ -662,23 +750,51 @@ while (< $current-iteration $max-iterations) {
         ralph-error "Failed to create PR: "(to-string $e[reason])
       }
     } else {
-      ralph-dim "Skipping PR creation (branch pushed: "$branch-name")"
+      if (not $pr-loop) {
+        ralph-dim "Skipping PR creation (branch pushed: "$branch-name")"
+      }
     }
 
-    # PR Merge
+    # PR Merge with Feedback Loop
     if (and (not (eq $pr-url "")) $should-create-pr) {
       var should-merge = $auto-merge
-      if (not $auto-merge) {
-        echo ""
-        ralph-status "Merge PR?"
-        echo $C_YELLOW"Merge PR? [y/N] "$C_DIM"(auto-no in 120s)"$C_RESET
-        try {
-          var answer = (bash -c 'read -t 120 -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
-          if (re:match '^[yY]' $answer) {
-            set should-merge = $true
+      var merge-loop = $true
+
+      while $merge-loop {
+        set merge-loop = $false
+
+        if (not $auto-merge) {
+          echo ""
+          ralph-status "Merge PR?"
+          echo $C_YELLOW"[y]es / [N]o / or type feedback for changes"$C_RESET
+          echo $C_DIM"(auto-no in 120s)"$C_RESET
+          try {
+            var answer = (str:trim-space (bash -c 'read -t 120 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null))
+            if (eq $answer "") {
+              # Empty = no (default)
+              set should-merge = $false
+            } elif (re:match '^[nN]$' $answer) {
+              set should-merge = $false
+            } elif (re:match '^[yY]$' $answer) {
+              set should-merge = $true
+            } else {
+              # Treat as feedback - run refinement
+              ralph-warn "Received feedback, running refinement..."
+              run-refinement $story-id $branch-name $answer
+              # Push updated changes
+              ralph-dim "Pushing refinement changes..."
+              try {
+                git -C $project-root push origin $branch-name 2>&1 | slurp
+                ralph-success "Changes pushed"
+              } catch _ { }
+              set merge-loop = $true
+              set should-merge = $false
+              echo ""
+            }
+          } catch {
+            ralph-dim "(Timeout - skipping merge)"
+            set should-merge = $false
           }
-        } catch {
-          ralph-dim "(Timeout - skipping merge)"
         }
       }
 
@@ -691,7 +807,9 @@ while (< $current-iteration $max-iterations) {
           ralph-error "Failed to merge PR: "(to-string $e[reason])
         }
       } else {
-        ralph-dim "PR left open for review"
+        if (not $merge-loop) {
+          ralph-dim "PR left open for review"
+        }
       }
     }
 

@@ -67,6 +67,27 @@ The PRD has 83 stories across 7 phases:
 | 6 | CLI Commands | init, plan, run, status, internal |
 | 7 | Polish | UX, docs, testing |
 
+## Feedback Loop
+
+When prompted for PR creation or merge, you can provide text feedback instead of just y/n:
+
+```
+Create PR? [Y]es / [n]o / or type feedback for changes
+> fix the error handling in config.go
+
+Received feedback, running refinement...
+────────────────── Claude Refining ──────────────────
+...
+```
+
+Ralph will:
+1. Run Claude with your feedback as context
+2. Claude makes the requested changes
+3. Push the changes
+4. Prompt again for PR/merge
+
+This enables iterative refinement without leaving the loop.
+
 ## Signals
 
 Claude outputs these signals to communicate with Ralph:
