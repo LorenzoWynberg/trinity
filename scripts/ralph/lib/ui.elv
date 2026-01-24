@@ -56,6 +56,21 @@ fn box {|title style|
   echo $color$C_BOLD"╚════════════════════════════════════════════════════════╝"$C_RESET
 }
 
+# Desktop notification (macOS/Linux)
+fn notify {|title message|
+  if (has-external osascript) {
+    # macOS
+    try {
+      osascript -e 'display notification "'$message'" with title "'$title'"' 2>/dev/null
+    } catch _ { }
+  } elif (has-external notify-send) {
+    # Linux
+    try {
+      notify-send $title $message 2>/dev/null
+    } catch _ { }
+  }
+}
+
 fn show-help {
   echo '
 Ralph - Autonomous Development Loop for Trinity v0.1
@@ -68,6 +83,10 @@ OPTIONS:
   --base-branch <name>    Base branch to create story branches from (default: dev)
   --auto-pr               Auto-create PR without prompting (default: prompt)
   --auto-merge            Auto-merge PR without prompting (default: prompt)
+  --no-validate           Skip story validation before execution
+  --yolo                  Full auto: --no-validate + --auto-pr + --auto-merge
+  --notify                Send desktop notifications on story complete/blocked
+  --skip ID "reason"      Skip a story, allowing dependents to proceed
   --resume                Resume from last state (skip story selection)
   --reset                 Reset state and start fresh
   -q, --quiet             Quiet mode - hide Claude output, show only Ralph status

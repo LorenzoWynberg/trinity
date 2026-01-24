@@ -62,6 +62,23 @@ if $config[reset-mode] {
   echo ""
 }
 
+# Handle skip mode
+if (not (eq $config[skip-story-id] "")) {
+  ui:status "Skipping story: "$config[skip-story-id]
+  ui:dim "  Reason: "$config[skip-reason]
+  prd:skip-story $config[skip-story-id] $config[skip-reason]
+
+  # Log to activity
+  var today = (date '+%Y-%m-%d')
+  var activity-file = (path:join $project-root "docs" "activity" $today".md")
+  echo "" >> $activity-file
+  echo "## Skipped: "$config[skip-story-id] >> $activity-file
+  echo "Reason: "$config[skip-reason] >> $activity-file
+
+  ui:success "Story skipped. Dependents can now proceed."
+  exit 0
+}
+
 # Read current state
 var current-state = (state:read)
 ui:dim "Current state:"
@@ -317,6 +334,9 @@ while (< $current-iteration $config[max-iterations]) {
     if $signals[complete] {
       echo ""
       ui:success "Story "$story-id" completed!"
+      if $config[notify-enabled] {
+        ui:notify "Ralph" "Story "$story-id" completed!"
+      }
 
       # Extract learnings before PR flow
       echo ""
@@ -395,6 +415,9 @@ while (< $current-iteration $config[max-iterations]) {
     } elif $signals[blocked] {
       echo ""
       ui:error "Story "$story-id" is BLOCKED"
+      if $config[notify-enabled] {
+        ui:notify "Ralph" "Story "$story-id" BLOCKED!"
+      }
       ui:dim "  Clearing story state..."
       set current-state[status] = "blocked"
       set current-state[current_story] = $nil
@@ -411,6 +434,9 @@ while (< $current-iteration $config[max-iterations]) {
     if $signals[all_complete] {
       echo ""
       ui:box "ALL STORIES COMPLETE!" "success"
+      if $config[notify-enabled] {
+        ui:notify "Ralph" "All stories complete!"
+      }
       ui:dim "Total iterations: "$current-iteration
       exit 0
     }

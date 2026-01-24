@@ -127,6 +127,18 @@ fn get-story-branch {|story-id|
   put "feat/story-"$parts[0]"."$parts[1]"."$parts[2]
 }
 
+# Skip a story (marks as complete for dependency purposes)
+fn skip-story {|story-id reason|
+  var tmp = (mktemp)
+  jq '(.stories[] | select(.id == "'$story-id'")) |= . + {
+    skipped: true,
+    skip_reason: "'$reason'",
+    passes: true,
+    merged: true
+  }' $prd-file > $tmp
+  mv $tmp $prd-file
+}
+
 # Get dependency info for a story (formatted for display)
 fn get-story-deps {|story-id|
   var deps-query = ".stories[] | select(.id == \""$story-id"\") | .depends_on // [] | .[]"

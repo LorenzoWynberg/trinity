@@ -48,11 +48,11 @@ Track implementation progress. Update status as features are completed.
 ## Phase 2: Polish
 
 ### 5. Desktop Notifications
-- [ ] Create `notify` function in `lib/ui.elv`
-- [ ] Add macOS `osascript` support
-- [ ] Add Linux `notify-send` support
-- [ ] Add `--notify` flag
-- [ ] Trigger on story complete/blocked
+- [x] Create `notify` function in `lib/ui.elv`
+- [x] Add macOS `osascript` support
+- [x] Add Linux `notify-send` support
+- [x] Add `--notify` flag
+- [x] Trigger on story complete/blocked
 
 ### 6. Status Command
 - [ ] Add `--status` flag to `lib/cli.elv`
@@ -62,10 +62,10 @@ Track implementation progress. Update status as features are completed.
 - [ ] Show current story and branch
 
 ### 7. Skip Story Command
-- [ ] Add `--skip` flag with story ID and reason
-- [ ] Create `skip-story` function in `lib/prd.elv`
-- [ ] Update prd.json with skipped status
-- [ ] Log to activity
+- [x] Add `--skip` flag with story ID and reason
+- [x] Create `skip-story` function in `lib/prd.elv`
+- [x] Update prd.json with skipped status
+- [x] Log to activity
 - [ ] Test dependency resolution with skipped story
 
 ### 8. YOLO Mode

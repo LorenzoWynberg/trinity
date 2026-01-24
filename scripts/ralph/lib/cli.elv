@@ -13,6 +13,9 @@ var auto-merge = $false
 var resume-mode = $false
 var reset-mode = $false
 var no-validate = $false
+var notify-enabled = $false
+var skip-story-id = ""
+var skip-reason = ""
 
 # Parse command line arguments
 fn parse-args {|arguments|
@@ -64,6 +67,20 @@ fn parse-args {|arguments|
       set auto-pr = $true
       set auto-merge = $true
       set i = (+ $i 1)
+    } elif (eq $arg "--notify") {
+      set notify-enabled = $true
+      set i = (+ $i 1)
+    } elif (eq $arg "--skip") {
+      # --skip STORY-X "reason"
+      var next-idx = (+ $i 1)
+      var reason-idx = (+ $i 2)
+      if (>= $reason-idx (count $arguments)) {
+        echo "Error: --skip requires STORY-ID and \"reason\"" >&2
+        exit 1
+      }
+      set skip-story-id = $arguments[$next-idx]
+      set skip-reason = $arguments[$reason-idx]
+      set i = (+ $i 3)
     } else {
       echo "Error: Unknown argument: "$arg >&2
       exit 1
@@ -105,5 +122,8 @@ fn get-config {
     &resume-mode=$resume-mode
     &reset-mode=$reset-mode
     &no-validate=$no-validate
+    &notify-enabled=$notify-enabled
+    &skip-story-id=$skip-story-id
+    &skip-reason=$skip-reason
   ]
 }
