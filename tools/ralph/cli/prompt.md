@@ -1,7 +1,7 @@
 # Ralph Agent - Story {{CURRENT_STORY}}
 
 ## Context
-Story: {{CURRENT_STORY}} | Branch: {{BRANCH}} | Attempt: {{ATTEMPT}} | Iteration: {{ITERATION}}/{{MAX_ITERATIONS}}
+Version: {{VERSION}} | Story: {{CURRENT_STORY}} | Branch: {{BRANCH}} | Attempt: {{ATTEMPT}} | Iteration: {{ITERATION}}/{{MAX_ITERATIONS}}
 
 Dependencies (completed): {{DEPENDENCIES}}
 
@@ -9,7 +9,7 @@ Dependencies (completed): {{DEPENDENCIES}}
 
 ## 1. Load Context
 Read these files first:
-- `tools/ralph/cli/prd.json` - acceptance criteria for {{CURRENT_STORY}}
+- `tools/ralph/cli/prd/{{VERSION}}.json` - acceptance criteria for {{CURRENT_STORY}}
 - `docs/ARCHITECTURE.md` - system design and patterns
 - `docs/COMMANDS.md` - CLI command specifications
 - `docs/PROMPTS.md` - prompt system design
@@ -21,7 +21,7 @@ Read these files first:
 
 If attempt > 1 or refinement: check `git log` and `git diff` for previous work. Focus on the feedback if provided.
 
-**Activity Log:** Create or update `docs/activity/YYYY-MM-DD.md` (today's date). Add entry for starting work on {{CURRENT_STORY}}. Before archiving old logs: extract learnings to `docs/learnings/`. Archive logs older than 7 days to `docs/activity/archive/YYYY-MM/`.
+**Activity Log:** Create or update `docs/activity/YYYY-MM-DD.md` (today's date). Add entry for starting work on {{VERSION}} / {{CURRENT_STORY}}. Include version in headers (e.g., "## {{VERSION}} - {{CURRENT_STORY}}: Title"). Before archiving old logs: extract learnings to `docs/learnings/`. Archive logs older than 7 days to `docs/activity/archive/YYYY-MM/`.
 
 ### Recent Activity Logs (Detailed Context)
 Review these recent activity logs for detailed context on recent work:

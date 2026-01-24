@@ -18,6 +18,9 @@ fn set-prd-file {|file-path|
   set prd-file = $file-path
 }
 
+# Current selected version
+var current-version = ""
+
 # Get PRD file path (for other modules)
 fn get-prd-file {
   put $prd-file
@@ -26,6 +29,11 @@ fn get-prd-file {
 # Get PRD directory path
 fn get-prd-dir {
   put $prd-dir
+}
+
+# Get current selected version
+fn get-current-version {
+  put $current-version
 }
 
 # List all available version files in prd directory
@@ -93,6 +101,7 @@ fn select-version {|target-version|
   }
 
   set-prd-file $file
+  set current-version = $version
   put $version
 }
 
