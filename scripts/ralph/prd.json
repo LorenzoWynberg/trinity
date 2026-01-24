@@ -6,8 +6,8 @@
       "intent": "Establish the Go monorepo workspace with proper module boundaries",
       "acceptance": [
         "go.work file at root with use directives for core, cli",
-        "core/go.mod with module github.com/yourusername/trinity/core",
-        "cli/go.mod with module github.com/yourusername/trinity/cli",
+        "core/go.mod with module github.com/trinity-ai-labs/trinity/core",
+        "cli/go.mod with module github.com/trinity-ai-labs/trinity/cli",
         "cli imports core module",
         "go work sync succeeds"
       ],
