@@ -44,7 +44,7 @@ Two-stage completion tracking:
 ## Activity Logging
 
 ### Daily log format
-`docs/activity/YYYY-MM-DD.md` with timestamped entries documenting what was done.
+`logs/activity/YYYY-MM-DD.md` with timestamped entries documenting what was done.
 
 ### Including in prompts
 Read 2 most recent logs and include via `{{RECENT_ACTIVITY_LOGS}}` placeholder. Gives Claude context about recent work.

@@ -232,7 +232,7 @@ if (not (eq $config[skip-story-id] "")) {
 
   # Log to activity
   var today = (date '+%Y-%m-%d')
-  var activity-file = (path:join $project-root "docs" "activity" $today".md")
+  var activity-file = (path:join $project-root "logs" "activity" $today".md")
   echo "" >> $activity-file
   echo "## Skipped: "$config[skip-story-id] >> $activity-file
   echo "Reason: "$config[skip-reason] >> $activity-file

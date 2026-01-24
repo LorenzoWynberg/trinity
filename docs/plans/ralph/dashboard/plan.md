@@ -145,7 +145,7 @@ Charts and statistics:
 
 Activity log viewer:
 
-- Parse `docs/activity/*.md` files
+- Parse `logs/activity/*.md` files
 - Filter by date range
 - Search within logs
 - Highlight current story entries
@@ -218,7 +218,7 @@ export async function getState() {
 }
 
 export async function getActivityLogs() {
-  const activityDir = path.join(RALPH_DIR, '../../docs/activity')
+  const activityDir = path.join(RALPH_DIR, '../../logs/activity')
   const files = await fs.readdir(activityDir)
   // Parse markdown files...
 }

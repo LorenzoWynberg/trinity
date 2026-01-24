@@ -13,7 +13,7 @@ export default async function ActivityPage() {
       <div className="p-8">
         <h1 className="text-2xl font-bold mb-4">Activity</h1>
         <p className="text-muted-foreground">
-          No activity logs found in docs/activity/
+          No activity logs found in logs/activity/
         </p>
       </div>
     )

@@ -7,6 +7,7 @@ const PROJECT_ROOT = path.join(process.cwd(), '../../..')
 const RALPH_CLI_DIR = path.join(PROJECT_ROOT, 'tools/ralph/cli')
 const PRD_DIR = path.join(RALPH_CLI_DIR, 'prd')
 const DOCS_DIR = path.join(PROJECT_ROOT, 'docs')
+const LOGS_DIR = path.join(PROJECT_ROOT, 'logs')
 
 // Get list of available versions from prd/ directory
 export async function getVersions(): Promise<string[]> {
@@ -121,7 +122,7 @@ export async function getMetrics(): Promise<Metrics | null> {
 
 export async function getActivityLogs(): Promise<{ date: string; content: string }[]> {
   try {
-    const activityDir = path.join(DOCS_DIR, 'activity')
+    const activityDir = path.join(LOGS_DIR, 'activity')
     const files = await fs.readdir(activityDir)
     const mdFiles = files.filter(f => f.match(/^\d{4}-\d{2}-\d{2}\.md$/))
 

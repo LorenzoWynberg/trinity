@@ -67,7 +67,7 @@ Older activity logs are moved to `archive/` to keep the main directory clean.
 
 **Structure:**
 ```
-docs/activity/
+logs/activity/
 ├── README.md           # This file
 ├── 2026-01-24.md       # Recent logs (keep last 7 days)
 ├── 2026-01-23.md
