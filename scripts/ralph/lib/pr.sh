@@ -24,31 +24,71 @@ pr_check_exists() {
   echo "$existing"
 }
 
-# Build PR body from commits and changes
+# Build PR body using Claude to summarize changes
 pr_build_body() {
   local story_id="$1"
   local story_title="$2"
   local branch_name="$3"
 
-  # Get commit messages since branching from base
+  ui_dim "  Generating PR description with Claude..."
+
+  # Get commit messages
   local commits
   commits=$(git -C "$PR_PROJECT_ROOT" log --oneline "$PR_BASE_BRANCH".."$branch_name" 2>/dev/null | head -20)
 
-  # Get changed files
-  local files_changed
-  files_changed=$(git -C "$PR_PROJECT_ROOT" diff --stat "$PR_BASE_BRANCH".."$branch_name" 2>/dev/null | tail -1)
+  # Get diff (limited to avoid token explosion)
+  local diff
+  diff=$(git -C "$PR_PROJECT_ROOT" diff "$PR_BASE_BRANCH".."$branch_name" 2>/dev/null | head -500)
 
-  cat << EOF
-## $story_id: $story_title
+  # Get file stats
+  local stats
+  stats=$(git -C "$PR_PROJECT_ROOT" diff --stat "$PR_BASE_BRANCH".."$branch_name" 2>/dev/null)
+
+  # Build prompt for Claude
+  local prompt="Write a concise GitHub PR description for these changes.
+
+Story: $story_id - $story_title
+
+Commits:
+$commits
+
+File changes:
+$stats
+
+Diff (truncated):
+$diff
+
+Format your response as:
+## Summary
+<1-2 sentence summary of what this PR does>
+
+## Changes
+<bullet points of key changes>
+
+## Testing
+<how to verify the changes work>
+
+Keep it concise. No preamble, just the formatted PR description."
+
+  # Call Claude to generate description
+  local body
+  body=$(echo "$prompt" | claude --print 2>/dev/null)
+
+  # Fallback if Claude fails
+  if [[ -z "$body" ]]; then
+    ui_dim "  Claude unavailable, using basic template"
+    body="## $story_id: $story_title
 
 ### Commits
 \`\`\`
 $commits
 \`\`\`
 
-### Summary
-$files_changed
-EOF
+### Changes
+$stats"
+  fi
+
+  echo "$body"
 }
 
 # Create a new PR
