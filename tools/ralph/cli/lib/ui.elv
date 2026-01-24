@@ -93,6 +93,8 @@ OPTIONS:
   --reset                 Reset state and start fresh
   --status                Show PRD status (phases, epics, stories) and exit
   --stats                 Show metrics (tokens, durations, costs) and exit
+  --version-status        Show version progress and exit
+  --target-version <ver>  Only work on stories for specific version (e.g., v1.0)
   --plan                  Plan mode - output implementation plan without making changes
   -q, --quiet             Quiet mode - hide Claude output, show only Ralph status
   -v, --verbose           Verbose mode - show full prompts, responses, state transitions

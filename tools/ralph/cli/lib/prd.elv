@@ -258,3 +258,108 @@ fn get-story-deps {|story-id|
     }
   }
 }
+
+# ═══════════════════════════════════════════════════════════════════════════
+# VERSION SUPPORT
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Get all unique versions in the PRD
+fn get-versions {
+  jq -r '.stories | map(.target_version // "v1.0") | unique | .[]' $prd-file
+}
+
+# Get next available story for a specific version
+fn get-next-story-for-version {|version|
+  # Get all MERGED story IDs
+  var merged = [(jq -r '.stories[] | select(.merged == true) | .id' $prd-file)]
+
+  # Get stories for this version that haven't passed yet
+  var candidates = [(jq -r '.stories[] | select(.passes != true and (.target_version // "v1.0") == "'$version'") | "\(.id)|\(.depends_on // [] | join(","))"' $prd-file)]
+
+  for candidate $candidates {
+    var parts = [(str:split "|" $candidate)]
+    var sid = $parts[0]
+    var deps-str = $parts[1]
+
+    # Check if all dependencies are MERGED
+    var deps-met = $true
+    if (not (eq $deps-str "")) {
+      var deps = [(str:split "," $deps-str)]
+      for dep $deps {
+        var found = $false
+        for m $merged {
+          if (eq $m $dep) {
+            set found = $true
+            break
+          }
+        }
+        if (not $found) {
+          set deps-met = $false
+          break
+        }
+      }
+    }
+
+    if $deps-met {
+      put $sid
+      return
+    }
+  }
+
+  # No story found
+  put ""
+}
+
+# Check if all stories for a version are merged
+fn version-complete {|version|
+  var not-merged = (jq '[.stories[] | select((.target_version // "v1.0") == "'$version'" and .merged != true)] | length' $prd-file)
+  eq $not-merged "0"
+}
+
+# Get version progress (returns "merged/total")
+fn get-version-progress {|version|
+  var total = (jq '[.stories[] | select((.target_version // "v1.0") == "'$version'")] | length' $prd-file)
+  var merged = (jq '[.stories[] | select((.target_version // "v1.0") == "'$version'" and .merged == true)] | length' $prd-file)
+  put $merged"/"$total
+}
+
+# Show version status summary
+fn show-version-status {
+  echo "═══════════════════════════════════════════════════════"
+  echo "  VERSION STATUS"
+  echo "═══════════════════════════════════════════════════════"
+  echo ""
+
+  var versions = [(get-versions)]
+
+  for version $versions {
+    var total = (jq '[.stories[] | select((.target_version // "v1.0") == "'$version'")] | length' $prd-file)
+    var merged = (jq '[.stories[] | select((.target_version // "v1.0") == "'$version'" and .merged == true)] | length' $prd-file)
+    var passed = (jq '[.stories[] | select((.target_version // "v1.0") == "'$version'" and .passes == true)] | length' $prd-file)
+    var skipped = (jq '[.stories[] | select((.target_version // "v1.0") == "'$version'" and .skipped == true)] | length' $prd-file)
+
+    var pct = 0
+    if (> $total 0) {
+      set pct = (/ (* $merged 100) $total)
+    }
+
+    var status = "in_progress"
+    if (eq $merged $total) {
+      set status = "ready_to_release"
+    }
+
+    echo $version" ["$status"]"
+    echo "  Progress: "$merged"/"$total" ("$pct"%)"
+    echo "  - Passed (awaiting merge): "(- $passed $merged)
+    echo "  - Skipped: "$skipped
+    echo "  - Remaining: "(- $total $passed)
+    echo ""
+  }
+
+  echo "═══════════════════════════════════════════════════════"
+}
+
+# Get story's target version
+fn get-story-version {|story-id|
+  jq -r '.stories[] | select(.id == "'$story-id'") | .target_version // "v1.0"' $prd-file
+}

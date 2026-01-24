@@ -22,6 +22,8 @@ var verbose-mode = $false
 var status-mode = $false
 var plan-mode = $false
 var stats-mode = $false
+var version-status-mode = $false
+var target-version = ""
 
 # Parse command line arguments
 fn parse-args {|arguments|
@@ -116,6 +118,17 @@ fn parse-args {|arguments|
     } elif (eq $arg "--stats") {
       set stats-mode = $true
       set i = (+ $i 1)
+    } elif (eq $arg "--version-status") {
+      set version-status-mode = $true
+      set i = (+ $i 1)
+    } elif (eq $arg "--target-version") {
+      var next-idx = (+ $i 1)
+      if (>= $next-idx (count $arguments)) {
+        echo "Error: --target-version requires a version (e.g., v1.0)" >&2
+        exit 1
+      }
+      set target-version = $arguments[$next-idx]
+      set i = (+ $i 2)
     } else {
       echo "Error: Unknown argument: "$arg >&2
       exit 1
@@ -165,5 +178,7 @@ fn get-config {
     &status-mode=$status-mode
     &plan-mode=$plan-mode
     &stats-mode=$stats-mode
+    &version-status-mode=$version-status-mode
+    &target-version=$target-version
   ]
 }

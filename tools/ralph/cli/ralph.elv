@@ -68,6 +68,13 @@ if $config[stats-mode] {
   exit 0
 }
 
+# Handle version status mode (show version progress and exit)
+if $config[version-status-mode] {
+  echo ""
+  prd:show-version-status
+  exit 0
+}
+
 # Handle plan mode (generate plan and exit)
 if $config[plan-mode] {
   echo ""
@@ -82,7 +89,11 @@ if $config[plan-mode] {
     set story-id = $current-state[current_story]
     ui:status "Planning for current story: "$story-id
   } else {
-    set story-id = (prd:get-next-story)
+    if (not (eq $config[target-version] "")) {
+      set story-id = (prd:get-next-story-for-version $config[target-version])
+    } else {
+      set story-id = (prd:get-next-story)
+    }
     if (eq $story-id "") {
       ui:warn "No stories available to plan"
       exit 0
@@ -294,7 +305,12 @@ while (< $current-iteration $config[max-iterations]) {
       ui:status "Continuing story: "$story-id
     } else {
       ui:status "Finding next story..."
-      set story-id = (prd:get-next-story)
+      if (not (eq $config[target-version] "")) {
+        ui:dim "  Filtering for version: "$config[target-version]
+        set story-id = (prd:get-next-story-for-version $config[target-version])
+      } else {
+        set story-id = (prd:get-next-story)
+      }
       if (eq $story-id "") {
         ui:warn "No stories available (all complete or blocked)"
         break
