@@ -860,7 +860,8 @@
         "Handles resume of in-progress story",
         "Skips blocked stories",
         "Skips stories awaiting human approval",
-        "Returns nil when all done"
+        "Returns nil when all done",
+        "Dependencies resolve on merge to dev, not on completion signal"
       ],
       "passes": false,
       "depends_on": [
