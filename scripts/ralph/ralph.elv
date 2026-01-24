@@ -19,7 +19,7 @@ var progress-file = (path:join $script-dir "progress.txt")
 var state-file = (path:join $script-dir "state.json")
 
 # Default configuration
-var max-iterations = 15
+var max-iterations = 100
 var current-iteration = 0
 var base-branch = "main"
 var quiet-mode = $false
@@ -69,7 +69,7 @@ USAGE:
   ralph.elv [OPTIONS]
 
 OPTIONS:
-  --max-iterations <n>    Maximum iterations before auto-stop (default: 15)
+  --max-iterations <n>    Maximum iterations before auto-stop (default: 100)
   --base-branch <name>    Base branch to create story branches from (default: main)
   --resume                Resume from last state (skip story selection)
   --reset                 Reset state and start fresh
