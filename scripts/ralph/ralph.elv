@@ -21,7 +21,7 @@ var state-file = (path:join $script-dir "state.json")
 # Default configuration
 var max-iterations = 100
 var current-iteration = 0
-var base-branch = "main"
+var base-branch = "dev"
 var quiet-mode = $false
 var claude-timeout = 1800  # 30 minutes
 
@@ -70,7 +70,7 @@ USAGE:
 
 OPTIONS:
   --max-iterations <n>    Maximum iterations before auto-stop (default: 100)
-  --base-branch <name>    Base branch to create story branches from (default: main)
+  --base-branch <name>    Base branch to create story branches from (default: dev)
   --resume                Resume from last state (skip story selection)
   --reset                 Reset state and start fresh
   -q, --quiet             Quiet mode - hide Claude output, show only Ralph status
