@@ -220,9 +220,9 @@ function GraphContent() {
   return (
     <>
       <div className="h-[calc(100vh-2rem)] w-full relative">
-        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-          {/* Version Selector */}
-          {versions.length >= 1 && (
+        {/* Version Selector - Left */}
+        {versions.length >= 1 && (
+          <div className="absolute top-4 left-4 z-10">
             <Select value={selectedVersion} onValueChange={setSelectedVersion}>
               <SelectTrigger className="w-[120px] h-9 bg-background">
                 <SelectValue placeholder="All versions" />
@@ -236,9 +236,11 @@ function GraphContent() {
                 ))}
               </SelectContent>
             </Select>
-          )}
+          </div>
+        )}
 
-          {/* Direction Toggle */}
+        {/* Direction Toggle - Right */}
+        <div className="absolute top-4 right-4 z-10">
           <Button
             variant="outline"
             size="sm"
