@@ -15,24 +15,27 @@ Ralph is an autonomous development loop that builds Trinity v0.1 by working thro
 ## Prerequisites
 
 - [Elvish shell](https://elv.sh/get/) - Install with `brew install elvish` (macOS) or see elv.sh/get
+- [GitHub CLI](https://cli.github.com/) - For PR creation/merging
 - Go 1.21+ - For building Trinity
 - Claude Code CLI - The AI execution engine
 
 ## How It Works
 
 1. **Picks next story** - Selects from `prd.json`, respecting dependencies
-2. **Creates branch** - `feat/story-<phase>.<epic>.<story>` from main
+2. **Creates branch** - `feat/story-<phase>.<epic>.<story>` from dev
 3. **Runs Claude** - Pipes prompt.md template to Claude CLI
 4. **Parses signals** - Detects `<story-complete>`, `<story-blocked>`
-5. **Updates state** - Persists progress to state.json
-6. **Repeats** - Until all stories complete or max iterations
+5. **Creates PR** - Auto-creates PR to dev (or prompts if `--no-auto-pr`)
+6. **Merges PR** - Prompts to merge (or auto-merges if `--auto-merge`)
+7. **Updates state** - Persists progress to state.json
+8. **Repeats** - Until all stories complete or max iterations
 
 ## Files
 
 | File | Purpose |
 |------|---------|
 | `ralph.elv` | Main loop script (Elvish) |
-| `prd.json` | Stories with dependencies (61 stories for v0.1) |
+| `prd.json` | Stories with dependencies (83 stories for v0.1) |
 | `prompt.md` | Template sent to Claude for each story |
 | `state.json` | Persistent state between runs |
 | `progress.txt` | Human-readable progress log |
@@ -43,14 +46,16 @@ Ralph is an autonomous development loop that builds Trinity v0.1 by working thro
 ./ralph.elv --help                    # Show all options
 ./ralph.elv --resume                  # Force resume current story
 ./ralph.elv --reset                   # Reset state, start fresh
-./ralph.elv --max-iterations 5        # Limit iterations
-./ralph.elv --base-branch develop     # Use different base branch
+./ralph.elv --max-iterations 50       # Limit iterations (default: 100)
+./ralph.elv --base-branch main        # Use different base branch (default: dev)
+./ralph.elv --no-auto-pr              # Prompt before creating PR
+./ralph.elv --auto-merge              # Auto-merge PRs without prompting
 ./ralph.elv -q                        # Quiet mode (no Claude output)
 ```
 
 ## PRD Structure
 
-The PRD has 61 stories across 7 phases:
+The PRD has 83 stories across 7 phases:
 
 | Phase | Focus | Stories |
 |-------|-------|---------|
@@ -93,12 +98,16 @@ To reset: `./ralph.elv --reset`
 
 - `jq` - JSON processing
 - `git` - Version control
+- `gh` - GitHub CLI for PR operations
 - `claude` - Claude Code CLI
+- `go` - Go compiler
 
 ## Troubleshooting
 
 **Story stuck?** Run with `--reset` to start fresh, or manually edit `state.json`.
 
-**Claude timing out?** Default is 30 minutes. Increase `CLAUDE_TIMEOUT` in script.
+**Claude timing out?** Default is 30 minutes. Check `claude-timeout` in script.
 
 **Dependencies not met?** Check `prd.json` - story requires other stories to complete first.
+
+**PR creation failed?** Make sure `gh auth login` is done and you have repo access.
