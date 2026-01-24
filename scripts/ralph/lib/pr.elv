@@ -31,11 +31,94 @@ fn check-exists {|branch-name|
   put ""
 }
 
-# Create a new PR
+# Build PR body using Claude to summarize ALL changes
+fn build-body {|story-id story-title branch-name|
+  ui:dim "  Generating PR description with Claude..." > /dev/tty
+
+  # Get ALL commits for this PR
+  var commits = ""
+  try {
+    set commits = (git -C $project-root log --oneline $base-branch".."$branch-name 2>/dev/null | slurp)
+  } catch _ { }
+
+  # Get file stats
+  var stats = ""
+  try {
+    set stats = (git -C $project-root diff --stat $base-branch".."$branch-name 2>/dev/null | slurp)
+  } catch _ { }
+
+  # Get files changed
+  var files-changed = ""
+  try {
+    set files-changed = (git -C $project-root diff --name-status $base-branch".."$branch-name 2>/dev/null | slurp)
+  } catch _ { }
+
+  # Get diff (limited)
+  var diff = ""
+  try {
+    set diff = (git -C $project-root diff $base-branch".."$branch-name 2>/dev/null | head -1000 | slurp)
+  } catch _ { }
+
+  # Build prompt
+  var prompt = "Write a comprehensive GitHub PR description based on the FULL git history below.
+
+Story: "$story-id" - "$story-title"
+
+ALL COMMITS IN THIS PR:
+"$commits"
+
+ALL FILES CHANGED:
+"$files-changed"
+
+FILE STATS:
+"$stats"
+
+DIFF (truncated):
+"$diff"
+
+Format:
+## Summary
+<2-3 sentence summary of what this PR accomplishes overall>
+
+## Changes
+<bullet points covering ALL significant changes, grouped by feature/area>
+
+## Testing
+<how to verify the changes work>
+
+Output just the formatted PR description, no preamble."
+
+  # Call Claude
+  var body = ""
+  try {
+    set body = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
+  } catch _ { }
+
+  # Fallback if Claude fails
+  if (eq (str:trim-space $body) "") {
+    ui:dim "  Claude unavailable, using basic template" > /dev/tty
+    set body = "## "$story-id": "$story-title"
+
+### Commits
+```
+"$commits"
+```
+
+### Changes
+"$stats
+  }
+
+  put $body
+}
+
+# Create a new PR with Claude-generated description
 fn create {|branch-name story-id story-title|
   ui:status "Creating PR to "$base-branch"..." > /dev/tty
+
+  var body = (build-body $story-id $story-title $branch-name)
+
   try {
-    var url = (gh pr create --base $base-branch --head $branch-name --title $story-id": "$story-title --body "Automated PR for "$story-id 2>&1 | slurp)
+    var url = (gh pr create --base $base-branch --head $branch-name --title $story-id": "$story-title --body $body 2>&1 | slurp)
     set url = (str:trim-space $url)
     ui:success "PR created: "$url > /dev/tty
     put $url
@@ -45,19 +128,15 @@ fn create {|branch-name story-id story-title|
   }
 }
 
-# Update PR description
-fn update {|branch-name story-id refinements|
+# Update PR description with Claude-generated content
+fn update {|branch-name story-id story-title|
   ui:status "Updating PR description..." > /dev/tty
+
+  var body = (build-body $story-id $story-title $branch-name)
+
   try {
-    var refinement-notes = ""
-    if (> (count $refinements) 0) {
-      set refinement-notes = "\n\n## Refinements\n"
-      for r $refinements {
-        set refinement-notes = $refinement-notes"- "$r"\n"
-      }
-    }
-    var new-body = "Automated PR for "$story-id$refinement-notes
-    gh pr edit $branch-name --body $new-body 2>&1 | slurp
+    gh pr edit $branch-name --body $body 2>&1 | slurp
+    ui:success "PR description updated" > /dev/tty
     put $true
   } catch e {
     ui:error "Failed to update PR: "(to-string $e[reason]) > /dev/tty
@@ -111,7 +190,6 @@ fn prompt-user {|timeout|
 fn run-flow {|story-id branch-name story-title current-iteration|
   var pr-url = ""
   var pr-exists = $false
-  var refinements = []
   var done = $false
 
   # Check if PR already exists
@@ -146,8 +224,8 @@ fn run-flow {|story-id branch-name story-title current-iteration|
     # Handle PR create/update
     if $should-handle-pr {
       if $pr-exists {
-        update $branch-name $story-id $refinements
-        ui:success "PR updated: "$pr-url
+        update $branch-name $story-id $story-title
+        ui:dim "PR: "$pr-url > /dev/tty
       } else {
         set pr-url = (create $branch-name $story-id $story-title)
         if (not (eq $pr-url "")) {
