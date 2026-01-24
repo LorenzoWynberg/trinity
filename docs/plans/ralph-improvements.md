@@ -237,7 +237,95 @@ Token Usage Summary:
 
 ---
 
-### 5. Skip Story Command
+### 5. Automatic Learning Extraction
+
+**Problem:** Claude discovers patterns and gotchas while working but often forgets to document them. Knowledge gets lost.
+
+**Solution:** After each story completes, automatically analyze what Claude did and suggest learnings.
+
+**Trigger:** Runs automatically when a story reaches `<story-complete>` signal, before PR flow.
+
+**Implementation:**
+```elvish
+fn extract-learnings {|story-id|
+  # Get the activity log entry for this story
+  var activity = (get-story-activity $story-id)
+
+  # Get the diff for this story
+  var diff = (git diff $base-branch...$branch-name)
+
+  # Get existing learnings for context
+  var existing = (cat docs/learnings/*.md | slurp)
+
+  var prompt = "Analyze this completed story and extract learnings.
+
+STORY: "$story-id"
+
+ACTIVITY LOG:
+"$activity"
+
+CHANGES MADE:
+"$diff"
+
+EXISTING LEARNINGS (don't duplicate):
+"$existing"
+
+Look for:
+- Gotchas or surprises encountered
+- Patterns that would help future stories
+- Project-specific conventions discovered
+- Mistakes made and corrected
+
+Output format:
+<no-learnings/> if nothing notable
+
+OR
+
+<learning file=\"gotchas.md\">
+Content to append...
+</learning>
+
+Only extract genuinely useful, non-obvious learnings."
+
+  var result = (echo $prompt | claude --dangerously-skip-permissions --print)
+
+  # Parse and apply learnings
+  if (not (str:contains $result "<no-learnings/>")) {
+    # Extract and append to appropriate files
+    apply-learnings $result
+    ui:success "Learnings extracted and saved"
+  }
+}
+```
+
+**Integration point in ralph.elv:**
+```elvish
+if $signals[complete] {
+  ui:success "Story "$story-id" completed!"
+
+  # Extract learnings before PR flow
+  ui:status "Extracting learnings..."
+  claude:extract-learnings $story-id
+
+  # Then continue to PR flow
+  var pr-result = (pr:run-flow ...)
+}
+```
+
+**Output location:** Appends to existing files in `docs/learnings/` based on category:
+- `gotchas.md` - Project-specific pitfalls
+- `patterns.md` - Reusable patterns discovered
+- `conventions.md` - Coding standards learned
+
+**Files:**
+- `scripts/ralph/lib/claude.elv`
+- `scripts/ralph/ralph.elv`
+
+**Effort:** 1.5 hours
+
+---
+
+### 6. Skip Story Command
 
 **Problem:** No way to skip a problematic story without blocking dependents.
 
@@ -275,7 +363,7 @@ fn skip-story {|story-id reason|
 
 ## Medium Impact
 
-### 6. Desktop Notifications
+### 7. Desktop Notifications
 
 **Problem:** User doesn't know when story completes if AFK.
 
@@ -308,28 +396,32 @@ notify "Ralph" "Story STORY-1.2.3 BLOCKED"
 
 ---
 
-### 7. Dry Run Mode
+### 8. Plan Mode
 
 **Problem:** No way to preview what Claude would do without making changes.
 
-**Solution:** Add dry-run mode that shows plan without executing.
+**Solution:** Add `--plan` flag that shows plan without executing.
 
 **Implementation:**
 ```bash
-./ralph.elv --dry-run
+./ralph.elv --plan
 ```
 
 - Runs Claude with modified prompt asking for plan only
 - No git commits, no PRs, no file changes
 - Outputs: files to modify, approach, estimated scope
+- User can review plan before running `./ralph.elv` to execute
 
 **Prompt addition:**
 ```markdown
-DRY RUN MODE: Do not make any changes.
-Instead, output a plan:
+PLAN MODE: Do not make any changes.
+Instead, output a detailed plan:
 1. Files you would create/modify
 2. Approach you would take
-3. Potential risks or blockers
+3. Key implementation steps
+4. Potential risks or blockers
+
+After reviewing, user will run without --plan to execute.
 ```
 
 **Files:**
@@ -341,7 +433,7 @@ Instead, output a plan:
 
 ---
 
-### 8. Auto-archive Activity Logs
+### 9. Auto-archive Activity Logs
 
 **Problem:** Activity logs pile up, prompt mentions archiving but it's manual.
 
@@ -378,7 +470,7 @@ Run on startup before main loop.
 
 ---
 
-### 9. Status/Dependency Visualization
+### 10. Status/Dependency Visualization
 
 **Problem:** Hard to see overall progress and what's blocked.
 
@@ -419,7 +511,7 @@ Legend: [x] merged  [>] in progress  [ ] pending  [!] blocked  [-] skipped
 
 ---
 
-### 10. Webhook/Slack Notifications
+### 11. Webhook/Slack Notifications
 
 **Problem:** Team visibility into Ralph progress.
 
@@ -451,7 +543,7 @@ fn post-webhook {|event payload|
 
 ## Quick Wins
 
-### 11. Configurable Timeouts
+### 12. Configurable Timeouts
 
 **Current:** Hardcoded 1800s (30 min) for Claude.
 
@@ -464,7 +556,7 @@ fn post-webhook {|event payload|
 
 ---
 
-### 12. Verbose Mode
+### 13. Verbose Mode
 
 **Current:** Either quiet or streaming.
 
@@ -477,7 +569,7 @@ fn post-webhook {|event payload|
 
 ---
 
-### 13. Story Retry with Clean Slate
+### 14. Story Retry with Clean Slate
 
 **Current:** Resume continues from existing branch state.
 
@@ -490,7 +582,7 @@ fn post-webhook {|event payload|
 
 ---
 
-### 14. Pre-flight Checks
+### 15. Pre-flight Checks
 
 **Current:** Jumps straight into story execution.
 
@@ -506,48 +598,57 @@ fn post-webhook {|event payload|
 
 ## Implementation Priority
 
-### Phase 1: PR Flow Refinement (Now)
+### Phase 1: Core Intelligence (Now)
 1. PR comment-based feedback system (2 hr)
    - Post feedback as PR comments
    - Post resolution comments
    - Add pr_url to state.json
    - Skip PR prompt when PR exists
    - Update description only at merge
-2. Editor-based feedback input (15 min)
+2. Automatic learning extraction (1.5 hr)
+   - Runs after every story completion
+   - Analyzes activity + diff for patterns
+   - Appends to docs/learnings/*.md
+3. Editor-based feedback input (15 min)
 
 ### Phase 2: Polish (This Week)
-3. Desktop notifications (15 min)
-4. Status command (1.5 hr)
-5. Skip story command (30 min)
+4. Desktop notifications (15 min)
+5. Status command (1.5 hr)
+6. Skip story command (30 min)
 
 ### Phase 3: Robustness (Next Week)
-6. Pre-flight checks (30 min)
-7. Auto-archive logs (20 min)
-8. Retry clean slate (20 min)
-9. Configurable timeouts (10 min)
+7. Pre-flight checks (30 min)
+8. Auto-archive logs (20 min)
+9. Retry clean slate (20 min)
+10. Configurable timeouts (10 min)
 
-### Phase 4: Intelligence (Following Week)
-10. Claude commit messages (1 hr)
-11. Dry run mode (1 hr)
+### Phase 4: More Intelligence (Following Week)
+11. Claude commit messages (1 hr)
+12. Plan mode `--plan` (1 hr)
 
 ### Phase 5: Observability (Later)
-12. Token tracking (2 hr)
-13. Webhook notifications (1 hr)
-14. Verbose mode (20 min)
+13. Token tracking (2 hr)
+14. Webhook notifications (1 hr)
+15. Verbose mode (20 min)
 
 ---
 
-## Open Questions
+## Open Questions (Ralph scope)
 
-1. **Parallel execution:** Should we support running multiple stories in parallel using git worktrees? High complexity but big time savings.
+1. **Story validation:** Should Claude pre-validate that acceptance criteria are clear before starting? Could catch ambiguous stories early. (Optional nice-to-have)
 
-2. **Story validation:** Should Claude pre-validate that acceptance criteria are clear before starting? Could catch ambiguous stories early.
+2. **Rollback mechanism:** If a merged story breaks something, how do we handle rollback? Revert commit + re-open story? (Note: deps already require `merged: true`, so reverting a story auto-blocks dependents)
 
-3. **Rollback mechanism:** If a merged story breaks something, how do we handle rollback? Revert commit + re-open story?
+---
 
-4. **Learning extraction:** Can we automatically suggest learnings to add based on what Claude did? Pattern detection from activity logs.
+## Deferred to Trinity
 
-5. **Branch strategy:** Current assumption is all features branch from and merge to base branch. What about feature branches that depend on other un-merged feature branches?
+These are out of scope for Ralph but will be handled by Trinity (the Go implementation):
+
+1. **Parallel execution:** Multiple stories in parallel using git worktrees, multi-agent coordination
+2. **Branch strategy:** Stacked PRs, branching from unmerged features, complex dependency graphs
+3. **Team features:** Multi-user, Turso/Postgres backends, OAuth
+4. **Docker isolation:** Running Claude in isolated containers
 
 ---
 
