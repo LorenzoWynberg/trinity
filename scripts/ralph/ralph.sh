@@ -105,9 +105,28 @@ if [[ -n "$UNMERGED_OUTPUT" ]]; then
 
     # Run PR flow for this story
     ui_status "Handling unmerged story: $sid"
-    pr_run_flow "$sid" "$branch" "$story_title" 0
+    pr_run_flow "$sid" "$branch" "$story_title" 0 > /dev/null
     echo ""
   done <<< "$UNMERGED_OUTPUT"
+
+  # Sync base branch after handling unmerged stories
+  git_sync_base_branch
+
+  # Pause before starting main loop
+  echo ""
+  ui_status "Unmerged stories handled. Ready to continue?"
+  echo -e "\033[33mStop loop? [y/N]\033[0m \033[2m(continues in 120s)\033[0m"
+  if read -t 120 -n 1 answer </dev/tty 2>/dev/null; then
+    if [[ "$answer" =~ ^[yY]$ ]]; then
+      echo ""
+      ui_warn "Stopped by user."
+      ui_dim "Run again to continue."
+      exit 0
+    fi
+  else
+    ui_dim "(Timeout - continuing)"
+  fi
+  echo ""
 fi
 
 # Main loop
@@ -306,28 +325,28 @@ while [[ $CURRENT_ITERATION -lt $MAX_ITERATIONS ]]; do
       # Sync base branch
       echo ""
       git_sync_base_branch
-
-      # Pause before next story
-      echo ""
-      ui_status "Pausing before next story..."
-      echo -e "\033[33mStop loop? [y/N]\033[0m \033[2m(continues in 120s)\033[0m"
-      if read -t 120 -n 1 answer </dev/tty 2>/dev/null; then
-        if [[ "$answer" =~ ^[yY]$ ]]; then
-          echo ""
-          ui_warn "Stopped by user."
-          ui_dim "Run again to continue."
-          exit 0
-        fi
-      else
-        ui_dim "(Timeout - continuing)"
-      fi
-      echo ""
-      ui_dim "Continuing to next story..."
     else
       # PR left open or skipped
-      ui_dim "PR not merged. Resetting state..."
+      ui_dim "PR not merged ($PR_RESULT). Resetting state..."
       state_update "current_story=null" "branch=null" "status=idle" "started_at=null" "attempts=0" "error=null"
     fi
+
+    # Pause before next story (after any PR resolution)
+    echo ""
+    ui_status "Story $STORY_ID done. Continue to next story?"
+    echo -e "\033[33mStop loop? [y/N]\033[0m \033[2m(continues in 120s)\033[0m"
+    if read -t 120 -n 1 answer </dev/tty 2>/dev/null; then
+      if [[ "$answer" =~ ^[yY]$ ]]; then
+        echo ""
+        ui_warn "Stopped by user."
+        ui_dim "Run again to continue."
+        exit 0
+      fi
+    else
+      ui_dim "(Timeout - continuing)"
+    fi
+    echo ""
+    ui_dim "Continuing to next story..."
 
   elif [[ "$SIGNAL_BLOCKED" == "true" ]]; then
     echo ""

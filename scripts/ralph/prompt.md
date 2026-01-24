@@ -49,11 +49,13 @@ After build passes, ask: "What's missing or could improve?"
 ## 6. On SUCCESS
 
 Update these files:
-- `scripts/ralph/progress.txt`: Add entry with date, changes, learnings
+- `scripts/ralph/progress.txt`: APPEND entry with date, changes, learnings (do NOT overwrite)
 - `scripts/ralph/prd.json`: Set `"passes": true` for {{CURRENT_STORY}}
   - NOTE: Do NOT set `merged` - Ralph handles that after PR is merged
-- `docs/activity/YYYY-MM-DD.md`: Add timestamped entry documenting what was done
-- `docs/learnings/*.md`: Extract any new patterns or gotchas to appropriate topic file
+- `docs/activity/YYYY-MM-DD.md`: APPEND timestamped entry (do NOT overwrite existing content)
+  - Read the file first, then add your entry at the end
+  - Keep all existing entries from other stories
+- `docs/learnings/*.md`: APPEND any new patterns or gotchas (do NOT overwrite)
 
 Then commit and push:
 ```bash
