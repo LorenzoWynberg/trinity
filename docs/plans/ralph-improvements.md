@@ -617,6 +617,39 @@ After implementing improvements, measure:
 - Token usage per story
 - User intervention frequency
 
+**Storage:** `scripts/ralph/metrics.json`
+```json
+{
+  "stories": {
+    "STORY-1.1.1": {
+      "started_at": "2026-01-24T10:00:00Z",
+      "completed_at": "2026-01-24T10:15:00Z",
+      "duration_seconds": 900,
+      "attempts": 1,
+      "feedback_rounds": 0,
+      "tokens": { "input": 5000, "output": 2000 }
+    },
+    "STORY-1.1.2": {
+      "started_at": "2026-01-24T10:20:00Z",
+      "completed_at": "2026-01-24T11:00:00Z",
+      "duration_seconds": 2400,
+      "attempts": 2,
+      "feedback_rounds": 1,
+      "tokens": { "input": 12000, "output": 4500 }
+    }
+  },
+  "totals": {
+    "stories_completed": 2,
+    "stories_blocked": 0,
+    "total_duration_seconds": 3300,
+    "total_feedback_rounds": 1,
+    "total_tokens": { "input": 17000, "output": 6500 }
+  }
+}
+```
+
+**View with:** `./ralph.elv --stats`
+
 ---
 
 ## v2 (Future)
