@@ -222,7 +222,7 @@ function GraphContent() {
       <div className="h-[calc(100vh-2rem)] w-full relative">
         <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
           {/* Version Selector */}
-          {versions.length > 1 && (
+          {versions.length >= 1 && (
             <Select value={selectedVersion} onValueChange={setSelectedVersion}>
               <SelectTrigger className="w-[120px] h-9 bg-background">
                 <SelectValue placeholder="All versions" />

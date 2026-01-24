@@ -88,7 +88,7 @@ export function StoriesList({ stories, currentStoryId, versions }: StoriesListPr
       {/* Filters */}
       <div className="flex items-center gap-6 flex-wrap">
         {/* Version Filter */}
-        {versions.length > 1 && (
+        {versions.length >= 1 && (
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium">Version:</label>
             <Select value={selectedVersion} onValueChange={setSelectedVersion}>
