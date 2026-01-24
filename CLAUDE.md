@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Trinity is a CLI tool for running autonomous AI development loops. It points at a project, reads stories from a PRD, and uses Claude Code to implement them autonomously while the developer is AFK.
 
-**Status:** Planning phase - no code implementation yet. See `docs/plans/INITIAL_PLAN.md` for full architecture.
+**Status:** Planning phase - ready for implementation. See `docs/` for full documentation.
 
 ## Architecture
 
@@ -153,59 +153,46 @@ A phase can depend on just a story. An epic can depend on just a story. Maximum 
 
 ## CLI Commands
 
-Trinity has a minimal, focused command set:
+Trinity has a minimal, focused command set. See `docs/COMMANDS.md` for full reference with all flags.
 
 ```bash
-# Auth
-trinity auth login              # Browser OAuth (required)
-trinity auth logout
-trinity auth status
-
-# Setup
-trinity init                    # Smart init (analyzes project, creates CLAUDE.md)
-
-# Analysis
-trinity analyze                 # Deep dive on codebase, suggest what to build
+trinity auth login|logout|status     # Authentication
+trinity init [--force]               # Initialize project
+trinity analyze [--json|--brief]     # Analyze codebase
 
 # PRD Management
-trinity prd add                 # Context-aware: creates PRD or adds to existing
-trinity prd show                # Full PRD tree with status
-trinity prd show mvp:auth       # Specific phase/epic/story
-trinity prd show --next         # What runs next
-trinity prd show --blocked      # Show blocked items
-trinity prd show --awaiting-review  # Human testing pending
-trinity prd refine              # AI review and improve stories
-trinity prd skip <ref>          # Mark as skipped
-trinity prd retry <ref>         # Reset to pending
+trinity prd add                      # Create PRD or add to existing
+trinity prd show [ref] [--next|--blocked|--json]  # View PRD
+trinity prd refine [ref]             # AI improve stories
+trinity prd skip|retry <ref>         # Change status
 
 # Execution
-trinity run                     # Run loop (auto-manages workspaces)
-trinity run --all               # All valid work in parallel
-trinity run mvp:auth            # Run specific epic
-trinity run <ref> --with-deps   # Run deps first, then target
-trinity run --docker            # Run in isolated container
-trinity run --attach            # Attach to running loop
-trinity run --stop              # Graceful stop after current story
-trinity run --kill              # Hard stop
+trinity run [ref]                    # Run dev loop
+trinity run --all                    # Parallel execution
+trinity run --with-deps              # Run deps first
+trinity run --once                   # Single story only
+trinity run --docker                 # Isolated container
+trinity run --attach|--stop|--kill   # Control running loop
 
 # Human Testing
-trinity approve                 # Approve current pending test
-trinity reject "feedback"       # Reject with feedback
+trinity approve [ref]                # Approve test
+trinity reject [ref] "feedback"      # Reject with feedback
 
 # Status & Config
-trinity status                  # Overview: agents, progress, blocked items
-trinity config show
-trinity config set KEY VALUE
+trinity status [--watch|--json]      # Overview
+trinity config show|set|edit         # Configuration
 
 # Ship
-trinity hotfix "desc"           # Fast lane for quick fixes
-trinity release                 # Merge dev → main
+trinity hotfix "desc" [--target|--auto-merge|--link]  # Quick fixes
+trinity release [--dry-run|--tag]    # Merge dev → main
 
 # Internal (Claude's API)
-trinity internal complete/add-story/log/learn/move-story
+trinity internal complete|add-story|log|learn|move-story
 ```
 
-**Auto workspace management:** `trinity run` automatically creates/manages workspaces. No manual `feature create/delete/switch` needed.
+**Flow:** `analyze → prd add → run`
+
+**Auto workspace management:** `trinity run` automatically creates/manages workspaces. No manual feature commands needed.
 
 ## Docker Isolation (Optional)
 
