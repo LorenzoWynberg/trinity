@@ -349,7 +349,81 @@ if $signals[complete] {
 
 ---
 
-### 6. Skip Story Command
+### 6. Story Validation
+
+**Problem:** Ambiguous acceptance criteria lead to wasted implementation cycles. Claude guesses, builds the wrong thing, gets rejected at PR review.
+
+**Solution:** Before executing a story, validate that acceptance criteria are clear enough to implement. Enabled by default, skip with `--no-validate`.
+
+**Implementation:**
+```elvish
+fn validate-story {|story-id|
+  var story = (jq -r '.stories[] | select(.id == "'$story-id'")' $prd-file)
+  var title = (echo $story | jq -r '.title')
+  var acceptance = (echo $story | jq -r '.acceptance | join("\n- ")')
+
+  var prompt = "Review this story. Can it be implemented unambiguously?
+
+STORY: "$story-id" - "$title"
+
+ACCEPTANCE CRITERIA:
+- "$acceptance"
+
+Check for:
+- Vague terms (\"settings\", \"improve\", \"better\", \"handle\")
+- Missing specifics (which fields, what UI, what endpoint)
+- Unclear scope or boundaries
+- Ambiguous success criteria
+
+Output ONLY one of:
+<valid/> if clear enough to implement
+
+OR
+
+<needs-clarification>
+- Question 1?
+- Question 2?
+</needs-clarification>"
+
+  var result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
+
+  if (str:contains $result "<valid/>") {
+    ui:success "Story validation passed"
+    put $true
+  } else {
+    ui:warn "Story needs clarification:"
+    # Extract and display questions
+    echo $result | grep -A 100 '<needs-clarification>' | grep '^-' > /dev/tty
+    put $false
+  }
+}
+```
+
+**Integration in ralph.elv:**
+```elvish
+# Before executing story
+if (not $config[no-validate]) {
+  ui:status "Validating story..."
+  if (not (claude:validate-story $story-id)) {
+    ui:error "Story "$story-id" needs clarification. Skipping."
+    # Either pause for input or skip to next story
+    continue
+  }
+}
+```
+
+**Flag:** `--no-validate` to skip validation
+
+**Files:**
+- `scripts/ralph/lib/claude.elv`
+- `scripts/ralph/lib/cli.elv`
+- `scripts/ralph/ralph.elv`
+
+**Effort:** 1 hour
+
+---
+
+### 7. Skip Story Command
 
 **Problem:** No way to skip a problematic story without blocking dependents.
 
@@ -387,7 +461,7 @@ fn skip-story {|story-id reason|
 
 ## Medium Impact
 
-### 7. Desktop Notifications
+### 8. Desktop Notifications
 
 **Problem:** User doesn't know when story completes if AFK.
 
@@ -420,7 +494,7 @@ notify "Ralph" "Story STORY-1.2.3 BLOCKED"
 
 ---
 
-### 8. Plan Mode
+### 9. Plan Mode
 
 **Problem:** No way to preview what Claude would do without making changes.
 
@@ -457,7 +531,7 @@ After reviewing, user will run without --plan to execute.
 
 ---
 
-### 9. Auto-archive Activity Logs
+### 10. Auto-archive Activity Logs
 
 **Problem:** Activity logs pile up, prompt mentions archiving but it's manual.
 
@@ -494,7 +568,7 @@ Run on startup before main loop.
 
 ---
 
-### 10. Status/Dependency Visualization
+### 11. Status/Dependency Visualization
 
 **Problem:** Hard to see overall progress and what's blocked.
 
@@ -537,7 +611,7 @@ Legend: [x] merged  [>] in progress  [ ] pending  [!] blocked  [-] skipped
 
 ## Quick Wins
 
-### 11. Configurable Timeouts
+### 12. Configurable Timeouts
 
 **Current:** Hardcoded 1800s (30 min) for Claude.
 
@@ -550,7 +624,7 @@ Legend: [x] merged  [>] in progress  [ ] pending  [!] blocked  [-] skipped
 
 ---
 
-### 12. Verbose Mode
+### 13. Verbose Mode
 
 **Current:** Either quiet or streaming.
 
@@ -563,7 +637,7 @@ Legend: [x] merged  [>] in progress  [ ] pending  [!] blocked  [-] skipped
 
 ---
 
-### 13. Story Retry with Clean Slate
+### 14. Story Retry with Clean Slate
 
 **Current:** Resume continues from existing branch state.
 
@@ -576,7 +650,7 @@ Legend: [x] merged  [>] in progress  [ ] pending  [!] blocked  [-] skipped
 
 ---
 
-### 14. Pre-flight Checks
+### 15. Pre-flight Checks
 
 **Current:** Jumps straight into story execution.
 
@@ -603,7 +677,11 @@ Legend: [x] merged  [>] in progress  [ ] pending  [!] blocked  [-] skipped
    - Runs after every story completion
    - Analyzes activity + diff for patterns
    - Appends to docs/learnings/*.md
-3. Editor-based feedback input (15 min)
+3. Story validation (1 hr)
+   - Validates acceptance criteria before execution
+   - Enabled by default, `--no-validate` to skip
+   - Catches ambiguous stories early
+4. Editor-based feedback input (15 min)
 
 ### Phase 2: Polish (This Week)
 4. Desktop notifications (15 min)
@@ -623,12 +701,6 @@ Legend: [x] merged  [>] in progress  [ ] pending  [!] blocked  [-] skipped
 ### Phase 5: Observability (Later)
 13. Metrics tracking `--stats` (2 hr)
 14. Verbose mode (20 min)
-
----
-
-## Open Questions
-
-1. **Story validation:** Should Claude pre-validate that acceptance criteria are clear before starting? Could catch ambiguous stories early. (Optional nice-to-have)
 
 ---
 
