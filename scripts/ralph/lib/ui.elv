@@ -91,7 +91,11 @@ OPTIONS:
   --timeout <seconds>     Claude timeout (default: 1800 = 30 min)
   --resume                Resume from last state (skip story selection)
   --reset                 Reset state and start fresh
+  --status                Show PRD status (phases, epics, stories) and exit
+  --stats                 Show metrics (tokens, durations, costs) and exit
+  --plan                  Plan mode - output implementation plan without making changes
   -q, --quiet             Quiet mode - hide Claude output, show only Ralph status
+  -v, --verbose           Verbose mode - show full prompts, responses, state transitions
   -h, --help              Show this help message
 
 WORKFLOW:

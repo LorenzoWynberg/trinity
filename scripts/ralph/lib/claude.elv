@@ -385,6 +385,129 @@ Only extract genuinely useful, non-obvious learnings. Be concise.'
   }
 }
 
+# Generate plan-only prompt for a story (no file changes)
+fn prepare-plan-prompt {|story-id|
+  # Get story details
+  var prd-file = (prd:get-prd-file)
+  var story-json = ""
+  try {
+    set story-json = (jq -r '.stories[] | select(.id == "'$story-id'")' $prd-file 2>/dev/null | slurp)
+  } catch _ { }
+
+  var title = (echo $story-json | jq -r '.title' | slurp | str:trim-space)
+  var acceptance = (echo $story-json | jq -r '.acceptance | join("\n- ")' | slurp | str:trim-space)
+  var deps = (prd:get-story-deps $story-id | slurp)
+
+  var prompt = '# Plan Mode - Story '$story-id'
+
+## Story
+**'$story-id'**: '$title'
+
+## Acceptance Criteria
+- '$acceptance'
+
+## Dependencies
+'$deps'
+
+## Task
+Create an implementation plan for this story. Do NOT make any changes to files.
+
+Output a detailed plan that includes:
+1. **Files to create/modify** - list each file with what changes are needed
+2. **Implementation steps** - ordered list of what to do
+3. **Testing approach** - how to verify the implementation
+4. **Potential challenges** - gotchas or edge cases to watch for
+
+Read the following for context:
+- `scripts/ralph/prd.json` - full story details
+- `docs/ARCHITECTURE.md` - system design
+- `docs/learnings/` - existing learnings
+
+Format your response as a clear, actionable plan.
+
+**IMPORTANT: Do NOT create, modify, or delete any files. This is plan-only mode.**'
+
+  # Write to temp file and return path
+  var prompt-file = (mktemp)
+  echo $prompt > $prompt-file
+  put $prompt-file
+}
+
+# Generate conventional commit message for a story
+# Returns the commit message string
+fn generate-commit-message {|story-id branch-name|
+  # Get story title
+  var story-title = (prd:get-story-title $story-id)
+
+  # Get diff for this story
+  var diff = ""
+  try {
+    var base = "dev"  # TODO: get from config
+    set diff = (git -C $project-root diff --stat $base"..."$branch-name 2>/dev/null | slurp)
+  } catch _ { }
+
+  if (eq $diff "") {
+    # No diff, return simple message
+    put "feat: "$story-id" - "$story-title
+    return
+  }
+
+  # Get files changed summary
+  var files-changed = ""
+  try {
+    set files-changed = (git -C $project-root diff --name-only $base"..."$branch-name 2>/dev/null | slurp)
+  } catch _ { }
+
+  var prompt = 'Generate a conventional commit message for this story.
+
+STORY: '$story-id' - '$story-title'
+
+FILES CHANGED:
+'$files-changed'
+
+DIFF STATS:
+'$diff'
+
+Rules:
+- Use conventional commit format: type(scope): description
+- Types: feat, fix, refactor, test, docs, chore
+- Scope is optional but helpful (e.g., cli, core, ralph)
+- Description should be imperative, lowercase, no period
+- Keep under 72 characters
+- Add bullet points for significant changes (2-4 max)
+
+Output format (exactly):
+<commit-message>
+type(scope): brief description
+
+- Change 1
+- Change 2
+</commit-message>'
+
+  var result = ""
+  try {
+    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
+  } catch e {
+    # Fallback to simple message
+    put "feat: "$story-id" - "$story-title
+    return
+  }
+
+  # Extract commit message from tags
+  if (str:contains $result "<commit-message>") {
+    try {
+      var msg = (echo $result | sed -n '/<commit-message>/,/<\/commit-message>/p' | sed '1d;$d' | str:trim-space (slurp))
+      if (not (eq $msg "")) {
+        put $msg
+        return
+      }
+    } catch _ { }
+  }
+
+  # Fallback
+  put "feat: "$story-id" - "$story-title
+}
+
 # Validate story acceptance criteria before execution
 # Returns: true if valid, false if needs clarification
 fn validate-story {|story-id|

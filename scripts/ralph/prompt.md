@@ -72,9 +72,21 @@ Update these files:
 Then commit and push (no Co-Authored-By lines):
 ```bash
 git add -A
-git commit -m "feat: {{CURRENT_STORY}} - <brief description>"
+git commit -m "$(cat <<'EOF'
+type(scope): brief description of {{CURRENT_STORY}}
+
+- Key change 1
+- Key change 2
+EOF
+)"
 git push -u origin {{BRANCH}}
 ```
+
+**Commit message format (conventional commits):**
+- **type**: feat (new feature), fix (bug fix), refactor, test, docs, chore
+- **scope**: optional area (cli, core, ralph, etc.)
+- **description**: imperative, lowercase, no period, under 72 chars
+- **body**: 2-4 bullet points of significant changes
 
 Output: `<story-complete>{{CURRENT_STORY}}</story-complete>`
 

@@ -18,6 +18,10 @@ var skip-story-id = ""
 var skip-reason = ""
 var custom-timeout = 0
 var retry-clean-story = ""
+var verbose-mode = $false
+var status-mode = $false
+var plan-mode = $false
+var stats-mode = $false
 
 # Parse command line arguments
 fn parse-args {|arguments|
@@ -100,6 +104,18 @@ fn parse-args {|arguments|
       }
       set retry-clean-story = $arguments[$next-idx]
       set i = (+ $i 2)
+    } elif (or (eq $arg "-v") (eq $arg "--verbose")) {
+      set verbose-mode = $true
+      set i = (+ $i 1)
+    } elif (eq $arg "--status") {
+      set status-mode = $true
+      set i = (+ $i 1)
+    } elif (eq $arg "--plan") {
+      set plan-mode = $true
+      set i = (+ $i 1)
+    } elif (eq $arg "--stats") {
+      set stats-mode = $true
+      set i = (+ $i 1)
     } else {
       echo "Error: Unknown argument: "$arg >&2
       exit 1
@@ -145,5 +161,9 @@ fn get-config {
     &skip-story-id=$skip-story-id
     &skip-reason=$skip-reason
     &retry-clean-story=$retry-clean-story
+    &verbose-mode=$verbose-mode
+    &status-mode=$status-mode
+    &plan-mode=$plan-mode
+    &stats-mode=$stats-mode
   ]
 }

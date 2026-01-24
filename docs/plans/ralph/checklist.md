@@ -55,11 +55,11 @@ Track implementation progress. Update status as features are completed.
 - [x] Trigger on story complete/blocked
 
 ### 6. Status Command
-- [ ] Add `--status` flag to `lib/cli.elv`
-- [ ] Create status display function in `lib/prd.elv`
-- [ ] Show phase/epic/story hierarchy
-- [ ] Show progress percentage
-- [ ] Show current story and branch
+- [x] Add `--status` flag to `lib/cli.elv`
+- [x] Create status display function in `lib/prd.elv`
+- [x] Show phase/epic/story hierarchy
+- [x] Show progress percentage
+- [x] Show current story and branch
 
 ### 7. Skip Story Command
 - [x] Add `--skip` flag with story ID and reason
@@ -107,35 +107,35 @@ Track implementation progress. Update status as features are completed.
 ## Phase 4: More Intelligence
 
 ### 13. Claude Commit Messages
-- [ ] Create `generate-commit-message` function
-- [ ] Build prompt with story info + diff
-- [ ] Update `prompt.md` to use generated messages
-- [ ] Test conventional commit format
+- [x] Create `generate-commit-message` function
+- [x] Build prompt with story info + diff
+- [x] Update `prompt.md` to use generated messages
+- [x] Test conventional commit format
 
 ### 14. Plan Mode
-- [ ] Add `--plan` flag
-- [ ] Create plan-only prompt template
-- [ ] Disable git commits and file changes
-- [ ] Output plan to stdout
-- [ ] Test plan output
+- [x] Add `--plan` flag
+- [x] Create plan-only prompt template
+- [x] Disable git commits and file changes
+- [x] Output plan to stdout
+- [x] Test plan output
 
 ---
 
 ## Phase 5: Observability
 
 ### 15. Metrics Tracking
-- [ ] Create `lib/metrics.elv` module
-- [ ] Create `metrics.json` structure
-- [ ] Extract tokens from Claude output
-- [ ] Update metrics on story complete
-- [ ] Add `--stats` flag
-- [ ] Create stats display function
+- [x] Create `lib/metrics.elv` module
+- [x] Create `metrics.json` structure
+- [x] Extract tokens from Claude output
+- [x] Update metrics on story complete
+- [x] Add `--stats` flag
+- [x] Create stats display function
 
 ### 16. Verbose Mode
-- [ ] Add `--verbose` flag
-- [ ] Show full prompts being sent
-- [ ] Show raw Claude responses
-- [ ] Show state transitions
+- [x] Add `--verbose` flag
+- [x] Show full prompts being sent
+- [x] Show raw Claude responses
+- [x] Show state transitions
 
 ---
 
