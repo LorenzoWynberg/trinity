@@ -1,8 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Node, Edge, MarkerType } from '@xyflow/react'
 import type { Story, StoryStatus } from '@/lib/types'
+
+export type LayoutMode = 'horizontal' | 'vertical' | 'custom'
+
+export type GraphLayout = {
+  layout: LayoutMode
+  positions: Record<string, { x: number; y: number }>
+}
 
 type GraphData = {
   nodes: Node[]
@@ -10,6 +17,8 @@ type GraphData = {
   stories: Story[]
   loading: boolean
   versions: string[]
+  layout: GraphLayout
+  saveLayout: (layout: GraphLayout) => Promise<void>
 }
 
 function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatus {
@@ -50,32 +59,117 @@ function calculateDepths(stories: Story[]): Map<string, number> {
   return depths
 }
 
-export function useGraphData(
-  direction: 'horizontal' | 'vertical' = 'horizontal',
-  version: string = 'all'
-): GraphData {
+// Calculate auto-layout positions
+export function calculateAutoPositions(
+  stories: Story[],
+  direction: 'horizontal' | 'vertical'
+): Record<string, { x: number; y: number }> {
+  const depths = calculateDepths(stories)
+  const positions: Record<string, { x: number; y: number }> = {}
+
+  // Group stories by depth
+  const byDepth = new Map<number, Story[]>()
+  stories.forEach(story => {
+    const depth = depths.get(story.id) || 0
+    if (!byDepth.has(depth)) byDepth.set(depth, [])
+    byDepth.get(depth)!.push(story)
+  })
+
+  // Sort each depth group
+  byDepth.forEach(group => {
+    group.sort((a, b) => {
+      if (a.phase !== b.phase) return a.phase - b.phase
+      if (a.epic !== b.epic) return a.epic - b.epic
+      return a.story_number - b.story_number
+    })
+  })
+
+  const NODE_WIDTH = 170
+  const NODE_HEIGHT = 70
+  const H_GAP = direction === 'vertical' ? 80 : 60
+  const V_GAP = direction === 'vertical' ? 70 : 20
+  const MAX_PER_ROW = 6
+
+  const maxDepth = Math.max(...Array.from(depths.values()), 0)
+
+  if (direction === 'horizontal') {
+    for (let depth = 0; depth <= maxDepth; depth++) {
+      const group = byDepth.get(depth) || []
+      group.forEach((story, idx) => {
+        positions[story.id] = {
+          x: depth * (NODE_WIDTH + H_GAP),
+          y: idx * (NODE_HEIGHT + V_GAP)
+        }
+      })
+    }
+  } else {
+    const maxRowWidth = MAX_PER_ROW * NODE_WIDTH + (MAX_PER_ROW - 1) * H_GAP
+    let currentRow = 0
+
+    for (let depth = 0; depth <= maxDepth; depth++) {
+      const group = byDepth.get(depth) || []
+
+      for (let chunkStart = 0; chunkStart < group.length; chunkStart += MAX_PER_ROW) {
+        const chunk = group.slice(chunkStart, chunkStart + MAX_PER_ROW)
+        const chunkSize = chunk.length
+        const rowWidth = chunkSize * NODE_WIDTH + (chunkSize - 1) * H_GAP
+        const xOffset = (maxRowWidth - rowWidth) / 2
+
+        chunk.forEach((story, idx) => {
+          positions[story.id] = {
+            x: xOffset + idx * (NODE_WIDTH + H_GAP),
+            y: currentRow * (NODE_HEIGHT + V_GAP)
+          }
+        })
+        currentRow++
+      }
+    }
+  }
+
+  return positions
+}
+
+export function useGraphData(version: string = 'all'): GraphData {
   const [nodes, setNodes] = useState<Node[]>([])
   const [edges, setEdges] = useState<Edge[]>([])
   const [stories, setStories] = useState<Story[]>([])
   const [versions, setVersions] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
+  const [layout, setLayout] = useState<GraphLayout>({ layout: 'horizontal', positions: {} })
+
+  // Save layout to API
+  const saveLayout = useCallback(async (newLayout: GraphLayout) => {
+    setLayout(newLayout)
+    try {
+      await fetch(`/api/graph-layout?version=${version}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newLayout),
+      })
+    } catch (error) {
+      console.error('Failed to save layout:', error)
+    }
+  }, [version])
 
   useEffect(() => {
     async function fetchData() {
       try {
         const versionParam = version !== 'all' ? `?version=${version}` : ''
-        const [prdRes, stateRes, versionsRes] = await Promise.all([
+        const [prdRes, stateRes, versionsRes, layoutRes] = await Promise.all([
           fetch(`/api/prd${versionParam}`),
           fetch('/api/state'),
           fetch('/api/versions'),
+          fetch(`/api/graph-layout?version=${version}`),
         ])
 
         const prd = await prdRes.json()
         const state = await stateRes.json()
         const versionsData = await versionsRes.json()
+        const savedLayout: GraphLayout = await layoutRes.json()
         const currentStoryId = state?.current_story || null
 
         setVersions(versionsData.versions || [])
+        setLayout(savedLayout)
 
         if (!prd?.stories) {
           setLoading(false)
@@ -83,97 +177,39 @@ export function useGraphData(
         }
 
         const storiesData: Story[] = prd.stories
-        const depths = calculateDepths(storiesData)
+        setStories(storiesData)
 
-        // Group stories by depth
-        const byDepth = new Map<number, Story[]>()
-        storiesData.forEach(story => {
-          const depth = depths.get(story.id) || 0
-          if (!byDepth.has(depth)) byDepth.set(depth, [])
-          byDepth.get(depth)!.push(story)
-        })
+        // Determine positions based on layout mode
+        let positions: Record<string, { x: number; y: number }>
 
-        // Sort each depth group by phase.epic.story_number
-        byDepth.forEach(group => {
-          group.sort((a, b) => {
-            if (a.phase !== b.phase) return a.phase - b.phase
-            if (a.epic !== b.epic) return a.epic - b.epic
-            return a.story_number - b.story_number
-          })
-        })
-
-        // Create nodes with positions
-        const NODE_WIDTH = 170
-        const NODE_HEIGHT = 70
-        const H_GAP = direction === 'vertical' ? 80 : 60
-        const V_GAP = direction === 'vertical' ? 70 : 20
-        const MAX_PER_ROW = 6 // Max nodes per row in vertical mode
-
-        const nodeList: Node[] = []
-        const maxDepth = Math.max(...Array.from(depths.values()), 0)
-
-        if (direction === 'horizontal') {
-          // Horizontal mode: simple layout
-          for (let depth = 0; depth <= maxDepth; depth++) {
-            const group = byDepth.get(depth) || []
-            group.forEach((story, idx) => {
-              const status = getStoryStatus(story, currentStoryId)
-              nodeList.push({
-                id: story.id,
-                type: 'story',
-                position: { x: depth * (NODE_WIDTH + H_GAP), y: idx * (NODE_HEIGHT + V_GAP) },
-                data: {
-                  label: story.id,
-                  title: story.title,
-                  status,
-                  phase: story.phase,
-                  epic: story.epic,
-                  direction,
-                },
-              })
-            })
-          }
+        if (savedLayout.layout === 'custom' && Object.keys(savedLayout.positions).length > 0) {
+          // Use saved custom positions, but calculate for any new stories
+          const autoPositions = calculateAutoPositions(storiesData, 'horizontal')
+          positions = { ...autoPositions, ...savedLayout.positions }
         } else {
-          // Vertical mode: limit to MAX_PER_ROW per row, wrap to new rows
-          // Calculate max width for centering (capped at MAX_PER_ROW)
-          const maxRowWidth = MAX_PER_ROW * NODE_WIDTH + (MAX_PER_ROW - 1) * H_GAP
-
-          let currentRow = 0
-          for (let depth = 0; depth <= maxDepth; depth++) {
-            const group = byDepth.get(depth) || []
-
-            // Split into chunks of MAX_PER_ROW
-            for (let chunkStart = 0; chunkStart < group.length; chunkStart += MAX_PER_ROW) {
-              const chunk = group.slice(chunkStart, chunkStart + MAX_PER_ROW)
-              const chunkSize = chunk.length
-
-              // Center this chunk within the max row width
-              const rowWidth = chunkSize * NODE_WIDTH + (chunkSize - 1) * H_GAP
-              const xOffset = (maxRowWidth - rowWidth) / 2
-
-              chunk.forEach((story, idx) => {
-                const status = getStoryStatus(story, currentStoryId)
-                nodeList.push({
-                  id: story.id,
-                  type: 'story',
-                  position: {
-                    x: xOffset + idx * (NODE_WIDTH + H_GAP),
-                    y: currentRow * (NODE_HEIGHT + V_GAP)
-                  },
-                  data: {
-                    label: story.id,
-                    title: story.title,
-                    status,
-                    phase: story.phase,
-                    epic: story.epic,
-                    direction,
-                  },
-                })
-              })
-              currentRow++
-            }
-          }
+          // Calculate auto positions
+          const direction = savedLayout.layout === 'vertical' ? 'vertical' : 'horizontal'
+          positions = calculateAutoPositions(storiesData, direction)
         }
+
+        // Create nodes
+        const nodeList: Node[] = storiesData.map(story => {
+          const status = getStoryStatus(story, currentStoryId)
+          const pos = positions[story.id] || { x: 0, y: 0 }
+          return {
+            id: story.id,
+            type: 'story',
+            position: pos,
+            data: {
+              label: story.id,
+              title: story.title,
+              status,
+              phase: story.phase,
+              epic: story.epic,
+              direction: savedLayout.layout,
+            },
+          }
+        })
 
         // Create edges
         const edgeList: Edge[] = []
@@ -209,7 +245,6 @@ export function useGraphData(
 
         setNodes(nodeList)
         setEdges(edgeList)
-        setStories(storiesData)
         setLoading(false)
       } catch (error) {
         console.error('Failed to fetch graph data:', error)
@@ -222,7 +257,7 @@ export function useGraphData(
     // Refresh every 5 seconds
     const interval = setInterval(fetchData, 5000)
     return () => clearInterval(interval)
-  }, [direction, version])
+  }, [version])
 
-  return { nodes, edges, stories, loading, versions }
+  return { nodes, edges, stories, loading, versions, layout, saveLayout }
 }

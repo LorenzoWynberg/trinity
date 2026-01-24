@@ -14,13 +14,14 @@ import {
   BackgroundVariant,
   ReactFlowProvider,
   useReactFlow,
+  NodeChange,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useTheme } from 'next-themes'
-import { ArrowRight, ArrowDown } from 'lucide-react'
+import { ArrowRight, ArrowDown, Hand } from 'lucide-react'
 import { StoryNode } from '@/components/story-node'
 import { StoryModal } from '@/components/story-modal'
-import { useGraphData } from '@/hooks/use-graph-data'
+import { useGraphData, calculateAutoPositions, LayoutMode } from '@/hooks/use-graph-data'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -38,28 +39,23 @@ const nodeTypes = {
 function GraphContent() {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
-  const [direction, setDirection] = useState<'horizontal' | 'vertical'>('horizontal')
   const [selectedVersion, setSelectedVersion] = useState<string>('all')
-  const { nodes: initialNodes, edges: initialEdges, loading, stories, versions } = useGraphData(direction, selectedVersion)
+  const {
+    nodes: initialNodes,
+    edges: initialEdges,
+    loading,
+    stories,
+    versions,
+    layout,
+    saveLayout
+  } = useGraphData(selectedVersion)
   const { fitView } = useReactFlow()
-  const shouldFitViewRef = useRef(true) // Fit on initial render
-  const prevDirectionRef = useRef(direction)
+  const shouldFitViewRef = useRef(true)
   const prevVersionRef = useRef(selectedVersion)
+  const prevLayoutRef = useRef(layout.layout)
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
-
-  // Load saved direction on mount
-  useEffect(() => {
-    fetch('/api/settings')
-      .then(res => res.json())
-      .then(data => {
-        if (data.graphDirection) {
-          setDirection(data.graphDirection)
-        }
-      })
-      .catch(console.error)
-  }, [])
 
   const [highlightedNodes, setHighlightedNodes] = useState<Set<string>>(new Set())
   const [highlightedEdges, setHighlightedEdges] = useState<Set<string>>(new Set())
@@ -68,22 +64,21 @@ function GraphContent() {
   const [selectedStatus, setSelectedStatus] = useState<StoryStatus>('pending')
   const [modalOpen, setModalOpen] = useState(false)
 
-  // Track direction/version changes to trigger fitView
+  // Track version/layout changes to trigger fitView
   useEffect(() => {
-    if (prevDirectionRef.current !== direction || prevVersionRef.current !== selectedVersion) {
+    if (prevVersionRef.current !== selectedVersion || prevLayoutRef.current !== layout.layout) {
       shouldFitViewRef.current = true
-      prevDirectionRef.current = direction
       prevVersionRef.current = selectedVersion
+      prevLayoutRef.current = layout.layout
     }
-  }, [direction, selectedVersion])
+  }, [selectedVersion, layout.layout])
 
-  // Update nodes when data loads, only fit view on initial render or direction change
+  // Update nodes when data loads
   useEffect(() => {
     if (initialNodes.length > 0) {
       setNodes(initialNodes)
       setEdges(initialEdges)
 
-      // Only fit view on initial render or direction change
       if (shouldFitViewRef.current) {
         setTimeout(() => {
           fitView({ padding: 0.1, duration: 200 })
@@ -92,6 +87,70 @@ function GraphContent() {
       }
     }
   }, [initialNodes, initialEdges, setNodes, setEdges, fitView])
+
+  // Handle layout mode change
+  const handleLayoutChange = useCallback(async (newLayoutMode: LayoutMode) => {
+    if (newLayoutMode === 'custom') {
+      // Just switch to custom, keep current positions
+      const positions: Record<string, { x: number; y: number }> = {}
+      nodes.forEach(node => {
+        positions[node.id] = { x: node.position.x, y: node.position.y }
+      })
+      await saveLayout({ layout: 'custom', positions })
+    } else {
+      // Recalculate positions for horizontal/vertical
+      const newPositions = calculateAutoPositions(stories, newLayoutMode)
+      await saveLayout({ layout: newLayoutMode, positions: newPositions })
+
+      // Update nodes immediately
+      setNodes(prevNodes => prevNodes.map(node => ({
+        ...node,
+        position: newPositions[node.id] || node.position
+      })))
+
+      // Fit view after layout change
+      setTimeout(() => {
+        fitView({ padding: 0.1, duration: 200 })
+      }, 50)
+    }
+  }, [nodes, stories, saveLayout, setNodes, fitView])
+
+  // Handle node drag end - switch to custom mode
+  const handleNodesChange = useCallback((changes: NodeChange<Node>[]) => {
+    onNodesChange(changes)
+
+    // Check if any node was dragged (position change)
+    const hasDrag = changes.some(change =>
+      change.type === 'position' && change.dragging === false && change.position
+    )
+
+    if (hasDrag && layout.layout !== 'custom') {
+      // Switch to custom mode and save all positions
+      const positions: Record<string, { x: number; y: number }> = {}
+      nodes.forEach(node => {
+        // Apply any position changes from the current batch
+        const change = changes.find(c => c.type === 'position' && c.id === node.id)
+        if (change && change.type === 'position' && change.position) {
+          positions[node.id] = { x: change.position.x, y: change.position.y }
+        } else {
+          positions[node.id] = { x: node.position.x, y: node.position.y }
+        }
+      })
+      saveLayout({ layout: 'custom', positions })
+    } else if (hasDrag && layout.layout === 'custom') {
+      // Already in custom mode, just save updated positions
+      const positions: Record<string, { x: number; y: number }> = {}
+      nodes.forEach(node => {
+        const change = changes.find(c => c.type === 'position' && c.id === node.id)
+        if (change && change.type === 'position' && change.position) {
+          positions[node.id] = { x: change.position.x, y: change.position.y }
+        } else {
+          positions[node.id] = { x: node.position.x, y: node.position.y }
+        }
+      })
+      saveLayout({ layout: 'custom', positions })
+    }
+  }, [onNodesChange, layout.layout, nodes, saveLayout])
 
   // Get all ancestors (dependencies) recursively
   const getAncestors = useCallback((nodeId: string, visited: Set<string> = new Set()): Set<string> => {
@@ -127,12 +186,10 @@ function GraphContent() {
   }, [stories, getAncestors])
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
-    // Toggle highlighting - if already highlighted, clear it
     if (highlightedNodes.has(node.id) && highlightedNodes.size === getAncestors(node.id).size) {
       setHighlightedNodes(new Set())
       setHighlightedEdges(new Set())
     } else {
-      // Highlight the dependency path
       const ancestors = getAncestors(node.id)
       const pathEdges = getPathEdges(node.id)
       setHighlightedNodes(ancestors)
@@ -150,7 +207,6 @@ function GraphContent() {
   }, [stories])
 
   const onNodeDoubleClick = useCallback((_: React.MouseEvent, node: Node) => {
-    // Open modal on double-click
     openStoryModal(node.id, node.data?.status as StoryStatus || 'pending')
   }, [openStoryModal])
 
@@ -186,28 +242,9 @@ function GraphContent() {
         ...node.style,
         opacity: hasHighlighting && !isHighlighted ? 0.3 : 1,
       },
-      // Highlighted nodes on top, non-highlighted nodes below highlighted edges
       zIndex: isHighlighted ? 1001 : (hasHighlighting ? -1 : 0),
     }
   })
-
-  const toggleDirection = async () => {
-    const newDirection = direction === 'horizontal' ? 'vertical' : 'horizontal'
-    setDirection(newDirection)
-
-    // Save to settings
-    try {
-      const res = await fetch('/api/settings')
-      const settings = await res.json()
-      await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...settings, graphDirection: newDirection }),
-      })
-    } catch (error) {
-      console.error('Failed to save direction setting:', error)
-    }
-  }
 
   if (loading) {
     return (
@@ -239,31 +276,39 @@ function GraphContent() {
           </div>
         )}
 
-        {/* Direction Toggle - Right */}
+        {/* Layout Selector - Right */}
         <div className="absolute top-4 right-4 z-10">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={toggleDirection}
-            className="gap-2"
-          >
-            {direction === 'horizontal' ? (
-              <>
-                <ArrowRight className="h-4 w-4" />
-                Horizontal
-              </>
-            ) : (
-              <>
-                <ArrowDown className="h-4 w-4" />
-                Vertical
-              </>
-            )}
-          </Button>
+          <Select value={layout.layout} onValueChange={(v) => handleLayoutChange(v as LayoutMode)}>
+            <SelectTrigger className="w-[140px] h-9 bg-background">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="horizontal">
+                <div className="flex items-center gap-2">
+                  <ArrowRight className="h-4 w-4" />
+                  Horizontal
+                </div>
+              </SelectItem>
+              <SelectItem value="vertical">
+                <div className="flex items-center gap-2">
+                  <ArrowDown className="h-4 w-4" />
+                  Vertical
+                </div>
+              </SelectItem>
+              <SelectItem value="custom">
+                <div className="flex items-center gap-2">
+                  <Hand className="h-4 w-4" />
+                  Custom
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+
         <ReactFlow
           nodes={styledNodes}
           edges={styledEdges}
-          onNodesChange={onNodesChange}
+          onNodesChange={handleNodesChange}
           onEdgesChange={onEdgesChange}
           onNodeClick={onNodeClick}
           onNodeDoubleClick={onNodeDoubleClick}
