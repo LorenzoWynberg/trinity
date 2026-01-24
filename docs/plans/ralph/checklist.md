@@ -13,34 +13,34 @@ Track implementation progress. Update status as features are completed.
 ## Phase 1: Core Intelligence
 
 ### 1. PR Comment-Based Feedback System
-- [ ] Add `pr_url` field to `state.json`
-- [ ] Create `post-feedback-comment` function
-- [ ] Create `post-resolution-comment` function
-- [ ] Create `get-all-pr-comments` function
-- [ ] Update PR flow to skip PR prompt when `pr_url` exists
-- [ ] Update PR description only at merge step
+- [x] Add `pr_url` field to `state.json`
+- [x] Create `post-feedback-comment` function
+- [x] Create `post-resolution-comment` function
+- [x] Create `get-all-pr-comments` function
+- [x] Update PR flow to skip PR prompt when `pr_url` exists
+- [x] Update PR description only at merge step
 - [ ] Test feedback loop with PR comments
 
 ### 2. Automatic Learning Extraction
-- [ ] Create `extract-learnings` function in `lib/claude.elv`
-- [ ] Create `get-story-activity` helper
-- [ ] Create `apply-learnings` parser
-- [ ] Integrate into ralph.elv after `<story-complete>`
-- [ ] Create initial `docs/learnings/` structure (gotchas.md, patterns.md, conventions.md)
+- [x] Create `extract-learnings` function in `lib/claude.elv`
+- [x] Create `get-story-activity` helper (inline in function)
+- [x] Create `apply-learnings` parser (inline in function)
+- [x] Integrate into ralph.elv after `<story-complete>`
+- [x] Create initial `docs/learnings/` structure (gotchas.md, patterns.md, conventions.md)
 - [ ] Test learning extraction
 
 ### 3. Story Validation
-- [ ] Create `validate-story` function in `lib/claude.elv`
-- [ ] Add `--no-validate` flag to `lib/cli.elv`
-- [ ] Integrate validation check before story execution
+- [x] Create `validate-story` function in `lib/claude.elv`
+- [x] Add `--no-validate` flag to `lib/cli.elv`
+- [x] Integrate validation check before story execution
 - [ ] Test with ambiguous story
 - [ ] Test with clear story
 
 ### 4. Editor-Based Feedback Input
-- [ ] Update `get-feedback` function in `lib/pr.elv`
-- [ ] Use `$EDITOR` / `$VISUAL` / vim fallback
-- [ ] Create temp file with instructions
-- [ ] Parse result ignoring comment lines
+- [x] Update `get-feedback` function in `lib/pr.elv`
+- [x] Use `$EDITOR` / `$VISUAL` / vim fallback
+- [x] Create temp file with instructions
+- [x] Parse result ignoring comment lines
 - [ ] Test editor flow
 
 ---
@@ -69,8 +69,8 @@ Track implementation progress. Update status as features are completed.
 - [ ] Test dependency resolution with skipped story
 
 ### 8. YOLO Mode
-- [ ] Add `--yolo` flag to `lib/cli.elv`
-- [ ] Set no-validate, auto-pr, auto-merge when enabled
+- [x] Add `--yolo` flag to `lib/cli.elv`
+- [x] Set no-validate, auto-pr, auto-merge when enabled
 - [ ] Add warning message on activation
 
 ---

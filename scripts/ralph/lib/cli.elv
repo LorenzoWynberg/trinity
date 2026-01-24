@@ -12,6 +12,7 @@ var auto-pr = $false
 var auto-merge = $false
 var resume-mode = $false
 var reset-mode = $false
+var no-validate = $false
 
 # Parse command line arguments
 fn parse-args {|arguments|
@@ -54,6 +55,15 @@ fn parse-args {|arguments|
     } elif (eq $arg "--auto-merge") {
       set auto-merge = $true
       set i = (+ $i 1)
+    } elif (eq $arg "--no-validate") {
+      set no-validate = $true
+      set i = (+ $i 1)
+    } elif (eq $arg "--yolo") {
+      # YOLO mode: no validation, auto PR, auto merge
+      set no-validate = $true
+      set auto-pr = $true
+      set auto-merge = $true
+      set i = (+ $i 1)
     } else {
       echo "Error: Unknown argument: "$arg >&2
       exit 1
@@ -94,5 +104,6 @@ fn get-config {
     &auto-merge=$auto-merge
     &resume-mode=$resume-mode
     &reset-mode=$reset-mode
+    &no-validate=$no-validate
   ]
 }

@@ -151,3 +151,224 @@ fn cleanup {|output-file|
   rm -f $output-file
   ui:dim "  Cleaned up temp file"
 }
+
+# Extract learnings from completed story
+# Analyzes what was done and appends to docs/learnings/
+fn extract-learnings {|story-id branch-name|
+  ui:status "Extracting learnings from story..."
+
+  # Get story activity (from today's log)
+  var activity = ""
+  var today = (date '+%Y-%m-%d')
+  var activity-file = (path:join $project-root "docs" "activity" $today".md")
+  if (path:is-regular $activity-file) {
+    try {
+      set activity = (cat $activity-file | slurp)
+    } catch _ { }
+  }
+
+  # Get diff for this story
+  var diff = ""
+  try {
+    var base = "dev"  # TODO: get from config
+    set diff = (git -C $project-root diff $base"..."$branch-name 2>/dev/null | slurp)
+  } catch _ { }
+
+  if (eq $diff "") {
+    ui:dim "  No diff found, skipping learning extraction"
+    return
+  }
+
+  # Get existing learnings for context (to avoid duplicates)
+  var existing = ""
+  var learnings-dir = (path:join $project-root "docs" "learnings")
+  if (path:is-dir $learnings-dir) {
+    try {
+      set existing = (cat $learnings-dir"/"*.md 2>/dev/null | slurp)
+    } catch _ { }
+  }
+
+  var prompt = 'Analyze this completed story and extract learnings.
+
+STORY: '$story-id'
+
+ACTIVITY LOG:
+'$activity'
+
+CHANGES MADE (DIFF):
+'$diff'
+
+EXISTING LEARNINGS (do not duplicate these):
+'$existing'
+
+Look for:
+- Gotchas or surprises encountered
+- Patterns that would help future stories
+- Project-specific conventions discovered
+- Mistakes made and then corrected
+- Non-obvious implementation details
+
+Output format - choose ONE:
+
+If nothing notable to learn:
+<no-learnings/>
+
+OR if there are learnings:
+<learning file="gotchas.md">
+## Title of Learning
+
+Content to append...
+</learning>
+
+<learning file="patterns.md">
+## Another Learning
+
+More content...
+</learning>
+
+Valid files: gotchas.md, patterns.md, conventions.md
+
+Only extract genuinely useful, non-obvious learnings. Be concise.'
+
+  var result = ""
+  try {
+    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
+  } catch e {
+    ui:warn "Learning extraction failed: "(to-string $e[reason])
+    return
+  }
+
+  if (str:contains $result "<no-learnings/>") {
+    ui:dim "  No notable learnings from this story"
+    return
+  }
+
+  # Parse and apply learnings
+  if (str:contains $result "<learning") {
+    # Ensure learnings directory exists
+    mkdir -p $learnings-dir
+
+    # Extract each learning block and append to appropriate file
+    # Simple parsing - look for <learning file="X"> ... </learning>
+    var count = 0
+    for file [gotchas.md patterns.md conventions.md] {
+      var pattern = '<learning file="'$file'">'
+      if (str:contains $result $pattern) {
+        try {
+          # Extract content between tags
+          var content = (echo $result | sed -n '/<learning file="'$file'">/,/<\/learning>/p' | sed '1d;$d')
+          if (not (eq (str:trim-space $content) "")) {
+            var target = (path:join $learnings-dir $file)
+            # Create file if doesn't exist
+            if (not (path:is-regular $target)) {
+              echo "# "$file > $target
+              echo "" >> $target
+            }
+            echo "" >> $target
+            echo $content >> $target
+            set count = (+ $count 1)
+          }
+        } catch _ { }
+      }
+    }
+
+    if (> $count 0) {
+      ui:success "  Extracted "$count" learning(s)"
+    } else {
+      ui:dim "  No learnings parsed"
+    }
+  } else {
+    ui:dim "  No learnings found in response"
+  }
+}
+
+# Validate story acceptance criteria before execution
+# Returns: true if valid, false if needs clarification
+fn validate-story {|story-id|
+  ui:status "Validating story acceptance criteria..."
+
+  # Get story details from prd.json
+  var prd-file = (prd:get-prd-file)
+  var story-json = ""
+  try {
+    set story-json = (jq -r '.stories[] | select(.id == "'$story-id'")' $prd-file 2>/dev/null | slurp)
+  } catch _ {
+    ui:error "Failed to read story "$story-id
+    put $false
+    return
+  }
+
+  if (eq $story-json "") {
+    ui:error "Story "$story-id" not found in PRD"
+    put $false
+    return
+  }
+
+  var title = (echo $story-json | jq -r '.title' | slurp | str:trim-space)
+  var acceptance = (echo $story-json | jq -r '.acceptance | join("\n- ")' | slurp | str:trim-space)
+
+  if (eq $acceptance "") {
+    ui:warn "Story "$story-id" has no acceptance criteria"
+    put $false
+    return
+  }
+
+  var prompt = 'Review this story. Can it be implemented unambiguously?
+
+STORY: '$story-id' - '$title'
+
+ACCEPTANCE CRITERIA:
+- '$acceptance'
+
+Check for:
+- Vague terms ("settings", "improve", "better", "handle", "properly")
+- Missing specifics (which fields, what UI, what endpoint, what format)
+- Unclear scope or boundaries
+- Ambiguous success criteria
+- Missing error handling requirements
+
+Output ONLY one of:
+<valid/> if clear enough to implement unambiguously
+
+OR
+
+<needs-clarification>
+- Question 1?
+- Question 2?
+</needs-clarification>
+
+Be pragmatic - minor ambiguity is OK if the intent is clear. Only flag things that could lead to implementing the wrong thing.'
+
+  var result = ""
+  try {
+    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
+  } catch e {
+    ui:warn "Validation check failed, proceeding anyway: "(to-string $e[reason])
+    put $true
+    return
+  }
+
+  if (str:contains $result "<valid/>") {
+    ui:success "Story validation passed"
+    put $true
+    return
+  }
+
+  if (str:contains $result "<needs-clarification>") {
+    ui:warn "Story needs clarification:" > /dev/tty
+    echo "" > /dev/tty
+    # Extract questions between tags
+    try {
+      echo $result | sed -n '/<needs-clarification>/,/<\/needs-clarification>/p' | grep '^\s*-' > /dev/tty
+    } catch _ {
+      echo $result > /dev/tty
+    }
+    echo "" > /dev/tty
+    put $false
+    return
+  }
+
+  # Unexpected response, proceed anyway
+  ui:dim "Validation returned unexpected response, proceeding"
+  put $true
+}

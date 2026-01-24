@@ -172,6 +172,32 @@ while (< $current-iteration $config[max-iterations]) {
 
     git:ensure-on-branch $branch-name
 
+    # Validate story (unless --no-validate or feedback refinement)
+    if (and (not $config[no-validate]) (eq $pending-feedback "")) {
+      if (not (claude:validate-story $story-id)) {
+        echo "" > /dev/tty
+        ui:warn "Story "$story-id" needs clarification before implementation." > /dev/tty
+        echo "\e[33mSkip this story and continue? [Y/n]\e[0m" > /dev/tty
+        try {
+          var answer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
+          if (re:match '^[nN]' $answer) {
+            echo ""
+            ui:status "Stopping. Clarify the story and run again."
+            exit 0
+          }
+        } catch { }
+        echo ""
+        ui:dim "Skipping story, will try next..."
+        # Reset state so next iteration picks a new story
+        set current-state[current_story] = $nil
+        set current-state[branch] = $nil
+        set current-state[status] = "idle"
+        set current-state[attempts] = (num 0)
+        state:write $current-state
+        continue
+      }
+    }
+
     # Prepare Claude prompt (with any pending feedback)
     var prep = (claude:prepare $story-id $branch-name $current-state[attempts] $current-iteration $pending-feedback)
     var prompt-file = $prep[prompt-file]
@@ -292,10 +318,18 @@ while (< $current-iteration $config[max-iterations]) {
       echo ""
       ui:success "Story "$story-id" completed!"
 
+      # Extract learnings before PR flow
+      echo ""
+      claude:extract-learnings $story-id $branch-name
+
       # Run PR flow (may request feedback)
+      # Pass pr_url from state to skip PR prompt if already exists
       echo ""
       var story-title = (prd:get-story-title $story-id)
-      var pr-result = (pr:run-flow $story-id $branch-name $story-title $current-iteration)
+      var state-pr-url = (if $current-state[pr_url] { put $current-state[pr_url] } else { put "" })
+      var pr-flow-result = (pr:run-flow $story-id $branch-name $story-title $current-iteration &state-pr-url=$state-pr-url)
+      var pr-result = $pr-flow-result[result]
+      var pr-url = $pr-flow-result[pr_url]
 
       # Handle feedback loop - re-run Claude with feedback
       if (eq $pr-result "feedback") {
@@ -309,9 +343,10 @@ while (< $current-iteration $config[max-iterations]) {
           # Store feedback for next iteration
           set pending-feedback = $fb
 
-          # Re-set state to in_progress with current story
+          # Re-set state to in_progress with current story, preserve pr_url
           set current-state[current_story] = $story-id
           set current-state[branch] = $branch-name
+          set current-state[pr_url] = $pr-url
           set current-state[status] = "in_progress"
           set current-state[attempts] = (+ $current-state[attempts] 1)
           state:write $current-state
@@ -326,6 +361,7 @@ while (< $current-iteration $config[max-iterations]) {
       ui:dim "  Resetting state to idle..."
       set current-state[current_story] = $nil
       set current-state[branch] = $nil
+      set current-state[pr_url] = $nil
       set current-state[status] = "idle"
       set current-state[started_at] = $nil
       set current-state[attempts] = (num 0)
