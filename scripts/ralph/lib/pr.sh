@@ -50,17 +50,13 @@ pr_build_body() {
   local diff
   diff=$(git -C "$PR_PROJECT_ROOT" diff "$PR_BASE_BRANCH".."$branch_name" 2>/dev/null | head -1000)
 
-  # Build prompt for Claude
+  # Build prompt for Claude - always generate fresh from git history
   local prompt
-  if [[ -n "$existing_body" ]]; then
-    prompt="Update this GitHub PR description to reflect ALL changes in the PR. Merge with existing content.
+  prompt="Write a comprehensive GitHub PR description based on the FULL git history below.
 
 Story: $story_id - $story_title
 
-EXISTING PR DESCRIPTION:
-$existing_body
-
-ALL COMMITS IN THIS PR:
+ALL COMMITS IN THIS PR (oldest to newest):
 $commits
 
 ALL FILES CHANGED:
@@ -73,42 +69,22 @@ DIFF (truncated for large changes):
 $diff
 
 Instructions:
-- Update the description to cover ALL changes listed above
-- Merge existing content with new information (don't lose previous context)
-- The summary should reflect the full scope of the PR
-- List ALL significant changes in the Changes section
-- Keep it organized and concise
+- Summarize ALL the work done in this PR based on the commits above
+- The summary should cover the FULL scope - from initial work to latest changes
+- Group related changes together logically
+- Be comprehensive but concise
 
-Output the complete updated PR description, no preamble."
-  else
-    prompt="Write a comprehensive GitHub PR description summarizing ALL changes in this PR.
-
-Story: $story_id - $story_title
-
-ALL COMMITS:
-$commits
-
-ALL FILES CHANGED:
-$files_changed
-
-FILE STATS:
-$stats
-
-DIFF (truncated for large changes):
-$diff
-
-Format your response as:
+Format:
 ## Summary
-<1-2 sentence summary covering the full scope of what this PR does>
+<2-3 sentence summary of what this PR accomplishes overall>
 
 ## Changes
-<bullet points covering ALL key changes - files added, modified, deleted>
+<bullet points covering ALL significant changes, grouped by feature/area>
 
 ## Testing
 <how to verify the changes work>
 
-Be comprehensive but concise. No preamble, just the formatted PR description."
-  fi
+Output just the formatted PR description, no preamble."
 
   # Call Claude to generate description
   local body
