@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import {
   ReactFlow,
   Node,
@@ -12,6 +12,8 @@ import {
   Controls,
   Background,
   BackgroundVariant,
+  ReactFlowProvider,
+  useReactFlow,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useTheme } from 'next-themes'
@@ -26,11 +28,13 @@ const nodeTypes = {
   story: StoryNode,
 }
 
-export default function GraphPage() {
+function GraphContent() {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
   const [direction, setDirection] = useState<'horizontal' | 'vertical'>('horizontal')
   const { nodes: initialNodes, edges: initialEdges, loading, stories } = useGraphData(direction)
+  const { fitView } = useReactFlow()
+  const fitViewTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -46,6 +50,7 @@ export default function GraphPage() {
       })
       .catch(console.error)
   }, [])
+
   const [highlightedNodes, setHighlightedNodes] = useState<Set<string>>(new Set())
   const [highlightedEdges, setHighlightedEdges] = useState<Set<string>>(new Set())
 
@@ -53,13 +58,27 @@ export default function GraphPage() {
   const [selectedStatus, setSelectedStatus] = useState<StoryStatus>('pending')
   const [modalOpen, setModalOpen] = useState(false)
 
-  // Update nodes when data loads
+  // Update nodes when data loads and fit view
   useEffect(() => {
     if (initialNodes.length > 0) {
       setNodes(initialNodes)
       setEdges(initialEdges)
+
+      // Fit view after nodes are rendered
+      if (fitViewTimeoutRef.current) {
+        clearTimeout(fitViewTimeoutRef.current)
+      }
+      fitViewTimeoutRef.current = setTimeout(() => {
+        fitView({ padding: 0.1, duration: 200 })
+      }, 50)
     }
-  }, [initialNodes, initialEdges, setNodes, setEdges])
+
+    return () => {
+      if (fitViewTimeoutRef.current) {
+        clearTimeout(fitViewTimeoutRef.current)
+      }
+    }
+  }, [initialNodes, initialEdges, setNodes, setEdges, fitView])
 
   // Get all ancestors (dependencies) recursively
   const getAncestors = useCallback((nodeId: string, visited: Set<string> = new Set()): Set<string> => {
@@ -209,7 +228,6 @@ export default function GraphPage() {
           </Button>
         </div>
         <ReactFlow
-          key={direction}
           nodes={styledNodes}
           edges={styledEdges}
           onNodesChange={onNodesChange}
@@ -263,5 +281,13 @@ export default function GraphPage() {
         }}
       />
     </>
+  )
+}
+
+export default function GraphPage() {
+  return (
+    <ReactFlowProvider>
+      <GraphContent />
+    </ReactFlowProvider>
   )
 }
