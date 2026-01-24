@@ -30,3 +30,6 @@ Thumbs.db
 # Local dev
 .env
 .env.local
+
+# Ralph state
+scripts/ralph/state.json

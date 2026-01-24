@@ -66,6 +66,11 @@ fn graceful-exit {
   exit 130
 }
 
+# Register signal handler for Ctrl+C (SIGINT)
+set-global-signal-handler int {
+  graceful-exit
+}
+
 # Print banner
 echo ""
 ui:box "RALPH - Autonomous Development Loop" "info"
@@ -106,8 +111,7 @@ if (prd:all-stories-complete) {
 var current-iteration = 0
 var resume-mode = $config[resume-mode]
 
-try {
-  while (< $current-iteration $config[max-iterations]) {
+while (< $current-iteration $config[max-iterations]) {
     set current-iteration = (+ $current-iteration 1)
 
     echo ""
@@ -253,13 +257,10 @@ try {
     }
 
     sleep 2
-  }
-
-  echo ""
-  ui:box "MAX ITERATIONS REACHED" "warn"
-  ui:dim "Iterations: "$config[max-iterations]
-  ui:dim "Run again to continue."
-  exit 0
-} catch e {
-  graceful-exit
 }
+
+echo ""
+ui:box "MAX ITERATIONS REACHED" "warn"
+ui:dim "Iterations: "$config[max-iterations]
+ui:dim "Run again to continue."
+exit 0
