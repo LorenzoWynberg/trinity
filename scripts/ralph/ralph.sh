@@ -82,6 +82,7 @@ if [[ -n "$UNMERGED_OUTPUT" ]]; then
   UNMERGED_COUNT=$(echo "$UNMERGED_OUTPUT" | wc -l | tr -d ' ')
   ui_warn "Found $UNMERGED_COUNT story(s) passed but not merged:"
 
+  # Display list (pipe is fine here, no user input needed)
   echo "$UNMERGED_OUTPUT" | while IFS= read -r sid; do
     [[ -z "$sid" ]] && continue
     story_title=$(prd_get_story_title "$sid")
@@ -90,7 +91,8 @@ if [[ -n "$UNMERGED_OUTPUT" ]]; then
   done
   echo ""
 
-  echo "$UNMERGED_OUTPUT" | while IFS= read -r sid; do
+  # Process each - use here-string to avoid subshell (preserves TTY access)
+  while IFS= read -r sid; do
     [[ -z "$sid" ]] && continue
     story_title=$(prd_get_story_title "$sid")
     branch=$(prd_get_story_branch "$sid")
@@ -105,7 +107,7 @@ if [[ -n "$UNMERGED_OUTPUT" ]]; then
     ui_status "Handling unmerged story: $sid"
     pr_run_flow "$sid" "$branch" "$story_title" 0
     echo ""
-  done
+  done <<< "$UNMERGED_OUTPUT"
 fi
 
 # Main loop
