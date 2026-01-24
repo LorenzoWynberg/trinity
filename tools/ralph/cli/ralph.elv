@@ -21,7 +21,7 @@ use ./lib/metrics
 var script-dir = (path:dir (src)[name])
 var project-root = (path:dir (path:dir $script-dir))
 var prompt-file = (path:join $script-dir "prompt.md")
-var prd-file = (path:join $script-dir "prd.json")
+var prd-dir = (path:join $script-dir "prd")
 var progress-file = (path:join $script-dir "progress.txt")
 var state-file = (path:join $script-dir "state.json")
 var metrics-file = (path:join $script-dir "metrics.json")
@@ -29,18 +29,34 @@ var metrics-file = (path:join $script-dir "metrics.json")
 # Parse arguments and validate
 cli:parse-args $args
 cli:check-dependencies
-cli:check-files $prompt-file $prd-file $progress-file
 
 # Get config
 var config = (cli:get-config)
 
+# Initialize PRD module with directory
+prd:init $prd-dir
+
+# Select version (auto or by flag)
+var active-version = (prd:select-version $config[target-version])
+if (eq $active-version "") {
+  if (not (eq $config[target-version] "")) {
+    ui:error "Version "$config[target-version]" not found or has no stories"
+  } else {
+    ui:success "All versions complete!"
+  }
+  exit 0
+}
+
+# Now check files (with selected PRD file)
+var prd-file = (prd:get-prd-file)
+cli:check-files $prompt-file $prd-file $progress-file
+
 # Load prompt template
 var prompt-template = (cat $prompt-file | slurp)
 
-# Initialize modules
+# Initialize remaining modules
 state:init $state-file
 git:init $project-root $config[base-branch]
-prd:init $prd-file
 claude:init $project-root $prompt-template $config[claude-timeout] $config[quiet-mode] $config[max-iterations]
 pr:init $project-root $config[base-branch] $config[auto-pr] $config[auto-merge]
 metrics:init $metrics-file
@@ -152,6 +168,7 @@ ui:box "RALPH - Autonomous Development Loop" "info"
 echo ""
 ui:dim "Project:        "$project-root
 ui:dim "Base branch:    "$config[base-branch]
+ui:dim "Target version: "$active-version" (prd/"$active-version".json)"
 ui:dim "Max iterations: "$config[max-iterations]
 if $config[quiet-mode] {
   ui:dim "Mode:           quiet (Claude output hidden)"

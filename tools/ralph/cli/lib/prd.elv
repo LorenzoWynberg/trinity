@@ -1,18 +1,99 @@
 # PRD and story operations for Ralph
 
 use str
+use path
+use re
 
-# PRD file path (set by init)
+# PRD directory and current file path
+var prd-dir = ""
 var prd-file = ""
 
-# Initialize with PRD file path
-fn init {|path|
-  set prd-file = $path
+# Initialize with PRD directory path
+fn init {|dir-path|
+  set prd-dir = $dir-path
+}
+
+# Set current PRD file (called after version selection)
+fn set-prd-file {|file-path|
+  set prd-file = $file-path
 }
 
 # Get PRD file path (for other modules)
 fn get-prd-file {
   put $prd-file
+}
+
+# Get PRD directory path
+fn get-prd-dir {
+  put $prd-dir
+}
+
+# List all available version files in prd directory
+fn list-versions {
+  var versions = []
+  for file [(path:glob $prd-dir"/v*.json")] {
+    var basename = (path:base $file)
+    var version = (re:replace '\.json$' '' $basename)
+    set versions = [$@versions $version]
+  }
+  # Sort versions (simple string sort works for vX.Y format)
+  put $@versions | order
+}
+
+# Get PRD file path for a specific version
+fn get-version-file {|version|
+  put $prd-dir"/"$version".json"
+}
+
+# Check if a version has incomplete stories
+fn version-has-incomplete {|version|
+  var file = (get-version-file $version)
+  if (not (path:is-regular $file)) {
+    put $false
+    return
+  }
+  var incomplete = (jq '[.stories[] | select(.merged != true)] | length' $file)
+  not (eq $incomplete "0")
+}
+
+# Get the lowest semantic version that has incomplete stories
+fn get-active-version {
+  var versions = [(list-versions)]
+  for version $versions {
+    if (version-has-incomplete $version) {
+      put $version
+      return
+    }
+  }
+  # All versions complete, return empty
+  put ""
+}
+
+# Select and set the PRD file (auto or by flag)
+fn select-version {|target-version|
+  var version = ""
+
+  if (not (eq $target-version "")) {
+    # Use specified version
+    set version = $target-version
+  } else {
+    # Auto-select lowest incomplete version
+    set version = (get-active-version)
+  }
+
+  if (eq $version "") {
+    put ""
+    return
+  }
+
+  var file = (get-version-file $version)
+  if (not (path:is-regular $file)) {
+    put ""
+    return
+  }
+
+  set-prd-file $file
+  put $version
 }
 
 # Get story info for branch naming (phase, epic, story_number)
@@ -323,20 +404,21 @@ fn get-version-progress {|version|
   put $merged"/"$total
 }
 
-# Show version status summary
+# Show version status summary (reads from all prd/*.json files)
 fn show-version-status {
   echo "═══════════════════════════════════════════════════════"
   echo "  VERSION STATUS"
   echo "═══════════════════════════════════════════════════════"
   echo ""
 
-  var versions = [(get-versions)]
+  var versions = [(list-versions)]
 
   for version $versions {
-    var total = (jq '[.stories[] | select((.target_version // "v1.0") == "'$version'")] | length' $prd-file)
-    var merged = (jq '[.stories[] | select((.target_version // "v1.0") == "'$version'" and .merged == true)] | length' $prd-file)
-    var passed = (jq '[.stories[] | select((.target_version // "v1.0") == "'$version'" and .passes == true)] | length' $prd-file)
-    var skipped = (jq '[.stories[] | select((.target_version // "v1.0") == "'$version'" and .skipped == true)] | length' $prd-file)
+    var file = (get-version-file $version)
+    var total = (jq '.stories | length' $file)
+    var merged = (jq '[.stories[] | select(.merged == true)] | length' $file)
+    var passed = (jq '[.stories[] | select(.passes == true)] | length' $file)
+    var skipped = (jq '[.stories[] | select(.skipped == true)] | length' $file)
 
     var pct = 0
     if (> $total 0) {
@@ -345,10 +427,11 @@ fn show-version-status {
 
     var status = "in_progress"
     if (eq $merged $total) {
-      set status = "ready_to_release"
+      set status = "complete"
     }
 
     echo $version" ["$status"]"
+    echo "  File: prd/"$version".json"
     echo "  Progress: "$merged"/"$total" ("$pct"%)"
     echo "  - Passed (awaiting merge): "(- $passed $merged)
     echo "  - Skipped: "$skipped

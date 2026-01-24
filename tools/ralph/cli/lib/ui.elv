@@ -111,10 +111,11 @@ WORKFLOW:
   8. Move to next story
 
 FILES:
-  - prompt.md     : Agent instructions template
-  - prd.json      : Task definitions with dependencies
-  - progress.txt  : Progress tracking and learnings
-  - state.json    : Persistent state between invocations
+  - prompt.md       : Agent instructions template
+  - prd/v1.0.json   : v1.0 task definitions with dependencies
+  - prd/v2.0.json   : v2.0 task definitions (when ready)
+  - progress.txt    : Progress tracking and learnings
+  - state.json      : Persistent state between invocations
 
 EXAMPLES:
   ./ralph.elv                          # Start fresh or continue
