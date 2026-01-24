@@ -34,7 +34,8 @@ function GraphContent() {
   const [direction, setDirection] = useState<'horizontal' | 'vertical'>('horizontal')
   const { nodes: initialNodes, edges: initialEdges, loading, stories } = useGraphData(direction)
   const { fitView } = useReactFlow()
-  const fitViewTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const shouldFitViewRef = useRef(true) // Fit on initial render
+  const prevDirectionRef = useRef(direction)
 
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -58,24 +59,26 @@ function GraphContent() {
   const [selectedStatus, setSelectedStatus] = useState<StoryStatus>('pending')
   const [modalOpen, setModalOpen] = useState(false)
 
-  // Update nodes when data loads and fit view
+  // Track direction changes to trigger fitView
+  useEffect(() => {
+    if (prevDirectionRef.current !== direction) {
+      shouldFitViewRef.current = true
+      prevDirectionRef.current = direction
+    }
+  }, [direction])
+
+  // Update nodes when data loads, only fit view on initial render or direction change
   useEffect(() => {
     if (initialNodes.length > 0) {
       setNodes(initialNodes)
       setEdges(initialEdges)
 
-      // Fit view after nodes are rendered
-      if (fitViewTimeoutRef.current) {
-        clearTimeout(fitViewTimeoutRef.current)
-      }
-      fitViewTimeoutRef.current = setTimeout(() => {
-        fitView({ padding: 0.1, duration: 200 })
-      }, 50)
-    }
-
-    return () => {
-      if (fitViewTimeoutRef.current) {
-        clearTimeout(fitViewTimeoutRef.current)
+      // Only fit view on initial render or direction change
+      if (shouldFitViewRef.current) {
+        setTimeout(() => {
+          fitView({ padding: 0.1, duration: 200 })
+        }, 50)
+        shouldFitViewRef.current = false
       }
     }
   }, [initialNodes, initialEdges, setNodes, setEdges, fitView])
