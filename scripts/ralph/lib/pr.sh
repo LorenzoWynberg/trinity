@@ -241,18 +241,38 @@ pr_run_flow() {
   while [[ "$done" == "false" ]]; do
     # === PR HANDLING ===
     if [[ "$pr_exists" == "true" ]]; then
-      # PR exists - ask to update description
+      # PR exists - offer update, skip, or feedback
       ui_dim "PR exists: $pr_url"
 
       if [[ "$PR_AUTO_PR" != "true" ]]; then
-        ui_status "Update PR description with latest changes?"
-        echo -e "\033[33m[Y]es / [n]o\033[0m"
+        ui_status "Review the PR. What would you like to do?"
+        echo -e "\033[33m[Y]es update description / [n]o skip / [f]eedback request changes\033[0m"
 
-        local answer
-        answer=$(pr_prompt_user)
+        local answer=""
+        read -r answer </dev/tty 2>/dev/null || answer=""
+        answer=$(echo "$answer" | tr '[:upper:]' '[:lower:]')
+
         case "$answer" in
-          no) ;;
-          *) pr_update_description "$branch_name" "$story_id" "$story_title" ;;
+          n|no)
+            ui_dim "Skipping PR update"
+            ;;
+          f|feedback)
+            # Get feedback and return to main loop
+            local feedback
+            feedback=$(pr_get_feedback)
+            if [[ -n "$feedback" ]]; then
+              PR_FEEDBACK="$feedback"
+              ui_status "Feedback received. Will re-run Claude with changes..."
+              echo "feedback"
+              return 0
+            else
+              ui_dim "No feedback provided"
+            fi
+            ;;
+          *)
+            # Default to yes - update description
+            pr_update_description "$branch_name" "$story_id" "$story_title"
+            ;;
         esac
       else
         pr_update_description "$branch_name" "$story_id" "$story_title"
