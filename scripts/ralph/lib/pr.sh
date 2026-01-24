@@ -44,6 +44,42 @@ pr_create() {
   fi
 }
 
+# Update PR description based on commits
+pr_update_description() {
+  local branch_name="$1"
+  local story_id="$2"
+  local story_title="$3"
+
+  ui_status "Updating PR description..."
+
+  # Get commit messages since branching from base
+  local commits
+  commits=$(git -C "$PR_PROJECT_ROOT" log --oneline "$PR_BASE_BRANCH".."$branch_name" 2>/dev/null | head -20)
+
+  # Get changed files
+  local files_changed
+  files_changed=$(git -C "$PR_PROJECT_ROOT" diff --stat "$PR_BASE_BRANCH".."$branch_name" 2>/dev/null | tail -1)
+
+  # Build PR body
+  local body="## $story_id: $story_title
+
+### Commits
+\`\`\`
+$commits
+\`\`\`
+
+### Summary
+$files_changed"
+
+  if gh pr edit "$branch_name" --body "$body" &>/dev/null; then
+    ui_success "PR description updated"
+    return 0
+  else
+    ui_error "Failed to update PR description"
+    return 1
+  fi
+}
+
 # Merge PR - returns merge commit SHA or empty string on failure
 pr_merge() {
   local branch_name="$1"
@@ -94,10 +130,26 @@ pr_run_flow() {
 
   local done=false
   while [[ "$done" == "false" ]]; do
-    # === PR CREATION (only if doesn't exist) ===
+    # === PR HANDLING ===
     if [[ "$pr_exists" == "true" ]]; then
-      ui_success "PR already exists: $pr_url"
+      # PR exists - ask to update description
+      ui_dim "PR exists: $pr_url"
+
+      if [[ "$PR_AUTO_PR" != "true" ]]; then
+        ui_status "Update PR description with latest changes?"
+        echo -e "\033[33m[Y]es / [n]o\033[0m"
+
+        local answer
+        answer=$(pr_prompt_user)
+        case "$answer" in
+          no) ;;
+          *) pr_update_description "$branch_name" "$story_id" "$story_title" ;;
+        esac
+      else
+        pr_update_description "$branch_name" "$story_id" "$story_title"
+      fi
     else
+      # No PR - ask to create
       local should_create_pr="$PR_AUTO_PR"
 
       if [[ "$PR_AUTO_PR" != "true" ]]; then
