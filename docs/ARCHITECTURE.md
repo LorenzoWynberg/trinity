@@ -18,7 +18,7 @@ trinity/
 ├── cli/                 # CLI app (imports core)
 │   ├── cmd/trinity/     # main.go entrypoint
 │   └── internal/        # CLI-specific code
-├── gui/                 # Wails desktop app (v0.4)
+├── gui/                 # Wails desktop app (v0.5)
 ├── prompts/             # Embedded via go:embed
 │   ├── templates/       # Prompts with {{placeholders}}
 │   ├── schemas/         # Expected JSON response formats
@@ -415,7 +415,7 @@ Use `trinity init --skip-skills` to disable auto-install.
 | Component | Technology | Rationale |
 |-----------|------------|-----------|
 | CLI | Go | Fast, single binary, good CLI ecosystem |
-| GUI (v0.4) | Wails | Go-based, auto TS bindings, lighter than Electron |
+| GUI (v0.5) | Wails | Go-based, auto TS bindings, lighter than Electron |
 | Database | SQLite | Embedded, single file, handles concurrent writes |
 | AI | Claude Code CLI | Execution engine, not just API |
 

@@ -34,7 +34,25 @@ Authentication and subscription gating.
 
 ---
 
-## v0.3 - Cross-Project Dependencies
+## v0.3 - Team Workflows
+
+Shared database for team collaboration.
+
+### Database Options
+- **Solo (default)**: SQLite in `~/.trinity/` - no setup required
+- **Team options** (v0.3):
+  - We provide Turso - managed, included in subscription
+  - Bring your own Turso - user provides API key
+  - Bring your own DB - Postgres/MySQL connection string
+
+### Features
+- Database adapter layer in `core/db`
+- `trinity config set db.provider managed|turso|postgres|mysql`
+- `trinity config set db.connection <connection-string-or-api-key>`
+
+---
+
+## v0.4 - Cross-Project Dependencies
 
 Reference dependencies across projects without centralizing state.
 
@@ -46,7 +64,7 @@ Reference dependencies across projects without centralizing state.
 
 ---
 
-## v0.4 - GUI
+## v0.5 - GUI
 
 Desktop app using Wails (Go + TypeScript).
 
@@ -64,8 +82,8 @@ Desktop app using Wails (Go + TypeScript).
 Full platform with cloud features.
 
 ### Features
-- Cloud sync for PRDs/progress
-- Team collaboration
+- Analytics and insights
+- CI/CD integration
 - Custom template marketplace
 - Analytics and insights
 - CI/CD integration
@@ -78,7 +96,8 @@ Full platform with cloud features.
 |----------|--------|-----------|
 | Language | Go | Single binary, fast, good CLI ecosystem |
 | GUI | Wails | Go-based, lighter than Electron |
-| Database | SQLite | Embedded, simple, handles concurrency |
+| Database (solo) | SQLite | Embedded, simple, no setup |
+| Database (teams) | Turso / BYOD | Turso for managed, Postgres/MySQL for enterprise |
 | AI | Claude Code CLI | Execution engine, not just API |
 | Storage | `~/.trinity/` | Keep user projects clean |
 | Project ID | `slugify(name)-timestamp` | Unique, readable, path-independent |
@@ -91,5 +110,4 @@ Full platform with cloud features.
 ## Open Questions
 
 1. **Subscription tiers?** - Different limits for different prices?
-2. **Team features scope?** - What collaboration features for v1.0?
-3. **Template marketplace?** - User-contributed prompts/workflows?
+2. **Template marketplace?** - User-contributed prompts/workflows?
