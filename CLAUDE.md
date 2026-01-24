@@ -21,7 +21,7 @@ trinity/
 ├── go.work              # Go workspace
 ├── core/                # Shared logic (config, loop, claude, prd, db)
 ├── cli/                 # CLI app (cmd/trinity/main.go)
-├── gui/                 # Wails desktop app (v0.2)
+├── gui/                 # Wails desktop app (v0.4)
 ├── prompts/             # Meta-prompts (embedded via go:embed)
 └── examples/            # Reference implementations
 ```

@@ -13,7 +13,7 @@ Trinity sets up and runs AI-powered autonomous development workflows. Point it a
 - 🚀 **CLI** - `trinity init`, `trinity run`, `trinity status`
 - 🧠 **Smart Init** - Claude analyzes your project and generates setup
 - 📊 **Streaming** - Real-time output as AI works
-- 🖥️ **GUI** - Desktop app for visual workflow management (v0.2)
+- 🖥️ **GUI** - Desktop app for visual workflow management (v0.4)
 
 ## Requirements
 

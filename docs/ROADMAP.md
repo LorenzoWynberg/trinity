@@ -23,12 +23,34 @@ Core autonomous development loop.
 
 ---
 
-## v0.2 - GUI + Auth
+## v0.2 - Auth
 
-Desktop app using Wails (Go + TypeScript), plus authentication.
+Authentication and subscription gating.
 
 ### Features
 - OAuth authentication (Google/GitHub)
+- Subscription validation
+- License key support (offline use)
+
+---
+
+## v0.3 - Cross-Project Dependencies
+
+Reference dependencies across projects without centralizing state.
+
+### Features
+- Cross-project reference syntax: `@project:phase:epic:story`
+- Query other project DBs to check dependency status
+- Projects remain portable/independent
+- `trinity link <project-path>` to register related projects
+
+---
+
+## v0.4 - GUI
+
+Desktop app using Wails (Go + TypeScript).
+
+### Features
 - Project management dashboard
 - Visual PRD editor (drag-drop stories, dependencies)
 - Real-time streaming output
