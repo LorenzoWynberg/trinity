@@ -11,7 +11,7 @@
         "cli imports core module",
         "go work sync succeeds"
       ],
-      "passes": false,
+      "passes": true,
       "depends_on": [],
       "phase": 1,
       "epic": 1,

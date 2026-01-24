@@ -4,6 +4,29 @@ This file tracks progress on building Trinity v0.1 using the autonomous developm
 
 ---
 
+## STORY-1.1.1: Create Go workspace structure
+Date: 2026-01-24
+Status: COMPLETED
+
+### Changes
+- Created `go.work` at root with `use ./core` and `use ./cli` directives
+- Created `core/go.mod` with module `github.com/trinity-ai-labs/trinity/core`
+- Created `core/core.go` with basic package and Version constant
+- Created `cli/go.mod` with module `github.com/trinity-ai-labs/trinity/cli`
+- Created `cli/cmd/trinity/main.go` that imports and uses core module
+- Added replace directive in cli/go.mod for local development
+
+### Learnings
+- Go workspaces need replace directives in individual modules to avoid version lookup failures during `go work sync`
+- The workspace approach cleanly separates core logic from CLI while allowing local development
+
+### Verification
+- `go work sync` succeeds
+- `go build ./cli/cmd/trinity` produces binary
+- Binary runs and displays core version
+
+---
+
 ## Project Started
 Date: 2026-01-23
 Goal: Build Trinity v0.1 - CLI MVP with autonomous development loop
