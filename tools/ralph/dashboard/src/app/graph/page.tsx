@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useState, useRef, useMemo } from 'react'
+import { useDebouncer } from '@tanstack/react-pacer'
 import {
   ReactFlow,
   Node,
@@ -18,7 +19,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useTheme } from 'next-themes'
-import { ArrowRight, ArrowDown, Save, Trash2, Loader2, Star, Maximize2 } from 'lucide-react'
+import { ArrowRight, ArrowDown, Save, Trash2, Loader2, Star, Maximize, Minimize } from 'lucide-react'
 import { StoryNode } from '@/components/story-node'
 import { VersionNode } from '@/components/version-node'
 import { StoryModal } from '@/components/story-modal'
@@ -75,6 +76,9 @@ function GraphContent() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
 
+  // Debounced layout save - waits 500ms after last change before saving
+  const layoutSaveDebouncer = useDebouncer(saveLayoutData, { wait: 500 })
+
   const [highlightedNodes, setHighlightedNodes] = useState<Set<string>>(new Set())
   const [highlightedEdges, setHighlightedEdges] = useState<Set<string>>(new Set())
 
@@ -85,6 +89,16 @@ function GraphContent() {
   // Save dialog state
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [newLayoutName, setNewLayoutName] = useState('')
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  // Track fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
 
   // Track version/layout changes to trigger fitView
   useEffect(() => {
@@ -154,7 +168,7 @@ function GraphContent() {
     setNewLayoutName('')
   }, [nodes, layoutData, saveLayoutData, newLayoutName])
 
-  // Handle node drag end - update custom layout if active
+  // Handle node drag end - update custom layout if active (debounced)
   const handleNodesChange = useCallback((changes: NodeChange<Node>[]) => {
     onNodesChange(changes)
 
@@ -165,7 +179,7 @@ function GraphContent() {
     if (hasDrag) {
       const activeLayout = layoutData.active
 
-      // If currently on a custom layout, update its positions
+      // If currently on a custom layout, update its positions (debounced)
       if (activeLayout !== 'horizontal' && activeLayout !== 'vertical') {
         const positions: Record<string, { x: number; y: number }> = {}
         nodes.forEach(node => {
@@ -184,10 +198,11 @@ function GraphContent() {
             [activeLayout]: { positions },
           },
         }
-        saveLayoutData(newData)
+        // Use debounced save to avoid rapid API calls while dragging
+        layoutSaveDebouncer.maybeExecute(newData)
       }
     }
-  }, [onNodesChange, layoutData, nodes, saveLayoutData])
+  }, [onNodesChange, layoutData, nodes, layoutSaveDebouncer])
 
   // Delete a custom layout
   const handleDeleteLayout = useCallback(async (name: string) => {
@@ -203,10 +218,14 @@ function GraphContent() {
     await saveLayoutData(newData)
   }, [layoutData, saveLayoutData])
 
-  // Recenter/fit the view
-  const handleRecenter = useCallback(() => {
-    fitView({ padding: 0.1, duration: 300 })
-  }, [fitView])
+  // Toggle fullscreen mode
+  const handleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen()
+    } else {
+      document.exitFullscreen()
+    }
+  }, [])
 
   // Get all ancestors (dependencies) recursively
   const getAncestors = useCallback((nodeId: string, visited: Set<string> = new Set()): Set<string> => {
@@ -306,7 +325,7 @@ function GraphContent() {
   const customLayoutNames = Object.keys(layoutData.customLayouts || {}).filter(name => name && name !== 'undefined')
 
   // Determine if we're in auto-layout mode (no manual positioning allowed)
-  const isAutoLayout = layoutData.active === 'horizontal' || layoutData.active === 'vertical'
+  const isAutoLayout = layoutData.active === 'horizontal' || layoutData.active === 'vertical' || layoutData.active === 'horizontal-compact' || layoutData.active === 'vertical-compact'
 
   return (
     <>
@@ -378,10 +397,22 @@ function GraphContent() {
                   Horizontal
                 </div>
               </SelectItem>
+              <SelectItem value="horizontal-compact">
+                <div className="flex items-center gap-2">
+                  <ArrowRight className="h-4 w-4" />
+                  Horizontal Compact
+                </div>
+              </SelectItem>
               <SelectItem value="vertical">
                 <div className="flex items-center gap-2">
                   <ArrowDown className="h-4 w-4" />
                   Vertical
+                </div>
+              </SelectItem>
+              <SelectItem value="vertical-compact">
+                <div className="flex items-center gap-2">
+                  <ArrowDown className="h-4 w-4" />
+                  Vertical Compact
                 </div>
               </SelectItem>
               {customLayoutNames.length > 0 && (
@@ -404,16 +435,15 @@ function GraphContent() {
             </SelectContent>
           </Select>
 
-          {/* Recenter button */}
+          {/* Fullscreen button */}
           <Button
             variant="outline"
             size="icon"
             className="h-9 w-9"
-            onClick={handleRecenter}
-            title="Fit to view"
-            disabled={isVersionLoading || isLayoutLoading}
+            onClick={handleFullscreen}
+            title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
           >
-            <Maximize2 className="h-4 w-4" />
+            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
           </Button>
 
           {/* Set as default button */}
@@ -431,7 +461,7 @@ function GraphContent() {
           </Button>
 
           {/* Delete button for custom layouts */}
-          {layoutData.active !== 'horizontal' && layoutData.active !== 'vertical' && (
+          {!isAutoLayout && (
             <Button
               variant="outline"
               size="icon"

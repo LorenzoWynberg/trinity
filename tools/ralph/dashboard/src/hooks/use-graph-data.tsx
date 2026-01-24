@@ -60,10 +60,12 @@ function calculateDepths(stories: Story[]): Map<string, number> {
   return depths
 }
 
+type LayoutDirection = 'horizontal' | 'horizontal-compact' | 'vertical' | 'vertical-compact'
+
 // Calculate auto-layout positions for a single version
 function calculateSingleVersionPositions(
   stories: Story[],
-  direction: 'horizontal' | 'vertical',
+  direction: LayoutDirection,
   offsetX: number = 0,
   offsetY: number = 0
 ): Record<string, { x: number; y: number }> {
@@ -89,13 +91,18 @@ function calculateSingleVersionPositions(
 
   const NODE_WIDTH = 170
   const NODE_HEIGHT = 70
-  const H_GAP = direction === 'vertical' ? 80 : 60
-  const V_GAP = direction === 'vertical' ? 70 : 20
-  const MAX_PER_ROW = 6
+  const MAX_PER_COL = 6
+
+  // Spacing varies by layout type
+  const isCompact = direction === 'horizontal-compact' || direction === 'vertical-compact'
+  const isVertical = direction === 'vertical' || direction === 'vertical-compact'
+  const H_GAP = isVertical ? 80 : 60
+  const V_GAP = direction === 'horizontal-compact' ? 40 : (isVertical ? 70 : 20)
 
   const maxDepth = Math.max(...Array.from(depths.values()), 0)
 
   if (direction === 'horizontal') {
+    // Horizontal: all nodes in column, unlimited height
     for (let depth = 0; depth <= maxDepth; depth++) {
       const group = byDepth.get(depth) || []
       group.forEach((story, idx) => {
@@ -105,15 +112,53 @@ function calculateSingleVersionPositions(
         }
       })
     }
+  } else if (direction === 'horizontal-compact') {
+    // Horizontal compact: max 6 nodes per column, overflow creates new columns
+    let currentCol = 0
+    const maxColHeight = MAX_PER_COL * NODE_HEIGHT + (MAX_PER_COL - 1) * V_GAP
+
+    for (let depth = 0; depth <= maxDepth; depth++) {
+      const group = byDepth.get(depth) || []
+      const numChunks = Math.ceil(group.length / MAX_PER_COL)
+
+      for (let chunkIdx = 0; chunkIdx < numChunks; chunkIdx++) {
+        const chunkStart = chunkIdx * MAX_PER_COL
+        const chunk = group.slice(chunkStart, chunkStart + MAX_PER_COL)
+        const chunkSize = chunk.length
+        // Center vertically within the max column height
+        const colHeight = chunkSize * NODE_HEIGHT + (chunkSize - 1) * V_GAP
+        const yOff = (maxColHeight - colHeight) / 2
+
+        chunk.forEach((story, idx) => {
+          positions[story.id] = {
+            x: offsetX + currentCol * (NODE_WIDTH + H_GAP),
+            y: offsetY + yOff + idx * (NODE_HEIGHT + V_GAP)
+          }
+        })
+        currentCol++
+      }
+    }
+  } else if (direction === 'vertical') {
+    // Vertical: all nodes in row, unlimited width, flows top to bottom
+    for (let depth = 0; depth <= maxDepth; depth++) {
+      const group = byDepth.get(depth) || []
+      group.forEach((story, idx) => {
+        positions[story.id] = {
+          x: offsetX + idx * (NODE_WIDTH + H_GAP),
+          y: offsetY + depth * (NODE_HEIGHT + V_GAP)
+        }
+      })
+    }
   } else {
-    const maxRowWidth = MAX_PER_ROW * NODE_WIDTH + (MAX_PER_ROW - 1) * H_GAP
+    // Vertical compact: max 6 nodes per row, flows top to bottom
+    const maxRowWidth = MAX_PER_COL * NODE_WIDTH + (MAX_PER_COL - 1) * H_GAP
     let currentRow = 0
 
     for (let depth = 0; depth <= maxDepth; depth++) {
       const group = byDepth.get(depth) || []
 
-      for (let chunkStart = 0; chunkStart < group.length; chunkStart += MAX_PER_ROW) {
-        const chunk = group.slice(chunkStart, chunkStart + MAX_PER_ROW)
+      for (let chunkStart = 0; chunkStart < group.length; chunkStart += MAX_PER_COL) {
+        const chunk = group.slice(chunkStart, chunkStart + MAX_PER_COL)
         const chunkSize = chunk.length
         const rowWidth = chunkSize * NODE_WIDTH + (chunkSize - 1) * H_GAP
         const xOff = (maxRowWidth - rowWidth) / 2
@@ -135,7 +180,7 @@ function calculateSingleVersionPositions(
 // Calculate auto-layout positions with version grouping
 export function calculateAutoPositions(
   stories: Story[],
-  direction: 'horizontal' | 'vertical',
+  direction: LayoutDirection,
   includeVersionHeaders: boolean = false
 ): Record<string, { x: number; y: number }> {
   // Group stories by version
@@ -165,11 +210,13 @@ export function calculateAutoPositions(
   const VERSION_HEADER_WIDTH = 180
   const VERSION_HEADER_HEIGHT = 70
   const VERSION_GAP = 100
-  const H_GAP = direction === 'vertical' ? 80 : 60
-  const V_GAP = direction === 'vertical' ? 70 : 20
+  const isVertical = direction === 'vertical' || direction === 'vertical-compact'
+  const H_GAP = isVertical ? 80 : 60
+  const V_GAP = direction === 'horizontal-compact' ? 40 : (isVertical ? 70 : 20)
 
-  if (direction === 'horizontal') {
+  if (direction === 'horizontal' || direction === 'horizontal-compact') {
     let currentX = 0
+    const MAX_PER_COL = 6
 
     for (const ver of sortedVersions) {
       const verStories = byVersion.get(ver) || []
@@ -182,19 +229,25 @@ export function calculateAutoPositions(
       Object.assign(positions, verPositions)
 
       if (includeVersionHeaders) {
-        // Find root stories (depth 0 = no dependencies)
-        const depths = calculateDepths(verStories)
-        const rootStories = verStories.filter(s => (depths.get(s.id) || 0) === 0)
-
-        // Position version header to the left, vertically centered with root stories
-        if (rootStories.length > 0) {
-          const rootYs = rootStories.map(s => verPositions[s.id]?.y || 0)
-          const minY = Math.min(...rootYs)
-          const maxY = Math.max(...rootYs)
-          const centerY = (minY + maxY + NODE_HEIGHT - VERSION_HEADER_HEIGHT) / 2
+        if (direction === 'horizontal-compact') {
+          // For compact, center version header in max column height
+          const maxColHeight = MAX_PER_COL * NODE_HEIGHT + (MAX_PER_COL - 1) * V_GAP
+          const centerY = (maxColHeight - VERSION_HEADER_HEIGHT) / 2
           positions[`version:${ver}`] = { x: currentX, y: centerY }
         } else {
-          positions[`version:${ver}`] = { x: currentX, y: 0 }
+          // For regular horizontal, find root stories and center with them
+          const depths = calculateDepths(verStories)
+          const rootStories = verStories.filter(s => (depths.get(s.id) || 0) === 0)
+
+          if (rootStories.length > 0) {
+            const rootYs = rootStories.map(s => verPositions[s.id]?.y || 0)
+            const minY = Math.min(...rootYs)
+            const maxY = Math.max(...rootYs)
+            const centerY = (minY + maxY + NODE_HEIGHT - VERSION_HEADER_HEIGHT) / 2
+            positions[`version:${ver}`] = { x: currentX, y: centerY }
+          } else {
+            positions[`version:${ver}`] = { x: currentX, y: 0 }
+          }
         }
       }
 
@@ -370,7 +423,7 @@ export function useGraphData(version: string = 'all'): GraphData {
         let positions: Record<string, { x: number; y: number }>
         const activeLayout = currentLayoutData.active || 'horizontal'
 
-        if (activeLayout === 'horizontal' || activeLayout === 'vertical') {
+        if (activeLayout === 'horizontal' || activeLayout === 'vertical' || activeLayout === 'horizontal-compact' || activeLayout === 'vertical-compact') {
           // Auto-calculate positions
           positions = calculateAutoPositions(storiesData, activeLayout, showVersionHeaders)
         } else {
@@ -388,7 +441,7 @@ export function useGraphData(version: string = 'all'): GraphData {
 
         // Create nodes
         const nodeList: Node[] = []
-        const isAutoLayout = activeLayout === 'horizontal' || activeLayout === 'vertical'
+        const isAutoLayout = activeLayout === 'horizontal' || activeLayout === 'vertical' || activeLayout === 'horizontal-compact' || activeLayout === 'vertical-compact'
 
         // Add version header nodes if showing all versions
         if (showVersionHeaders) {
