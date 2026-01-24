@@ -184,54 +184,78 @@ PR #42: STORY-1.1.2 - Create CLI entrypoint
 
 ---
 
-### 4. Cost/Token Tracking
+### 4. Metrics Tracking
 
-**Problem:** No visibility into Claude API usage and costs.
+**Problem:** No visibility into Claude API usage, costs, or overall performance.
 
-**Solution:** Track tokens per story and provide cost estimates.
+**Solution:** Track all metrics per story in dedicated `metrics.json` file.
 
-**Implementation:**
-
-Add to `state.json`:
+**Storage:** `scripts/ralph/metrics.json`
 ```json
 {
-  "token_usage": {
+  "stories": {
+    "STORY-1.1.1": {
+      "started_at": "2026-01-24T10:00:00Z",
+      "completed_at": "2026-01-24T10:15:00Z",
+      "duration_seconds": 900,
+      "attempts": 1,
+      "feedback_rounds": 0,
+      "tokens": { "input": 5000, "output": 2000 },
+      "cost_estimate": 0.15
+    },
     "STORY-1.1.2": {
-      "runs": [
-        {
-          "timestamp": "2026-01-24T10:30:00Z",
-          "input_tokens": 5000,
-          "output_tokens": 2000,
-          "duration_seconds": 180
-        }
-      ],
-      "total_input": 5000,
-      "total_output": 2000
+      "started_at": "2026-01-24T10:20:00Z",
+      "completed_at": "2026-01-24T11:00:00Z",
+      "duration_seconds": 2400,
+      "attempts": 2,
+      "feedback_rounds": 1,
+      "tokens": { "input": 12000, "output": 4500 },
+      "cost_estimate": 0.35
     }
+  },
+  "totals": {
+    "stories_completed": 2,
+    "stories_blocked": 0,
+    "total_duration_seconds": 3300,
+    "total_feedback_rounds": 1,
+    "total_tokens": { "input": 17000, "output": 6500 },
+    "total_cost_estimate": 0.50
   }
 }
 ```
 
-Parse from Claude's stream-json output:
+**Implementation:**
 ```elvish
-# Extract usage from result message
+# Parse tokens from Claude's stream-json output
 jq -r 'select(.type == "result") | .usage | "\(.input_tokens)\t\(.output_tokens)"'
+
+# Update metrics after each story
+fn update-metrics {|story-id started completed attempts feedback-rounds input-tokens output-tokens|
+  # Read, update, write metrics.json
+}
 ```
 
-Add `--stats` flag to show usage:
+**View with `--stats` flag:**
 ```
 $ ./ralph.elv --stats
 
-Token Usage Summary:
-  STORY-1.1.1: 12,000 in / 4,500 out (~$0.25)
-  STORY-1.1.2: 8,000 in / 3,000 out (~$0.18)
-  Total: 20,000 in / 7,500 out (~$0.43)
+Ralph Metrics
+=============
+Stories: 2 completed, 0 blocked
+Time: 55 min total (avg 27.5 min/story)
+Feedback: 1 round total (avg 0.5/story)
+Tokens: 17,000 in / 6,500 out
+Cost: ~$0.50
+
+Per-Story:
+  STORY-1.1.1: 15 min, 1 attempt, $0.15
+  STORY-1.1.2: 40 min, 2 attempts, 1 feedback, $0.35
 ```
 
 **Files:**
-- `scripts/ralph/lib/state.elv`
-- `scripts/ralph/lib/claude.elv`
-- `scripts/ralph/ralph.elv`
+- New `scripts/ralph/lib/metrics.elv`
+- `scripts/ralph/lib/claude.elv` - extract tokens from output
+- `scripts/ralph/ralph.elv` - update metrics on story complete
 
 **Effort:** 2 hours
 
@@ -597,7 +621,7 @@ Legend: [x] merged  [>] in progress  [ ] pending  [!] blocked  [-] skipped
 12. Plan mode `--plan` (1 hr)
 
 ### Phase 5: Observability (Later)
-13. Token tracking (2 hr)
+13. Metrics tracking `--stats` (2 hr)
 14. Verbose mode (20 min)
 
 ---
@@ -610,45 +634,7 @@ Legend: [x] merged  [>] in progress  [ ] pending  [!] blocked  [-] skipped
 
 ## Success Metrics
 
-After implementing improvements, measure:
-- Average story completion time
-- Feedback loop iterations per story
-- Stories blocked rate
-- Token usage per story
-- User intervention frequency
-
-**Storage:** `scripts/ralph/metrics.json`
-```json
-{
-  "stories": {
-    "STORY-1.1.1": {
-      "started_at": "2026-01-24T10:00:00Z",
-      "completed_at": "2026-01-24T10:15:00Z",
-      "duration_seconds": 900,
-      "attempts": 1,
-      "feedback_rounds": 0,
-      "tokens": { "input": 5000, "output": 2000 }
-    },
-    "STORY-1.1.2": {
-      "started_at": "2026-01-24T10:20:00Z",
-      "completed_at": "2026-01-24T11:00:00Z",
-      "duration_seconds": 2400,
-      "attempts": 2,
-      "feedback_rounds": 1,
-      "tokens": { "input": 12000, "output": 4500 }
-    }
-  },
-  "totals": {
-    "stories_completed": 2,
-    "stories_blocked": 0,
-    "total_duration_seconds": 3300,
-    "total_feedback_rounds": 1,
-    "total_tokens": { "input": 17000, "output": 6500 }
-  }
-}
-```
-
-**View with:** `./ralph.elv --stats`
+See **#4 Metrics Tracking** - all metrics stored in `metrics.json` and viewable with `--stats`.
 
 ---
 
