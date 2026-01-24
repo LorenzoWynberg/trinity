@@ -23,11 +23,12 @@ Core autonomous development loop.
 
 ---
 
-## v0.2 - GUI
+## v0.2 - GUI + Auth
 
-Desktop app using Wails (Go + TypeScript).
+Desktop app using Wails (Go + TypeScript), plus authentication.
 
 ### Features
+- OAuth authentication (Google/GitHub)
 - Project management dashboard
 - Visual PRD editor (drag-drop stories, dependencies)
 - Real-time streaming output
@@ -58,7 +59,9 @@ Full platform with cloud features.
 | Database | SQLite | Embedded, simple, handles concurrency |
 | AI | Claude Code CLI | Execution engine, not just API |
 | Storage | `~/.trinity/` | Keep user projects clean |
-| Auth | OAuth (Google/GitHub) | No trial mode, subscription required |
+| Project ID | `slugify(name)-timestamp` | Unique, readable, path-independent |
+| Workspaces | Git worktrees | Lightweight parallel execution |
+| Auth (v0.2+) | OAuth (Google/GitHub) | No trial mode, subscription required |
 | Monetization | Subscription | ~$5/month (tentative) |
 
 ---

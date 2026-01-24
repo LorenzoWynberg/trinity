@@ -41,21 +41,49 @@ All Trinity data lives in `~/.trinity/` - user projects stay clean.
 
 ```
 ~/.trinity/
-├── auth.json                         # OAuth tokens, subscription
+├── auth.json                         # OAuth tokens (v0.2+)
 ├── config.json                       # Global preferences
 ├── sessions/                         # Wizard progress, temp data
 │   └── <id>.json
 ├── projects/
-│   └── <project-hash>/
+│   └── <project-hash>/               # Hash = slugify(name)-timestamp
 │       ├── config.json               # Project config
-│       ├── trinity.db                # SQLite: PRD, agents, activity, learnings
-│       └── workspaces/
-│           ├── trunk/                # Default workspace (actual repo)
-│           └── feature-<name>/       # Isolated clone (auto-managed)
-│               └── repo/             # Full repo clone
+│       └── trinity.db                # SQLite: PRD, agents, activity, learnings, queue
 ```
 
 **User's project:** Only gets optional CLAUDE.md. All other state in `~/.trinity/`.
+
+### Git Worktrees
+
+Trinity uses git worktrees for parallel agent execution instead of full clones:
+
+```bash
+# How Trinity manages workspaces
+git worktree add ~/.trinity/projects/<hash>/worktrees/feature-auth feature/auth
+git worktree add ~/.trinity/projects/<hash>/worktrees/feature-payments feature/payments
+```
+
+**Why worktrees:**
+- **Lightweight** - Share `.git` directory, only checkout working files
+- **Fast** - Creating a worktree is instant (no clone needed)
+- **Parallel** - Multiple agents work in different worktrees simultaneously
+- **Independent** - Each worktree has its own branch, index, and working tree
+
+**How it works:**
+1. Agent starts work on `mvp:auth` epic
+2. Trinity creates worktree: `git worktree add worktrees/feature-auth -b feature/auth`
+3. Agent works in that worktree directory
+4. When done, PR merges to `dev`, worktree removed: `git worktree remove feature-auth`
+
+**Multiple agents running in parallel:**
+```
+worktrees/
+├── feature-auth/          # Agent 1 working here
+├── feature-payments/      # Agent 2 working here (no deps on auth)
+└── feature-notifications/ # Agent 3 working here
+```
+
+Each worktree is a complete working directory with its own branch. Agents don't interfere with each other.
 
 ---
 
@@ -90,6 +118,11 @@ story_tags (story_id, tag_id)
 -- Learnings
 learnings (id, content, created_at, updated_at)
 learning_tags (learning_id, tag_id)
+
+-- Command Queue (for internal commands from Claude)
+queue (id, type, payload, status, agent_id, created_at, processed_at)
+-- type: 'complete', 'learn', 'add-story', 'log', 'move-story'
+-- status: 'pending', 'processing', 'done', 'failed'
 ```
 
 ### DB API (`core/db`)
@@ -278,6 +311,102 @@ docker run \
 - Docker installed and running
 - Claude CLI pre-installed in container image
 - Git credentials available (mount or env vars)
+
+---
+
+## Claude Code Integration
+
+Trinity shells out to the `claude` CLI as its execution engine.
+
+### Invocation Pattern
+
+Based on the ralph.elv reference implementation:
+
+```bash
+# Basic invocation (non-streaming)
+claude --dangerously-skip-permissions --print < prompt.md
+
+# Streaming with JSON output
+claude --dangerously-skip-permissions --verbose --print --output-format stream-json < prompt.md
+```
+
+**Flags:**
+- `--dangerously-skip-permissions` - Allows Claude to run without interactive permission prompts
+- `--print` - Output response to stdout
+- `--output-format stream-json` - Stream JSON events for real-time progress
+
+### Signal System
+
+Claude communicates back to Trinity via structured signals in output:
+
+```
+<story-complete>STORY-1.2.3</story-complete>    # Story finished
+<story-blocked>Reason here</story-blocked>      # Can't proceed
+<promise>COMPLETE</promise>                     # Confirm action taken
+```
+
+Trinity parses these signals to update state and decide next actions.
+
+### Prompt Flow
+
+1. Trinity fills prompt template with context (story, learnings, code)
+2. Pipes prompt to Claude via stdin
+3. Claude executes, outputs results + signals
+4. Trinity parses output, updates DB, continues loop
+
+```go
+// Simplified invocation
+cmd := exec.Command("claude", "--dangerously-skip-permissions", "--print")
+cmd.Stdin = promptReader
+cmd.Dir = worktreePath
+output, err := cmd.Output()
+// Parse output for signals, update state
+```
+
+---
+
+## Skill Management
+
+Trinity manages Claude Code skills to enhance AI capabilities based on project needs.
+
+### Auto-Install on Init
+
+`trinity init` detects stack and installs relevant skills globally:
+
+| Detected Stack | Skills Installed |
+|----------------|------------------|
+| Go | `golang-pro` |
+| Go + CLI | `golang-pro`, `cli-developer` |
+| React/Next.js | `react-expert`, `nextjs-developer` |
+| Python + FastAPI | `python-pro`, `fastapi-expert` |
+| TypeScript | `typescript-expert` |
+| Microservices | `microservices-architect` |
+
+### Suggest Missing Skills
+
+`trinity analyze` and `trinity skills suggest` detect patterns that would benefit from additional skills:
+
+```
+Detected patterns:
+  • gRPC service definitions → microservices-architect
+  • OpenAPI/Swagger specs → api-designer
+  • Kubernetes manifests → kubernetes-specialist
+  • CI/CD pipelines → devops-engineer
+```
+
+### Installation
+
+```bash
+# Trinity wraps the add-skill CLI
+trinity skills add golang-pro cli-developer
+
+# Under the hood:
+npx add-skill Jeffallan/claude-skills --skill <name> -a claude-code -g -y
+```
+
+Skills installed to `~/.agents/skills/` (global) - available across all projects.
+
+Use `trinity init --skip-skills` to disable auto-install.
 
 ---
 

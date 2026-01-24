@@ -47,16 +47,15 @@ Everything lives in `~/.trinity/` - user projects stay clean:
 
 ```
 ~/.trinity/
-├── auth.json                         # OAuth tokens, subscription
+├── auth.json                         # OAuth tokens (v0.2+)
 ├── config.json                       # Global preferences
 ├── projects/
-│   └── <project-hash>/
+│   └── <project-hash>/               # Hash = slugify(name)-timestamp
 │       ├── config.json               # Project config
-│       ├── trinity.db                # All state: PRD, agents, activity, learnings
-│       └── workspaces/
-│           ├── trunk/                # Default workspace (actual repo)
-│           └── feature-<name>/       # Isolated clone (auto-managed)
-│               └── repo/
+│       ├── trinity.db                # All state: PRD, agents, activity, learnings, queue
+│       └── worktrees/                # Git worktrees for parallel agents
+│           ├── feature-auth/         # Agent 1 workspace
+│           └── feature-payments/     # Agent 2 workspace (parallel)
 ```
 
 User's project gets no scaffolded files. The output is commits/code.
@@ -86,6 +85,9 @@ activity_logs (id, timestamp, agent, action, message, story_ref)
 -- Knowledge
 learnings (id, content, created_at, updated_at)
 learning_tags (learning_id, tag_id)
+
+-- Command Queue (internal commands from Claude)
+queue (id, type, payload, status, agent_id, created_at, processed_at)
 ```
 
 **DB API (`core/db`):**
@@ -157,42 +159,45 @@ A phase can depend on just a story. An epic can depend on just a story. Maximum 
 
 ## CLI Commands
 
-Trinity has a minimal, focused command set. See `docs/COMMANDS.md` for full reference with all flags.
-
 ```bash
-trinity auth login|logout|status     # Authentication
-trinity init [--force]               # Initialize project
-trinity analyze [--json|--brief]     # Analyze codebase
+# Initialize & Analyze
+trinity init
+trinity analyze
 
-# PRD Management
-trinity plan add                     # Create plan or add to existing
-trinity plan show [ref] [--next|--blocked|--json]  # View plan
-trinity plan refine [ref]            # AI improve stories
-trinity plan skip|retry <ref>        # Change status
+# Plan Management
+trinity plan add
+trinity plan show [ref]
+trinity plan refine [ref]
+trinity plan skip <ref>
+trinity plan retry <ref>
 
-# Execution
-trinity run [ref]                    # Run dev loop
-trinity run --all                    # Parallel execution
-trinity run --with-deps              # Run deps first
-trinity run --once                   # Single story only
-trinity run --docker                 # Isolated container
-trinity run --attach|--stop|--kill   # Control running loop
+# Execute
+trinity run [ref]
+trinity run --all
+trinity run --with-deps
+trinity run --docker
 
-# Human Testing
-trinity approve [ref]                # Approve test
-trinity reject [ref] "feedback"      # Reject with feedback
+# Human Testing Gates
+trinity approve [ref]
+trinity reject [ref] "feedback"
 
 # Status & Config
-trinity status [--watch|--json]      # Overview
-trinity config show|set|edit         # Configuration
+trinity status
+trinity config show|set|edit
+trinity skills list|suggest|add|remove|search
 
 # Ship
-trinity hotfix "desc" [--target|--auto-merge|--link]  # Quick fixes
-trinity release [--dry-run|--tag]    # Merge dev → main
+trinity hotfix "description"
+trinity release
 
-# Internal (Claude's API)
+# Internal (Claude calls these)
 trinity internal complete|add-story|log|learn|move-story
+
+# Auth (v0.2+)
+trinity auth login|logout|status
 ```
+
+See `docs/COMMANDS.md` for all flags and detailed usage.
 
 **Flow:** `analyze → plan add → run`
 
@@ -259,6 +264,17 @@ feature branches (auto-managed)
 
 ### Claude Code Integration
 Trinity shells out to `claude` CLI - it's the execution engine, not just an API. Claude Code handles file I/O, bash commands, and context management.
+
+**Invocation:**
+```bash
+claude --dangerously-skip-permissions --print < prompt.md
+```
+
+**Signal system:** Claude outputs structured signals that Trinity parses:
+```
+<story-complete>STORY-1.2.3</story-complete>
+<story-blocked>Reason</story-blocked>
+```
 
 ### Prompt Templates & Schemas
 
