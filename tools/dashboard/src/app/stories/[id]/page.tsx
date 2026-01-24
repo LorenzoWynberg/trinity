@@ -195,7 +195,15 @@ export default async function StoryDetailPage({
             {story.merge_commit && (
               <div>
                 <span className="text-muted-foreground">Merge commit:</span>{' '}
-                <code className="text-xs">{story.merge_commit.slice(0, 8)}</code>
+                <a
+                  href={`https://github.com/trinity-ai-labs/trinity/commit/${story.merge_commit}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                >
+                  <code className="text-xs">{story.merge_commit.slice(0, 8)}</code>
+                  <ExternalLink className="h-3 w-3" />
+                </a>
               </div>
             )}
           </CardContent>
