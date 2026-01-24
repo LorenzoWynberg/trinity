@@ -127,6 +127,17 @@ fn get-story-branch {|story-id|
   put "feat/story-"$parts[0]"."$parts[1]"."$parts[2]
 }
 
+# Reset a story for retry (clears passes, merged, attempts)
+fn reset-story {|story-id|
+  var tmp = (mktemp)
+  jq '(.stories[] | select(.id == "'$story-id'")) |= . + {
+    passes: false,
+    merged: false,
+    skipped: false
+  } | del(.stories[] | select(.id == "'$story-id'") | .merge_commit, .skip_reason)' $prd-file > $tmp
+  mv $tmp $prd-file
+}
+
 # Skip a story (marks as complete for dependency purposes)
 fn skip-story {|story-id reason|
   var tmp = (mktemp)

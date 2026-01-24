@@ -78,24 +78,24 @@ Track implementation progress. Update status as features are completed.
 ## Phase 3: Robustness
 
 ### 9. Pre-flight Checks
-- [ ] Create `preflight-checks` function
-- [ ] Check clean git state
-- [ ] Check base branch is up to date
-- [ ] Check required tools (claude, gh, jq, git)
-- [ ] Check GitHub auth valid
-- [ ] Run on startup before main loop
+- [x] Create `preflight-checks` function
+- [x] Check clean git state
+- [x] Check base branch is up to date
+- [x] Check required tools (claude, gh, jq, git)
+- [x] Check GitHub auth valid
+- [x] Run on startup before main loop
 
 ### 10. Auto-archive Activity Logs
-- [ ] Create `archive-old-logs` function
-- [ ] Find logs older than 7 days
-- [ ] Move to `docs/activity/archive/YYYY-MM/`
-- [ ] Run on startup
+- [x] Create `archive-old-logs` function
+- [x] Find logs older than 7 days
+- [x] Move to `docs/activity/archive/YYYY-MM/`
+- [x] Run on startup
 
 ### 11. Retry Clean Slate
-- [ ] Add `--retry-clean STORY-X` flag
-- [ ] Delete existing branch (local + remote)
-- [ ] Reset story in prd.json (passes=false, attempts=0)
-- [ ] Clear state.json
+- [x] Add `--retry-clean STORY-X` flag
+- [x] Delete existing branch (local + remote)
+- [x] Reset story in prd.json (passes=false, attempts=0)
+- [x] Clear state.json
 
 ### 12. Configurable Timeouts
 - [x] Add `--timeout N` flag

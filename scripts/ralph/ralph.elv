@@ -42,6 +42,26 @@ prd:init $prd-file
 claude:init $project-root $prompt-template $config[claude-timeout] $config[quiet-mode] $config[max-iterations]
 pr:init $project-root $config[base-branch] $config[auto-pr] $config[auto-merge]
 
+# Archive old activity logs on startup
+claude:archive-old-logs
+
+# Run pre-flight checks
+if (not (claude:preflight-checks)) {
+  ui:warn "Pre-flight checks failed. Fix issues above or proceed with caution."
+  echo "\e[33mContinue anyway? [y/N]\e[0m"
+  try {
+    var answer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
+    if (not (re:match '^[yY]' $answer)) {
+      echo ""
+      ui:status "Aborted. Fix issues and run again."
+      exit 1
+    }
+  } catch {
+    exit 1
+  }
+  echo ""
+}
+
 # Print banner
 echo ""
 ui:box "RALPH - Autonomous Development Loop" "info"
@@ -63,6 +83,44 @@ if $config[reset-mode] {
   state:reset
   ui:success "State reset complete."
   echo ""
+}
+
+# Handle retry-clean mode
+if (not (eq $config[retry-clean-story] "")) {
+  var story-id = $config[retry-clean-story]
+  ui:status "Retry clean: "$story-id
+
+  # Get branch name for story
+  var branch-name = ""
+  try {
+    set branch-name = (prd:get-branch-name $story-id)
+  } catch _ { }
+
+  # Delete local branch if exists
+  if (not (eq $branch-name "")) {
+    ui:dim "  Deleting local branch: "$branch-name
+    try {
+      git -C $project-root branch -D $branch-name 2>/dev/null
+    } catch _ { }
+
+    # Delete remote branch if exists
+    ui:dim "  Deleting remote branch: "$branch-name
+    try {
+      git -C $project-root push origin --delete $branch-name 2>/dev/null
+    } catch _ { }
+  }
+
+  # Reset story in prd.json
+  ui:dim "  Resetting story state in PRD"
+  prd:reset-story $story-id
+
+  # Clear state.json
+  ui:dim "  Clearing Ralph state"
+  state:reset
+
+  ui:success "Story "$story-id" reset for fresh retry"
+  ui:dim "Run ./ralph.elv to start fresh"
+  exit 0
 }
 
 # Handle skip mode

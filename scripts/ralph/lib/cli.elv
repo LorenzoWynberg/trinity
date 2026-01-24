@@ -17,6 +17,7 @@ var notify-enabled = $false
 var skip-story-id = ""
 var skip-reason = ""
 var custom-timeout = 0
+var retry-clean-story = ""
 
 # Parse command line arguments
 fn parse-args {|arguments|
@@ -91,6 +92,14 @@ fn parse-args {|arguments|
       set custom-timeout = (num $arguments[$next-idx])
       set claude-timeout = $custom-timeout
       set i = (+ $i 2)
+    } elif (eq $arg "--retry-clean") {
+      var next-idx = (+ $i 1)
+      if (>= $next-idx (count $arguments)) {
+        echo "Error: --retry-clean requires STORY-ID" >&2
+        exit 1
+      }
+      set retry-clean-story = $arguments[$next-idx]
+      set i = (+ $i 2)
     } else {
       echo "Error: Unknown argument: "$arg >&2
       exit 1
@@ -135,5 +144,6 @@ fn get-config {
     &notify-enabled=$notify-enabled
     &skip-story-id=$skip-story-id
     &skip-reason=$skip-reason
+    &retry-clean-story=$retry-clean-story
   ]
 }

@@ -22,6 +22,109 @@ fn init {|root template timeout quiet max-iter|
   set max-iterations = $max-iter
 }
 
+# Pre-flight checks before starting
+# Returns true if all checks pass, false otherwise
+fn preflight-checks {
+  var all-ok = $true
+
+  ui:status "Running pre-flight checks..."
+
+  # Check clean git state
+  var git-status = ""
+  try {
+    set git-status = (git -C $project-root status --porcelain 2>/dev/null | slurp)
+  } catch _ { }
+
+  if (not (eq (str:trim-space $git-status) "")) {
+    ui:warn "  Git: uncommitted changes detected"
+    set all-ok = $false
+  } else {
+    ui:dim "  Git: clean ✓"
+  }
+
+  # Check GitHub auth
+  try {
+    gh auth status 2>&1 | slurp > /dev/null
+    ui:dim "  GitHub auth: valid ✓"
+  } catch _ {
+    ui:warn "  GitHub auth: not authenticated (run 'gh auth login')"
+    set all-ok = $false
+  }
+
+  # Check required tools
+  for cmd [claude jq git gh] {
+    if (not (has-external $cmd)) {
+      ui:warn "  Tool missing: "$cmd
+      set all-ok = $false
+    }
+  }
+  ui:dim "  Tools: claude, jq, git, gh ✓"
+
+  # Check base branch is up to date (optional, just warn)
+  try {
+    git -C $project-root fetch origin 2>/dev/null
+    var local = (git -C $project-root rev-parse dev 2>/dev/null | slurp | str:trim-space)
+    var remote = (git -C $project-root rev-parse origin/dev 2>/dev/null | slurp | str:trim-space)
+    if (not (eq $local $remote)) {
+      ui:warn "  Base branch: out of sync with origin (consider 'git pull')"
+    } else {
+      ui:dim "  Base branch: up to date ✓"
+    }
+  } catch _ {
+    ui:dim "  Base branch: could not check (offline?)"
+  }
+
+  echo ""
+  put $all-ok
+}
+
+# Archive old activity logs (>7 days) on startup
+fn archive-old-logs {
+  var activity-dir = (path:join $project-root "docs" "activity")
+  var archive-dir = (path:join $activity-dir "archive")
+
+  if (not (path:is-dir $activity-dir)) {
+    return
+  }
+
+  # Get cutoff date (7 days ago)
+  var cutoff = ""
+  try {
+    # macOS date
+    set cutoff = (date -v-7d '+%Y-%m-%d' 2>/dev/null)
+  } catch _ {
+    try {
+      # Linux date
+      set cutoff = (date -d '7 days ago' '+%Y-%m-%d' 2>/dev/null)
+    } catch _ {
+      return
+    }
+  }
+
+  var archived-count = 0
+  try {
+    for f [(ls $activity-dir)] {
+      # Match YYYY-MM-DD.md files
+      if (re:match '^\d{4}-\d{2}-\d{2}\.md$' $f) {
+        var file-date = (str:trim-suffix ".md" $f)
+        # Compare dates lexicographically (works for YYYY-MM-DD format)
+        if (< $file-date $cutoff) {
+          # Extract year-month for archive folder
+          var year-month = $file-date[0..7]
+          var target-dir = (path:join $archive-dir $year-month)
+          mkdir -p $target-dir
+          mv (path:join $activity-dir $f) (path:join $target-dir $f)
+          set archived-count = (+ $archived-count 1)
+        }
+      }
+    }
+  } catch _ { }
+
+  if (> $archived-count 0) {
+    ui:dim "Archived "$archived-count" old activity log(s)"
+  }
+}
+
 # Get recent activity logs (up to 2 most recent)
 fn get-recent-activity-logs {
   var activity-dir = (path:join $project-root "docs" "activity")
