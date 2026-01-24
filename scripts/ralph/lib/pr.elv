@@ -90,10 +90,14 @@ fn push-changes {|branch-name|
   }
 }
 
-# Prompt user with timeout, return answer
+# Prompt user, return answer (timeout 0 = wait forever)
 fn prompt-user {|timeout|
   try {
-    var answer = (str:trim-space (bash -c 'read -t '$timeout' ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null))
+    var cmd = 'read ans 2>/dev/null; echo "$ans"'
+    if (> $timeout 0) {
+      set cmd = 'read -t '$timeout' ans 2>/dev/null; echo "$ans"'
+    }
+    var answer = (str:trim-space (bash -c $cmd </dev/tty 2>/dev/null))
     put $answer
   } catch {
     put ""
@@ -124,24 +128,16 @@ fn run-flow {|story-id branch-name story-title current-iteration|
       } else {
         ui:status "Create PR to "$base-branch"?"
       }
-      echo "\e[33m[Y]es / [n]o / or type feedback for changes\e[0m"
-      echo "\e[2m(auto-yes in 120s)\e[0m"
+      echo "\e[33m[Y]es / [n]o\e[0m"
 
-      var answer = (prompt-user 120)
-      if (eq $answer "") {
-        set should-handle-pr = $true
-      } elif (re:match '^[nN]$' $answer) {
+      var answer = (prompt-user 0)
+      if (re:match '^[nN]$' $answer) {
         set should-handle-pr = $false
       } elif (re:match '^[yY]$' $answer) {
         set should-handle-pr = $true
       } else {
-        # Feedback - run refinement and loop back
-        ui:warn "Received feedback, running refinement..."
-        set refinements = [$@refinements $answer]
-        claude:run $story-id $branch-name "refinement" $current-iteration $answer
-        push-changes $branch-name
-        echo ""
-        continue
+        # Default to yes if just enter
+        set should-handle-pr = $true
       }
     }
 
@@ -166,24 +162,16 @@ fn run-flow {|story-id branch-name story-title current-iteration|
     if (and $pr-exists (not $auto-merge)) {
       echo ""
       ui:status "Merge PR?"
-      echo "\e[33m[y]es / [N]o / or type feedback for changes\e[0m"
-      echo "\e[2m(auto-no in 120s)\e[0m"
+      echo "\e[33m[y]es / [N]o\e[0m"
 
-      var answer = (prompt-user 120)
+      var answer = (prompt-user 0)
       if (re:match '^[yY]$' $answer) {
         merge $branch-name
         set done = $true
-      } elif (or (eq $answer "") (re:match '^[nN]$' $answer)) {
+      } else {
+        # Default to no (leave open for review)
         ui:dim "PR left open for review"
         set done = $true
-      } else {
-        # Feedback - run refinement and go back to PR prompt
-        ui:warn "Received feedback, running refinement..."
-        set refinements = [$@refinements $answer]
-        claude:run $story-id $branch-name "refinement" $current-iteration $answer
-        push-changes $branch-name
-        echo ""
-        # Loop back to PR prompt
       }
     } elif $auto-merge {
       merge $branch-name
@@ -192,6 +180,4 @@ fn run-flow {|story-id branch-name story-title current-iteration|
       set done = $true
     }
   }
-
-  put $true
 }
