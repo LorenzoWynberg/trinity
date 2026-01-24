@@ -7,11 +7,11 @@ Trinity is a CLI tool for running autonomous AI development loops. Point it at a
 ```bash
 trinity init                    # Initialize project
 trinity analyze                 # Understand codebase
-trinity prd add                 # Define what to build
+trinity plan add                 # Define what to build
 trinity run                     # Let it build
 ```
 
-**Flow:** `analyze → prd add → run`
+**Flow:** `analyze → plan add → run`
 
 ---
 

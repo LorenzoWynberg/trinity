@@ -9,7 +9,7 @@ The core Trinity flow:
 ```bash
 trinity init                    # 1. Initialize
 trinity analyze                 # 2. Understand codebase
-trinity prd add                 # 3. Define what to build
+trinity plan add                 # 3. Define what to build
 trinity run                     # 4. Let it build
 ```
 
@@ -51,7 +51,7 @@ Suggestions:
 ### 3. Create PRD
 
 ```bash
-trinity prd add
+trinity plan add
 ```
 
 Interactive wizard:
@@ -87,7 +87,7 @@ Trinity handles:
 ### Check Current State
 
 ```bash
-trinity prd show
+trinity plan show
 ```
 
 ```
@@ -102,7 +102,7 @@ MVP
 ### Add New Feature
 
 ```bash
-trinity prd add
+trinity plan add
 > Add email notifications when task is assigned
 ```
 
@@ -361,7 +361,7 @@ Shows stale agents. Trinity auto-recovers on next `run`.
 ### Reset Story
 
 ```bash
-trinity prd retry mvp:auth:STORY-1.1.2
+trinity plan retry mvp:auth:STORY-1.1.2
 ```
 
 Resets story to pending.
@@ -369,7 +369,7 @@ Resets story to pending.
 ### Skip Story
 
 ```bash
-trinity prd skip mvp:auth:STORY-1.1.2
+trinity plan skip mvp:auth:STORY-1.1.2
 ```
 
 Skip problematic story, continue with others.

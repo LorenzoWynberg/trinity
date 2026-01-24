@@ -181,13 +181,13 @@ prompts/
 │   ├── init-analyze.md           # Analyze project during init
 │   ├── init-claude-md.md         # Generate CLAUDE.md
 │   ├── analyze.md                # Deep codebase analysis
-│   ├── prd-add-init.md           # Create new PRD
-│   ├── prd-add-extend.md         # Add to existing PRD
-│   ├── prd-refine.md             # Improve stories
+│   ├── plan-add-init.md           # Create new PRD
+│   ├── plan-add-extend.md         # Add to existing PRD
+│   ├── plan-refine.md             # Improve stories
 │   └── story-execute.md          # Execute a story
 ├── schemas/                      # Expected JSON response formats
-│   ├── prd-add.json
-│   ├── prd-refine.json
+│   ├── plan-add.json
+│   ├── plan-refine.json
 │   ├── analyze.json
 │   └── ...
 └── internal/                     # Internal command prompts
@@ -201,7 +201,7 @@ prompts/
 
 ```
 1. CLI fills template:
-   prd-add.md + {existing_prd, user_input}
+   plan-add.md + {existing_prd, user_input}
 
 2. Sends to Claude with response schema
 

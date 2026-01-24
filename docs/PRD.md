@@ -221,7 +221,7 @@ Use tags for filtering and grouping.
 - `ui`, `ux`, `performance`
 - `critical`, `tech-debt`, `refactor`
 
-Query with: `trinity prd show --tag auth`
+Query with: `trinity plan show --tag auth`
 
 ---
 

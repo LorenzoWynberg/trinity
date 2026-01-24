@@ -20,14 +20,14 @@ prompts/
 │   ├── init-analyze.md           # Analyze project during init
 │   ├── init-claude-md.md         # Generate CLAUDE.md
 │   ├── analyze.md                # Deep codebase analysis
-│   ├── prd-add-init.md           # Create new PRD (no existing)
-│   ├── prd-add-extend.md         # Add to existing PRD
-│   ├── prd-refine.md             # Improve stories
+│   ├── plan-add-init.md           # Create new PRD (no existing)
+│   ├── plan-add-extend.md         # Add to existing PRD
+│   ├── plan-refine.md             # Improve stories
 │   └── story-execute.md          # Execute a single story
 ├── schemas/                      # Expected JSON response formats
 │   ├── analyze.json
-│   ├── prd-add.json
-│   ├── prd-refine.json
+│   ├── plan-add.json
+│   ├── plan-refine.json
 │   └── ...
 └── internal/                     # Internal command prompts
     ├── learn.md                  # Add learning
@@ -120,7 +120,7 @@ Deep codebase analysis. Used by `trinity analyze`.
 
 ---
 
-### `prd-add-init.md`
+### `plan-add-init.md`
 
 Create a new PRD from scratch. Used when no PRD exists.
 
@@ -135,7 +135,7 @@ Create a new PRD from scratch. Used when no PRD exists.
 
 ---
 
-### `prd-add-extend.md`
+### `plan-add-extend.md`
 
 Add to existing PRD. Used when PRD exists.
 

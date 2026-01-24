@@ -161,10 +161,10 @@ trinity init [--force]               # Initialize project
 trinity analyze [--json|--brief]     # Analyze codebase
 
 # PRD Management
-trinity prd add                      # Create PRD or add to existing
-trinity prd show [ref] [--next|--blocked|--json]  # View PRD
-trinity prd refine [ref]             # AI improve stories
-trinity prd skip|retry <ref>         # Change status
+trinity plan add                     # Create plan or add to existing
+trinity plan show [ref] [--next|--blocked|--json]  # View plan
+trinity plan refine [ref]            # AI improve stories
+trinity plan skip|retry <ref>        # Change status
 
 # Execution
 trinity run [ref]                    # Run dev loop
@@ -190,7 +190,7 @@ trinity release [--dry-run|--tag]    # Merge dev → main
 trinity internal complete|add-story|log|learn|move-story
 ```
 
-**Flow:** `analyze → prd add → run`
+**Flow:** `analyze → plan add → run`
 
 **Auto workspace management:** `trinity run` automatically creates/manages workspaces. No manual feature commands needed.
 
@@ -261,8 +261,8 @@ Trinity shells out to `claude` CLI - it's the execution engine, not just an API.
 ```
 prompts/
 ├── templates/           # Prompts with {{placeholders}}
-│   ├── prd-add-init.md      # prd add when no PRD exists
-│   ├── prd-add-extend.md    # prd add when PRD exists
+│   ├── plan-add-init.md     # plan add when no plan exists
+│   ├── plan-add-extend.md   # plan add when plan exists
 │   ├── story-execute.md
 │   └── analyze.md
 ├── schemas/             # Expected JSON response formats

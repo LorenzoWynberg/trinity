@@ -8,7 +8,7 @@ Complete reference for all Trinity CLI commands and flags.
 trinity auth login|logout|status     # Authentication
 trinity init                         # Initialize project
 trinity analyze                      # Analyze codebase
-trinity prd add|show|refine|skip|retry  # PRD management
+trinity plan add|show|refine|skip|retry  # Plan management
 trinity run                          # Execute dev loop
 trinity approve|reject               # Human testing gates
 trinity status                       # Overview
@@ -67,36 +67,36 @@ trinity analyze --brief         # Short summary only
 
 ---
 
-### `trinity prd`
+### `trinity plan`
 
 PRD (Product Requirements Document) management.
 
-#### `trinity prd add`
+#### `trinity plan add`
 
 Add stories, epics, or phases to PRD.
 
 ```bash
-trinity prd add                 # Interactive wizard
-trinity prd add "description"   # Non-interactive with description
+trinity plan add                 # Interactive wizard
+trinity plan add "description"   # Non-interactive with description
 ```
 
 - If no PRD exists: runs full creation wizard (gather info → generate → refine loop)
 - If PRD exists: AI suggests placement, handles renumbering
 
-#### `trinity prd show`
+#### `trinity plan show`
 
 View PRD contents.
 
 ```bash
-trinity prd show                # Full PRD tree with status
-trinity prd show <ref>          # Specific item (e.g., mvp:auth, mvp:auth:STORY-1.1.2)
-trinity prd show --next         # What runs next
-trinity prd show --blocked      # Blocked by dependencies
-trinity prd show --pending      # Pending items only
-trinity prd show --in-progress  # In-progress items
-trinity prd show --completed    # Completed items
-trinity prd show --awaiting-review  # Waiting for human testing
-trinity prd show --json         # Output as JSON
+trinity plan show                # Full PRD tree with status
+trinity plan show <ref>          # Specific item (e.g., mvp:auth, mvp:auth:STORY-1.1.2)
+trinity plan show --next         # What runs next
+trinity plan show --blocked      # Blocked by dependencies
+trinity plan show --pending      # Pending items only
+trinity plan show --in-progress  # In-progress items
+trinity plan show --completed    # Completed items
+trinity plan show --awaiting-review  # Waiting for human testing
+trinity plan show --json         # Output as JSON
 ```
 
 | Flag | Description |
@@ -109,22 +109,22 @@ trinity prd show --json         # Output as JSON
 | `--awaiting-review` | Show items waiting for human testing |
 | `--json` | Output structured JSON |
 
-#### `trinity prd refine`
+#### `trinity plan refine`
 
 AI review and improve stories.
 
 ```bash
-trinity prd refine              # Refine entire PRD
-trinity prd refine <ref>        # Refine specific phase/epic
+trinity plan refine              # Refine entire PRD
+trinity plan refine <ref>        # Refine specific phase/epic
 ```
 
-#### `trinity prd skip` / `trinity prd retry`
+#### `trinity plan skip` / `trinity plan retry`
 
 Change story status.
 
 ```bash
-trinity prd skip <ref>          # Mark as skipped
-trinity prd retry <ref>         # Reset to pending
+trinity plan skip <ref>          # Mark as skipped
+trinity plan retry <ref>         # Reset to pending
 ```
 
 ---
