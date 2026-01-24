@@ -120,21 +120,48 @@ export async function getMetrics(): Promise<Metrics | null> {
   }
 }
 
-export async function getActivityLogs(): Promise<{ date: string; content: string }[]> {
+export async function getActivityLogs(): Promise<{ date: string; content: string; archived: boolean }[]> {
   try {
     const activityDir = path.join(LOGS_DIR, 'activity')
+    const archiveDir = path.join(activityDir, 'archive')
+    const logs: { date: string; content: string; archived: boolean }[] = []
+
+    // Read recent logs from main directory
     const files = await fs.readdir(activityDir)
     const mdFiles = files.filter(f => f.match(/^\d{4}-\d{2}-\d{2}\.md$/))
 
-    const logs = await Promise.all(
-      mdFiles.map(async (file) => {
-        const content = await fs.readFile(path.join(activityDir, file), 'utf-8')
-        return {
-          date: file.replace('.md', ''),
-          content
-        }
+    for (const file of mdFiles) {
+      const content = await fs.readFile(path.join(activityDir, file), 'utf-8')
+      logs.push({
+        date: file.replace('.md', ''),
+        content,
+        archived: false
       })
-    )
+    }
+
+    // Read archived logs from archive/YYYY-MM/ subdirectories
+    try {
+      const archiveMonths = await fs.readdir(archiveDir)
+      for (const month of archiveMonths) {
+        if (!month.match(/^\d{4}-\d{2}$/)) continue
+        const monthDir = path.join(archiveDir, month)
+        const stat = await fs.stat(monthDir)
+        if (!stat.isDirectory()) continue
+
+        const archivedFiles = await fs.readdir(monthDir)
+        for (const file of archivedFiles) {
+          if (!file.match(/^\d{4}-\d{2}-\d{2}\.md$/)) continue
+          const content = await fs.readFile(path.join(monthDir, file), 'utf-8')
+          logs.push({
+            date: file.replace('.md', ''),
+            content,
+            archived: true
+          })
+        }
+      }
+    } catch {
+      // Archive directory might not exist yet
+    }
 
     return logs.sort((a, b) => b.date.localeCompare(a.date))
   } catch {
