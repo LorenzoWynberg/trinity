@@ -12,6 +12,9 @@ var claude-timeout = 1800
 var quiet-mode = $false
 var max-iterations = 100
 
+# Last output file (set by run, read by caller)
+var last-output-file = ""
+
 # Initialize with configuration
 fn init {|root template timeout quiet max-iter|
   set project-root = $root
@@ -100,12 +103,10 @@ Stay focused on the feedback - don't refactor unrelated code.
       var stream-text = 'select(.type == "assistant").message.content[]? | select(.type == "text").text // empty | gsub("\n"; "\r\n") | . + "\r\n\n"'
       var final-result = 'select(.type == "result").result // empty'
 
-      # Run streaming pipeline - output goes directly to terminal
-      # Note: Output may take a moment to appear as Claude starts processing
-      timeout $claude-timeout claude --dangerously-skip-permissions --verbose --print --output-format stream-json < $prompt-tmp 2>&1 | ^
-        grep --line-buffered '^{' | ^
-        tee $output-file | ^
-        jq --unbuffered -rj $stream-text
+      # Streaming pipeline - matches working example exactly
+      try {
+        timeout $claude-timeout claude --dangerously-skip-permissions --verbose --print --output-format stream-json < $prompt-tmp 2>&1 | grep --line-buffered '^{' | tee $output-file | jq --unbuffered -rj $stream-text 2>/dev/null
+      } catch _ { }
 
       # Extract final result text for signal detection
       try {
@@ -140,8 +141,13 @@ Stay focused on the feedback - don't refactor unrelated code.
     rm -f $output-file".result" 2>/dev/null
   }
 
-  # Return output file path for signal detection
-  put $output-file
+  # Store output file path for caller to retrieve
+  set last-output-file = $output-file
+}
+
+# Get the output file from the last run
+fn get-output-file {
+  put $last-output-file
 }
 
 # Run refinement (convenience wrapper)
