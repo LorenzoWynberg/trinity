@@ -33,21 +33,21 @@ fn check-exists {|branch-name|
 
 # Create a new PR
 fn create {|branch-name story-id story-title|
-  ui:status "Creating PR to "$base-branch"..."
+  ui:status "Creating PR to "$base-branch"..." > /dev/tty
   try {
     var url = (gh pr create --base $base-branch --head $branch-name --title $story-id": "$story-title --body "Automated PR for "$story-id 2>&1 | slurp)
     set url = (str:trim-space $url)
-    ui:success "PR created: "$url
+    ui:success "PR created: "$url > /dev/tty
     put $url
   } catch e {
-    ui:error "Failed to create PR: "(to-string $e[reason])
+    ui:error "Failed to create PR: "(to-string $e[reason]) > /dev/tty
     put ""
   }
 }
 
 # Update PR description
 fn update {|branch-name story-id refinements|
-  ui:status "Updating PR description..."
+  ui:status "Updating PR description..." > /dev/tty
   try {
     var refinement-notes = ""
     if (> (count $refinements) 0) {
@@ -60,32 +60,32 @@ fn update {|branch-name story-id refinements|
     gh pr edit $branch-name --body $new-body 2>&1 | slurp
     put $true
   } catch e {
-    ui:error "Failed to update PR: "(to-string $e[reason])
+    ui:error "Failed to update PR: "(to-string $e[reason]) > /dev/tty
     put $false
   }
 }
 
 # Merge PR - returns merge commit SHA or empty string on failure
 fn merge {|branch-name|
-  ui:status "Merging PR..."
+  ui:status "Merging PR..." > /dev/tty
   try {
     gh pr merge $branch-name --squash --delete-branch 2>&1 | slurp
     # Get the merge commit SHA from base branch
     var merge-commit = (str:trim-space (git -C $project-root rev-parse $base-branch | slurp))
-    ui:success "PR merged (commit: "$merge-commit")"
+    ui:success "PR merged (commit: "$merge-commit")" > /dev/tty
     put $merge-commit
   } catch e {
-    ui:error "Failed to merge PR: "(to-string $e[reason])
+    ui:error "Failed to merge PR: "(to-string $e[reason]) > /dev/tty
     put ""
   }
 }
 
 # Push changes to remote
 fn push-changes {|branch-name|
-  ui:dim "Pushing refinement changes..."
+  ui:dim "Pushing refinement changes..." > /dev/tty
   try {
     git -C $project-root push origin $branch-name 2>&1 | slurp
-    ui:success "Changes pushed"
+    ui:success "Changes pushed" > /dev/tty
     put $true
   } catch _ {
     put $false
