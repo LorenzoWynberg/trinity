@@ -1,0 +1,20 @@
+# Ralph Progress Log - Trinity v0.1
+
+This file tracks progress on building Trinity v0.1 using the autonomous development loop.
+
+---
+
+## Project Started
+Date: 2026-01-23
+Goal: Build Trinity v0.1 - CLI MVP with autonomous development loop
+
+### Phase Overview
+- Phase 1: Foundation (Go workspace, CLI scaffold, config)
+- Phase 2: Database Layer (SQLite, migrations, all tables)
+- Phase 3: Claude & Git Integration (invocation, signals, git ops)
+- Phase 4: Prompts (templates, schemas, placeholders)
+- Phase 5: Loop Logic (story selection, execution, recovery)
+- Phase 6: CLI Commands (init, analyze, plan, run, status, internal)
+- Phase 7: Polish (UX, docs, testing)
+
+---

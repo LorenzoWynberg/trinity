@@ -1,0 +1,1642 @@
+{
+  "stories": [
+    {
+      "id": "STORY-1.1.1",
+      "title": "Create Go workspace structure",
+      "intent": "Establish the Go monorepo workspace with proper module boundaries",
+      "acceptance": [
+        "go.work file at root with use directives for core, cli",
+        "core/go.mod with module github.com/trinity-ai-labs/trinity/core",
+        "cli/go.mod with module github.com/trinity-ai-labs/trinity/cli",
+        "cli imports core module",
+        "go work sync succeeds"
+      ],
+      "passes": false,
+      "depends_on": [],
+      "phase": 1,
+      "epic": 1,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-1.1.2",
+      "title": "Create CLI entrypoint with Cobra",
+      "intent": "Set up the main CLI application structure using Cobra command framework",
+      "acceptance": [
+        "cli/cmd/trinity/main.go exists",
+        "Uses github.com/spf13/cobra for CLI",
+        "Root command with basic help text",
+        "go build ./cli/cmd/trinity produces binary",
+        "./trinity --help shows usage"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-1.1.1"
+      ],
+      "phase": 1,
+      "epic": 1,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-1.1.3",
+      "title": "Add version command",
+      "intent": "Provide version information for troubleshooting and releases",
+      "acceptance": [
+        "trinity version outputs version number",
+        "Version set via ldflags at build time",
+        "Includes build date and git commit when available"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-1.1.2"
+      ],
+      "phase": 1,
+      "epic": 1,
+      "story_number": 3
+    },
+    {
+      "id": "STORY-1.2.1",
+      "title": "Create config package structure",
+      "intent": "Set up configuration management for Trinity settings",
+      "acceptance": [
+        "core/config/config.go exists",
+        "Config struct with global settings (default timeout, etc.)",
+        "Uses ~/.trinity/config.json as storage path",
+        "Load and Save functions implemented"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-1.1.1"
+      ],
+      "phase": 1,
+      "epic": 2,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-1.2.2",
+      "title": "Implement project config management",
+      "intent": "Manage per-project configuration stored in ~/.trinity/projects/",
+      "acceptance": [
+        "ProjectConfig struct with project-specific settings",
+        "Projects stored in ~/.trinity/projects/<hash>/config.json",
+        "Hash generated from slugify(name)-timestamp",
+        "GetProject, SaveProject functions work correctly"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-1.2.1"
+      ],
+      "phase": 1,
+      "epic": 2,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-1.2.3",
+      "title": "Add config CLI commands",
+      "intent": "Allow users to view and modify configuration via CLI",
+      "acceptance": [
+        "trinity config show displays current config",
+        "trinity config set <key> <value> updates config",
+        "trinity config edit opens config in $EDITOR",
+        "Changes persist to disk"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-1.1.2",
+        "STORY-1.2.2"
+      ],
+      "phase": 1,
+      "epic": 2,
+      "story_number": 3,
+      "human_testing": {
+        "required": true,
+        "instructions": "Test config show displays readable output, config set persists values, config edit opens editor correctly",
+        "url": null
+      }
+    },
+    {
+      "id": "STORY-2.1.1",
+      "title": "Create SQLite database connection",
+      "intent": "Establish database connectivity for storing all Trinity state",
+      "acceptance": [
+        "core/db/db.go exists with DB struct",
+        "Uses modernc.org/sqlite (pure Go, no CGO)",
+        "Open function creates/connects to ~/.trinity/projects/<hash>/trinity.db",
+        "Database auto-created if not exists",
+        "Close function properly releases connection"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-1.2.2"
+      ],
+      "phase": 2,
+      "epic": 1,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-2.1.2",
+      "title": "Create database schema migrations",
+      "intent": "Manage database schema versioning and automatic migrations",
+      "acceptance": [
+        "core/db/migrations/ contains SQL migration files",
+        "Migration runner applies pending migrations on startup",
+        "Schema version tracked in database",
+        "Migrations are idempotent (safe to re-run)"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.1.1"
+      ],
+      "phase": 2,
+      "epic": 1,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-2.1.3",
+      "title": "Implement phases table and API",
+      "intent": "Store PRD phases in database with full CRUD operations",
+      "acceptance": [
+        "phases table created (id, name, status, depends_on, priority)",
+        "db.Phases.List(opts) returns filtered phases",
+        "db.Phases.Get(id) returns single phase",
+        "db.Phases.Create(phase) inserts new phase",
+        "db.Phases.Update(id, changes) updates phase"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.1.2"
+      ],
+      "phase": 2,
+      "epic": 1,
+      "story_number": 3
+    },
+    {
+      "id": "STORY-2.1.4",
+      "title": "Implement epics table and API",
+      "intent": "Store PRD epics in database with parent phase relationships",
+      "acceptance": [
+        "epics table created (id, phase_id, name, path, status, depends_on, priority)",
+        "db.Epics.List(phaseID, opts) returns epics for phase",
+        "db.Epics.GetByPath('mvp:auth') resolves path to epic",
+        "db.Epics.Create(epic) inserts new epic",
+        "Foreign key to phases enforced"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.1.3"
+      ],
+      "phase": 2,
+      "epic": 1,
+      "story_number": 4
+    },
+    {
+      "id": "STORY-2.1.5",
+      "title": "Implement stories table and API",
+      "intent": "Store PRD stories with full story data including human testing fields",
+      "acceptance": [
+        "stories table created with all fields from schema",
+        "db.Stories.List(epicID, opts) returns stories",
+        "db.Stories.Get(id) returns single story",
+        "db.Stories.Insert(story) creates story",
+        "db.Stories.Update(id, changes) modifies story",
+        "Human testing fields (required, instructions, url, status) stored"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.1.4"
+      ],
+      "phase": 2,
+      "epic": 1,
+      "story_number": 5
+    },
+    {
+      "id": "STORY-2.1.6",
+      "title": "Implement story selection logic",
+      "intent": "Get next runnable story respecting dependencies",
+      "acceptance": [
+        "db.Stories.GetNext() returns story with deps met, not blocked",
+        "Dependency resolution checks all depends_on items",
+        "Supports phase, epic, and story-level dependencies",
+        "Returns nil when no stories available",
+        "Respects human_testing.status - stories awaiting approval not selected"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.1.5"
+      ],
+      "phase": 2,
+      "epic": 1,
+      "story_number": 6
+    },
+    {
+      "id": "STORY-2.2.1",
+      "title": "Implement tags table",
+      "intent": "Store shared tags used across PRD items and learnings",
+      "acceptance": [
+        "tags table created (id, name)",
+        "db.Tags.List() returns all tags",
+        "db.Tags.Find(name) returns tag by name",
+        "db.Tags.Create(name) creates new tag",
+        "Name is unique constraint"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.1.2"
+      ],
+      "phase": 2,
+      "epic": 2,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-2.2.2",
+      "title": "Implement tag associations",
+      "intent": "Enable many-to-many relationships between tags and PRD items",
+      "acceptance": [
+        "phase_tags, epic_tags, story_tags junction tables created",
+        "db.Stories.ByTag('auth', 'frontend') returns AND query results",
+        "Tag associations managed through existing CRUD methods",
+        "Cascade delete when parent item removed"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.2.1",
+        "STORY-2.1.5"
+      ],
+      "phase": 2,
+      "epic": 2,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-2.3.1",
+      "title": "Implement activity_logs table and API",
+      "intent": "Track all agent activity for debugging and auditing",
+      "acceptance": [
+        "activity_logs table created (id, timestamp, agent, action, message, story_ref)",
+        "db.Activity.Log(agent, action, message, storyRef) inserts entry",
+        "db.Activity.Recent(limit) returns latest entries",
+        "db.Activity.ForStory(storyID) filters by story",
+        "Timestamps auto-generated"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.1.2"
+      ],
+      "phase": 2,
+      "epic": 3,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-2.3.2",
+      "title": "Implement learnings table and API",
+      "intent": "Store lessons learned during development for future reference",
+      "acceptance": [
+        "learnings table created (id, content, created_at, updated_at)",
+        "learning_tags junction table for tag associations",
+        "db.Learnings.Search(keywords) does full-text search",
+        "db.Learnings.Insert(content, tags) creates learning",
+        "db.Learnings.ByTag('gotcha') filters by tag"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.2.1"
+      ],
+      "phase": 2,
+      "epic": 3,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-2.4.1",
+      "title": "Implement agents table and API",
+      "intent": "Track running agents and their current work",
+      "acceptance": [
+        "agents table created (id, workspace, epic, current_story, pid, status, started_at)",
+        "db.Agents.Register(workspace, epic) creates agent entry",
+        "db.Agents.Heartbeat(id) updates timestamp",
+        "db.Agents.Stale(timeout) finds crashed agents",
+        "db.Agents.Release(id) cleans up agent"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.1.2"
+      ],
+      "phase": 2,
+      "epic": 4,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-2.4.2",
+      "title": "Implement command queue table and API",
+      "intent": "Queue internal commands from Claude for sequential processing",
+      "acceptance": [
+        "queue table created (id, type, payload, status, agent_id, created_at, processed_at)",
+        "Queue types: complete, learn, add-story, log, move-story",
+        "Queue status: pending, processing, done, failed",
+        "Pop operation marks as processing atomically",
+        "Sequential processing prevents conflicts"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.4.1"
+      ],
+      "phase": 2,
+      "epic": 4,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-2.4.3",
+      "title": "Implement token_usage table and API",
+      "intent": "Track Claude token usage for cost visibility",
+      "acceptance": [
+        "token_usage table created (id, story_id, timestamp, input_tokens, output_tokens, model)",
+        "db.TokenUsage.Log(storyID, input, output, model) records usage",
+        "db.TokenUsage.Summary() returns totals",
+        "db.TokenUsage.ForStory(id) returns story usage",
+        "Timestamps auto-generated"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.1.2"
+      ],
+      "phase": 2,
+      "epic": 4,
+      "story_number": 3
+    },
+    {
+      "id": "STORY-3.1.1",
+      "title": "Create Claude environment validation",
+      "intent": "Verify Claude CLI is installed and working before operations",
+      "acceptance": [
+        "core/claude/checks.go exists",
+        "ValidateEnvironment() checks claude CLI in PATH",
+        "Verifies claude --version succeeds",
+        "Verifies git is available",
+        "Returns clear error messages for each failure"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-1.1.1"
+      ],
+      "phase": 3,
+      "epic": 1,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-3.1.2",
+      "title": "Implement Claude invocation wrapper",
+      "intent": "Provide clean interface for executing Claude with prompts",
+      "acceptance": [
+        "core/claude/run.go exists",
+        "Run(prompt, opts) executes claude CLI with given prompt",
+        "Uses --dangerously-skip-permissions --print flags",
+        "Captures stdout and stderr",
+        "Returns output and any error"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-3.1.1"
+      ],
+      "phase": 3,
+      "epic": 1,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-3.1.3",
+      "title": "Implement streaming output support",
+      "intent": "Enable real-time output display from Claude",
+      "acceptance": [
+        "RunStreaming(prompt, opts, writer) streams output",
+        "Uses --output-format stream-json flag",
+        "Parses JSON stream for text chunks",
+        "Writes to provided io.Writer in real-time",
+        "Still captures full output for signal parsing"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-3.1.2"
+      ],
+      "phase": 3,
+      "epic": 1,
+      "story_number": 3
+    },
+    {
+      "id": "STORY-3.1.4",
+      "title": "Implement signal parsing",
+      "intent": "Detect completion and blocked signals from Claude output",
+      "acceptance": [
+        "ParseSignals(output) extracts structured signals",
+        "Detects <story-complete>ID</story-complete>",
+        "Detects <story-blocked>reason</story-blocked>",
+        "Detects <promise>COMPLETE</promise>",
+        "Returns parsed Signal struct with type and content"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-3.1.2"
+      ],
+      "phase": 3,
+      "epic": 1,
+      "story_number": 4
+    },
+    {
+      "id": "STORY-3.1.5",
+      "title": "Implement timeout handling",
+      "intent": "Prevent hung Claude sessions with configurable timeout",
+      "acceptance": [
+        "Run accepts timeout option (default 30 minutes)",
+        "Uses context.WithTimeout for cancellation",
+        "Kills Claude process on timeout",
+        "Returns timeout-specific error",
+        "Logs partial output before timeout"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-3.1.2"
+      ],
+      "phase": 3,
+      "epic": 1,
+      "story_number": 5
+    },
+    {
+      "id": "STORY-3.1.6",
+      "title": "Implement token usage parsing",
+      "intent": "Extract token counts from Claude stream output",
+      "acceptance": [
+        "ParseTokenUsage(streamOutput) extracts token counts",
+        "Parses input_tokens and output_tokens from JSON",
+        "Works with stream-json format",
+        "Returns TokenUsage struct with model info"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-3.1.3"
+      ],
+      "phase": 3,
+      "epic": 1,
+      "story_number": 6
+    },
+    {
+      "id": "STORY-3.2.1",
+      "title": "Create git validation functions",
+      "intent": "Verify git repository state before operations",
+      "acceptance": [
+        "core/git/validate.go exists",
+        "IsRepo(path) checks if path is git repo",
+        "IsClean(path) checks for uncommitted changes",
+        "CurrentBranch(path) returns current branch name",
+        "HasConflicts(path) checks for merge conflicts"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-1.1.1"
+      ],
+      "phase": 3,
+      "epic": 2,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-3.2.2",
+      "title": "Implement git branch operations",
+      "intent": "Manage feature branches for story work",
+      "acceptance": [
+        "core/git/branch.go exists",
+        "CreateBranch(path, name, base) creates branch from base",
+        "SwitchBranch(path, name) checks out branch",
+        "DeleteBranch(path, name) removes branch",
+        "BranchExists(path, name) checks existence"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-3.2.1"
+      ],
+      "phase": 3,
+      "epic": 2,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-3.2.3",
+      "title": "Implement git sync operations",
+      "intent": "Keep local repo in sync with remote",
+      "acceptance": [
+        "Fetch(path) fetches from remote",
+        "Pull(path) pulls current branch",
+        "Push(path, branch) pushes to remote",
+        "SyncWithBase(path, base) fetches and resets to base"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-3.2.2"
+      ],
+      "phase": 3,
+      "epic": 2,
+      "story_number": 3
+    },
+    {
+      "id": "STORY-4.0.1",
+      "title": "Create prompts directory structure",
+      "intent": "Scaffold the embedded prompts directory with proper organization",
+      "acceptance": [
+        "prompts/ directory exists at repo root",
+        "prompts/templates/ subdirectory created",
+        "prompts/schemas/ subdirectory created",
+        "prompts/internal/ subdirectory created",
+        "prompts/embed.go with go:embed directive for all subdirectories"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-1.1.1"
+      ],
+      "phase": 4,
+      "epic": 0,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-4.1.1",
+      "title": "Create prompt template loader",
+      "intent": "Load and manage prompt templates with placeholder substitution",
+      "acceptance": [
+        "core/prompts/loader.go exists",
+        "Uses prompts/ directory via go:embed",
+        "LoadTemplate(name) returns template content",
+        "FillTemplate(template, vars) substitutes {{placeholders}}",
+        "Returns error for missing templates or placeholders"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.0.1"
+      ],
+      "phase": 4,
+      "epic": 1,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-4.1.2",
+      "title": "Create story-execute.md prompt template",
+      "intent": "Define the main prompt template for story execution",
+      "acceptance": [
+        "prompts/templates/story-execute.md exists",
+        "Includes story context placeholders (id, title, acceptance)",
+        "Includes learnings context section",
+        "Includes verification and self-review instructions",
+        "Includes signal output instructions (story-complete, story-blocked)"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.0.1"
+      ],
+      "phase": 4,
+      "epic": 1,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-4.1.3",
+      "title": "Create analyze.md prompt template",
+      "intent": "Define prompt for codebase analysis",
+      "acceptance": [
+        "prompts/templates/analyze.md exists",
+        "Instructs Claude to analyze project structure",
+        "Identifies tech stack and patterns",
+        "Suggests relevant skills to install",
+        "Returns structured JSON matching schemas/analyze.json"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.0.1",
+        "STORY-4.3.1"
+      ],
+      "phase": 4,
+      "epic": 1,
+      "story_number": 3
+    },
+    {
+      "id": "STORY-4.1.4",
+      "title": "Create plan-add-init.md prompt template",
+      "intent": "Define prompt for creating new PRD from scratch",
+      "acceptance": [
+        "prompts/templates/plan-add-init.md exists",
+        "Instructs Claude to create PRD structure",
+        "Guides phase/epic/story breakdown",
+        "Returns structured JSON matching schemas/plan-add.json",
+        "Includes dependency assignment guidelines"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.0.1",
+        "STORY-4.3.2"
+      ],
+      "phase": 4,
+      "epic": 1,
+      "story_number": 4
+    },
+    {
+      "id": "STORY-4.1.5",
+      "title": "Create plan-add-extend.md prompt template",
+      "intent": "Define prompt for adding to existing PRD",
+      "acceptance": [
+        "prompts/templates/plan-add-extend.md exists",
+        "Includes existing PRD as context",
+        "Identifies where new work fits",
+        "Maintains dependency consistency",
+        "Returns incremental additions only"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.1.4"
+      ],
+      "phase": 4,
+      "epic": 1,
+      "story_number": 5
+    },
+    {
+      "id": "STORY-4.1.6",
+      "title": "Create plan-refine.md prompt template",
+      "intent": "Define prompt for refining existing PRD stories",
+      "acceptance": [
+        "prompts/templates/plan-refine.md exists",
+        "Analyzes story quality and clarity",
+        "Suggests improved acceptance criteria",
+        "Identifies stories that should be split",
+        "Returns structured refinement suggestions matching schemas/plan-refine.json"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.1.5",
+        "STORY-4.3.3"
+      ],
+      "phase": 4,
+      "epic": 1,
+      "story_number": 6
+    },
+    {
+      "id": "STORY-4.1.7",
+      "title": "Create init-analyze.md prompt template",
+      "intent": "Define prompt for initial project analysis during trinity init",
+      "acceptance": [
+        "prompts/templates/init-analyze.md exists",
+        "Quick analysis of project structure",
+        "Detects primary language and framework",
+        "Identifies build system and test framework",
+        "Returns structured JSON for CLAUDE.md generation"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.0.1"
+      ],
+      "phase": 4,
+      "epic": 1,
+      "story_number": 7
+    },
+    {
+      "id": "STORY-4.1.8",
+      "title": "Create init-claude-md.md prompt template",
+      "intent": "Define prompt for generating project CLAUDE.md",
+      "acceptance": [
+        "prompts/templates/init-claude-md.md exists",
+        "Takes project analysis as input",
+        "Generates project-specific guidance",
+        "Includes build/test commands",
+        "Supports --no-ai-attribution flag in output"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.1.7"
+      ],
+      "phase": 4,
+      "epic": 1,
+      "story_number": 8
+    },
+    {
+      "id": "STORY-4.2.1",
+      "title": "Create internal complete prompt",
+      "intent": "Define prompt for validating story completion",
+      "acceptance": [
+        "prompts/internal/complete.md exists",
+        "Validates completion criteria met",
+        "Updates dependency graph",
+        "Returns completion confirmation"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.0.1"
+      ],
+      "phase": 4,
+      "epic": 2,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-4.2.2",
+      "title": "Create internal learn prompt",
+      "intent": "Define prompt for processing learnings",
+      "acceptance": [
+        "prompts/internal/learn.md exists",
+        "Checks for duplicate learnings",
+        "Formats learning consistently",
+        "Suggests appropriate tags"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.0.1"
+      ],
+      "phase": 4,
+      "epic": 2,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-4.2.3",
+      "title": "Create internal add-story prompt",
+      "intent": "Define prompt for properly adding new stories",
+      "acceptance": [
+        "prompts/internal/add-story.md exists",
+        "Validates story fits in epic structure",
+        "Assigns proper story ID following convention",
+        "Suggests appropriate dependencies"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.0.1"
+      ],
+      "phase": 4,
+      "epic": 2,
+      "story_number": 3
+    },
+    {
+      "id": "STORY-4.2.4",
+      "title": "Create internal move-story prompt",
+      "intent": "Define prompt for handling story renumbering",
+      "acceptance": [
+        "prompts/internal/move-story.md exists",
+        "Validates new position is valid",
+        "Identifies all references to update",
+        "Returns list of changes needed"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.0.1"
+      ],
+      "phase": 4,
+      "epic": 2,
+      "story_number": 4
+    },
+    {
+      "id": "STORY-4.3.1",
+      "title": "Create analyze.json response schema",
+      "intent": "Define expected JSON structure for analyze command output",
+      "acceptance": [
+        "prompts/schemas/analyze.json exists",
+        "Defines stack object (language, framework, build_tool)",
+        "Defines structure description field",
+        "Defines suggestions array with title, description, priority",
+        "Valid JSON Schema format"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.0.1"
+      ],
+      "phase": 4,
+      "epic": 3,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-4.3.2",
+      "title": "Create plan-add.json response schema",
+      "intent": "Define expected JSON structure for plan add command output",
+      "acceptance": [
+        "prompts/schemas/plan-add.json exists",
+        "Defines analysis field for placement reasoning",
+        "Defines suggestions array with type, parent, after fields",
+        "Defines generated object with full story structure",
+        "Valid JSON Schema format"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.0.1"
+      ],
+      "phase": 4,
+      "epic": 3,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-4.3.3",
+      "title": "Create plan-refine.json response schema",
+      "intent": "Define expected JSON structure for plan refine command output",
+      "acceptance": [
+        "prompts/schemas/plan-refine.json exists",
+        "Defines refinements array with story_id, suggestions",
+        "Defines split_recommendations for large stories",
+        "Defines improved_acceptance array",
+        "Valid JSON Schema format"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-4.0.1"
+      ],
+      "phase": 4,
+      "epic": 3,
+      "story_number": 3
+    },
+    {
+      "id": "STORY-5.1.1",
+      "title": "Create loop package structure",
+      "intent": "Set up the core autonomous development loop",
+      "acceptance": [
+        "core/loop/loop.go exists",
+        "Loop struct with DB, Claude, and config references",
+        "Run() method starts the loop",
+        "Clean separation of concerns"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.1.6",
+        "STORY-3.1.4"
+      ],
+      "phase": 5,
+      "epic": 1,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-5.1.2",
+      "title": "Implement story selection in loop",
+      "intent": "Select next story respecting dependencies and state",
+      "acceptance": [
+        "selectNext() calls db.Stories.GetNext()",
+        "Handles resume of in-progress story",
+        "Skips blocked stories",
+        "Skips stories awaiting human approval",
+        "Returns nil when all done"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-5.1.1"
+      ],
+      "phase": 5,
+      "epic": 1,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-5.1.3",
+      "title": "Implement branch management in loop",
+      "intent": "Create and manage feature branches for each story",
+      "acceptance": [
+        "createStoryBranch(story) creates feat/story-X.Y.Z branch",
+        "Syncs with base branch (dev) first",
+        "Reuses existing branch if present",
+        "Updates state with current branch"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-5.1.1",
+        "STORY-3.2.2"
+      ],
+      "phase": 5,
+      "epic": 1,
+      "story_number": 3
+    },
+    {
+      "id": "STORY-5.1.4",
+      "title": "Implement story execution in loop",
+      "intent": "Execute Claude on a story with full context",
+      "acceptance": [
+        "executeStory(story) fills prompt template",
+        "Includes story details, learnings, dependencies",
+        "Calls Claude with streaming output",
+        "Parses output for signals",
+        "Updates story status based on result"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-5.1.3",
+        "STORY-4.1.2"
+      ],
+      "phase": 5,
+      "epic": 1,
+      "story_number": 4
+    },
+    {
+      "id": "STORY-5.1.5",
+      "title": "Implement iteration control",
+      "intent": "Control loop iterations with max limit and pause points",
+      "acceptance": [
+        "Pause between stories (configurable via config)",
+        "Option to stop after each story completion (--once flag)",
+        "Clean exit on all stories complete",
+        "On timeout: log partial output, mark story as pending with timeout note, continue to next story"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-5.1.4"
+      ],
+      "phase": 5,
+      "epic": 1,
+      "story_number": 5
+    },
+    {
+      "id": "STORY-5.1.6",
+      "title": "Implement human testing gate in loop",
+      "intent": "Pause loop when story requires human verification",
+      "acceptance": [
+        "After story complete, check human_testing.required",
+        "If required, set human_testing_status to 'awaiting'",
+        "Display human testing instructions to user",
+        "Pause loop and prompt user to run trinity approve/reject",
+        "Continue to next story only after approval"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-5.1.4"
+      ],
+      "phase": 5,
+      "epic": 1,
+      "story_number": 6
+    },
+    {
+      "id": "STORY-5.2.1",
+      "title": "Implement state persistence",
+      "intent": "Save loop state for crash recovery",
+      "acceptance": [
+        "State saved to DB before each phase",
+        "Current story, branch, attempt tracked",
+        "Timestamps for started_at, last_updated",
+        "State readable on restart"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-5.1.4",
+        "STORY-2.4.1"
+      ],
+      "phase": 5,
+      "epic": 2,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-5.2.2",
+      "title": "Implement crash detection",
+      "intent": "Detect and recover from crashed agents",
+      "acceptance": [
+        "Check for stale agents on startup",
+        "PID check to verify process actually running",
+        "Mark stale agents as crashed",
+        "Reset in-progress stories to pending"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-5.2.1"
+      ],
+      "phase": 5,
+      "epic": 2,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-5.2.3",
+      "title": "Implement resume flow",
+      "intent": "Resume interrupted work from last checkpoint",
+      "acceptance": [
+        "--resume flag continues from last state",
+        "Prompts user: resume, restart, or skip",
+        "Preserves branch and context",
+        "Logs recovery action taken"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-5.2.2"
+      ],
+      "phase": 5,
+      "epic": 2,
+      "story_number": 3
+    },
+    {
+      "id": "STORY-6.1.1",
+      "title": "Implement trinity init command",
+      "intent": "Initialize Trinity for a new project",
+      "acceptance": [
+        "trinity init prompts for project name",
+        "Creates ~/.trinity/projects/<hash>/ structure",
+        "Initializes database with schema",
+        "Saves project config",
+        "Offers to create CLAUDE.md in project"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-1.2.2",
+        "STORY-2.1.2",
+        "STORY-1.1.2"
+      ],
+      "phase": 6,
+      "epic": 1,
+      "story_number": 1,
+      "human_testing": {
+        "required": true,
+        "instructions": "Run trinity init in a test project directory. Verify: prompts appear correctly, directories created in ~/.trinity/projects/, database initialized, CLAUDE.md offer works",
+        "url": null
+      }
+    },
+    {
+      "id": "STORY-6.1.2",
+      "title": "Implement trinity analyze command",
+      "intent": "Analyze codebase to understand structure and suggest skills",
+      "acceptance": [
+        "trinity analyze runs analysis prompt",
+        "Displays detected tech stack",
+        "Lists suggested skills to install",
+        "Saves analysis to project config"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.1.1",
+        "STORY-4.1.3"
+      ],
+      "phase": 6,
+      "epic": 1,
+      "story_number": 2,
+      "human_testing": {
+        "required": true,
+        "instructions": "Run trinity analyze on a known project (Go, React, Python). Verify: correct stack detected, sensible skill suggestions, output is readable and accurate",
+        "url": null
+      }
+    },
+    {
+      "id": "STORY-6.2.1",
+      "title": "Implement trinity plan add command",
+      "intent": "Add new work items to the PRD",
+      "acceptance": [
+        "trinity plan add prompts for description",
+        "Uses plan-add-init.md for new PRD",
+        "Uses plan-add-extend.md for existing PRD",
+        "Displays generated items for confirmation",
+        "Saves to database on confirm"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.1.1",
+        "STORY-4.1.4"
+      ],
+      "phase": 6,
+      "epic": 2,
+      "story_number": 1,
+      "human_testing": {
+        "required": true,
+        "instructions": "Test both flows: 1) Add to empty PRD - verify creates sensible structure, 2) Add to existing PRD - verify new items integrate correctly with proper dependencies",
+        "url": null
+      }
+    },
+    {
+      "id": "STORY-6.2.2",
+      "title": "Implement trinity plan show command",
+      "intent": "Display current PRD structure",
+      "acceptance": [
+        "trinity plan show displays full PRD",
+        "trinity plan show <ref> shows specific item",
+        "Shows phase/epic/story hierarchy",
+        "Indicates status (pending, in_progress, done)",
+        "Shows dependencies"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.2.1"
+      ],
+      "phase": 6,
+      "epic": 2,
+      "story_number": 2,
+      "human_testing": {
+        "required": true,
+        "instructions": "Create a PRD with multiple phases/epics/stories. Verify: hierarchy displays correctly, status indicators work, specific ref lookup works, dependencies shown clearly",
+        "url": null
+      }
+    },
+    {
+      "id": "STORY-6.2.3",
+      "title": "Implement trinity plan skip/retry commands",
+      "intent": "Allow skipping blocked stories and retrying failed ones",
+      "acceptance": [
+        "trinity plan skip <ref> marks story as skipped",
+        "trinity plan retry <ref> resets story to pending",
+        "Updates dependency resolution accordingly",
+        "Logs the action taken"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.2.2"
+      ],
+      "phase": 6,
+      "epic": 2,
+      "story_number": 3
+    },
+    {
+      "id": "STORY-6.2.4",
+      "title": "Implement trinity plan refine command",
+      "intent": "Allow refinement of PRD stories for better clarity",
+      "acceptance": [
+        "trinity plan refine improves all stories",
+        "trinity plan refine <ref> refines specific phase/epic",
+        "Suggests clearer acceptance criteria",
+        "Can split large stories into smaller ones",
+        "Preserves existing dependency relationships"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.2.2"
+      ],
+      "phase": 6,
+      "epic": 2,
+      "story_number": 4
+    },
+    {
+      "id": "STORY-6.3.1",
+      "title": "Implement trinity run command",
+      "intent": "Execute the autonomous development loop",
+      "acceptance": [
+        "trinity run starts loop with next available story",
+        "trinity run <ref> runs specific story/epic/phase",
+        "trinity run --all runs until all complete",
+        "--with-deps includes dependencies",
+        "Displays progress and Claude output"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-5.1.5",
+        "STORY-1.1.2"
+      ],
+      "phase": 6,
+      "epic": 3,
+      "story_number": 1,
+      "human_testing": {
+        "required": true,
+        "instructions": "Run trinity run on a simple 2-3 story PRD. Verify: stories execute in correct order, output streams properly, story completion/blocking handled correctly, can interrupt with Ctrl+C",
+        "url": null
+      }
+    },
+    {
+      "id": "STORY-6.3.2",
+      "title": "Implement run output display",
+      "intent": "Show real-time progress during run",
+      "acceptance": [
+        "Streaming output from Claude displayed",
+        "Progress indicators for current story",
+        "Banner on story complete/blocked",
+        "Summary on loop end"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.3.1"
+      ],
+      "phase": 6,
+      "epic": 3,
+      "story_number": 2,
+      "human_testing": {
+        "required": true,
+        "instructions": "Watch trinity run output on a real story. Verify: streaming output is readable, progress shows current story, banners appear on state changes, final summary is clear",
+        "url": null
+      }
+    },
+    {
+      "id": "STORY-6.4.1",
+      "title": "Implement trinity status command",
+      "intent": "Show current project status and progress",
+      "acceptance": [
+        "trinity status shows overall progress",
+        "Counts stories by status",
+        "Shows current/recent activity",
+        "Displays any blocked items"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.1.1",
+        "STORY-1.1.2"
+      ],
+      "phase": 6,
+      "epic": 4,
+      "story_number": 1,
+      "human_testing": {
+        "required": true,
+        "instructions": "Run trinity status at various stages of a project. Verify: progress counts accurate, recent activity displayed, blocked items highlighted, output is clear and useful",
+        "url": null
+      }
+    },
+    {
+      "id": "STORY-6.4.2",
+      "title": "Implement trinity status --cost flag",
+      "intent": "Show token usage and cost summary",
+      "acceptance": [
+        "trinity status --cost shows token totals",
+        "--cost --today shows today's usage",
+        "Calculates estimated cost based on model",
+        "Breaks down by story if verbose"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.4.1",
+        "STORY-2.4.3"
+      ],
+      "phase": 6,
+      "epic": 4,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-6.5.1",
+      "title": "Implement trinity internal complete command",
+      "intent": "Allow Claude to signal story completion",
+      "acceptance": [
+        "trinity internal complete <story> marks story done",
+        "Updates story status in database",
+        "Resolves dependent stories",
+        "Logs completion activity"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.4.2",
+        "STORY-1.1.2"
+      ],
+      "phase": 6,
+      "epic": 5,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-6.5.2",
+      "title": "Implement trinity internal learn command",
+      "intent": "Allow Claude to add learnings",
+      "acceptance": [
+        "trinity internal learn 'content' --tags x,y adds learning",
+        "Checks for duplicates",
+        "Saves to database",
+        "Logs the learning"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.3.2",
+        "STORY-1.1.2"
+      ],
+      "phase": 6,
+      "epic": 5,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-6.5.3",
+      "title": "Implement trinity internal add-story command",
+      "intent": "Allow Claude to add discovered stories",
+      "acceptance": [
+        "trinity internal add-story <epic> 'title' adds story",
+        "Assigns proper story ID",
+        "Places in correct epic",
+        "Updates numbering as needed"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.1.5",
+        "STORY-1.1.2"
+      ],
+      "phase": 6,
+      "epic": 5,
+      "story_number": 3
+    },
+    {
+      "id": "STORY-6.5.4",
+      "title": "Implement trinity internal log command",
+      "intent": "Allow Claude to write activity logs",
+      "acceptance": [
+        "trinity internal log 'message' writes to activity",
+        "Timestamps automatically",
+        "Associates with current agent/story",
+        "No response needed (fire and forget)"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.3.1",
+        "STORY-1.1.2"
+      ],
+      "phase": 6,
+      "epic": 5,
+      "story_number": 4
+    },
+    {
+      "id": "STORY-6.5.5",
+      "title": "Implement trinity internal move-story command",
+      "intent": "Allow Claude to renumber stories and update references",
+      "acceptance": [
+        "trinity internal move-story <from> <to> renumbers story",
+        "Updates all depends_on references",
+        "Maintains dependency graph integrity",
+        "Logs the move operation"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.1.5",
+        "STORY-1.1.2"
+      ],
+      "phase": 6,
+      "epic": 5,
+      "story_number": 5
+    },
+    {
+      "id": "STORY-6.6.1",
+      "title": "Implement trinity approve command",
+      "intent": "Allow human approval of stories requiring manual testing",
+      "acceptance": [
+        "trinity approve approves current pending test",
+        "trinity approve <ref> approves specific story",
+        "Updates human_testing_status to 'approved'",
+        "Updates story status to completed",
+        "Unblocks dependent stories",
+        "Logs approval activity"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-5.1.6"
+      ],
+      "phase": 6,
+      "epic": 6,
+      "story_number": 1,
+      "human_testing": {
+        "required": true,
+        "instructions": "Create a story with human_testing.required=true. Run it to completion. Verify: loop pauses, instructions displayed, trinity approve works, story marked complete, loop can continue",
+        "url": null
+      }
+    },
+    {
+      "id": "STORY-6.6.2",
+      "title": "Implement trinity reject command",
+      "intent": "Allow human rejection with feedback for iteration",
+      "acceptance": [
+        "trinity reject 'feedback' rejects with reason",
+        "trinity reject <ref> 'feedback' rejects specific story",
+        "Stores rejection feedback in story",
+        "Resets story to pending",
+        "Claude sees feedback on next attempt",
+        "Logs rejection activity"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.6.1"
+      ],
+      "phase": 6,
+      "epic": 6,
+      "story_number": 2,
+      "human_testing": {
+        "required": true,
+        "instructions": "Reject a completed story with feedback. Run trinity run again. Verify: feedback is visible to Claude in next attempt, story iterates based on feedback",
+        "url": null
+      }
+    },
+    {
+      "id": "STORY-6.7.1",
+      "title": "Implement trinity hotfix command",
+      "intent": "Enable quick fixes outside the normal PRD flow",
+      "acceptance": [
+        "trinity hotfix 'description' creates fix branch",
+        "Runs Claude to implement fix",
+        "Creates PR to dev branch",
+        "--target main option for urgent fixes",
+        "--auto-merge merges when CI passes"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.3.1"
+      ],
+      "phase": 6,
+      "epic": 7,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-6.7.2",
+      "title": "Implement trinity release command",
+      "intent": "Ship completed work from dev to main",
+      "acceptance": [
+        "trinity release merges dev to main via PR",
+        "--dry-run shows what would be released",
+        "--tag v1.0.0 creates git tag",
+        "--direct merges without PR",
+        "Validates all stories complete before release"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.3.1"
+      ],
+      "phase": 6,
+      "epic": 7,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-6.8.1",
+      "title": "Implement trinity skills list command",
+      "intent": "Show installed Claude Code skills",
+      "acceptance": [
+        "trinity skills list shows all installed skills",
+        "Indicates global vs project-local skills",
+        "Shows skill descriptions",
+        "Works without project context"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-1.1.2"
+      ],
+      "phase": 6,
+      "epic": 8,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-6.8.2",
+      "title": "Implement trinity skills suggest command",
+      "intent": "Suggest skills based on detected project stack",
+      "acceptance": [
+        "trinity skills suggest analyzes project",
+        "Compares installed vs recommended skills",
+        "Shows which skills are missing",
+        "Based on detected tech stack (Go, React, etc.)"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.8.1",
+        "STORY-6.1.2"
+      ],
+      "phase": 6,
+      "epic": 8,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-6.8.3",
+      "title": "Implement trinity skills add/remove commands",
+      "intent": "Install and remove Claude Code skills",
+      "acceptance": [
+        "trinity skills add <names...> installs skills globally",
+        "trinity skills remove <names...> removes skills",
+        "Uses npx add-skill under the hood",
+        "Shows progress during installation"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.8.1"
+      ],
+      "phase": 6,
+      "epic": 8,
+      "story_number": 3
+    },
+    {
+      "id": "STORY-7.1.1",
+      "title": "Add comprehensive error messages",
+      "intent": "Provide helpful error messages for common issues",
+      "acceptance": [
+        "Claude CLI not found gives install instructions",
+        "Git not clean suggests stash/commit",
+        "Database errors give recovery steps",
+        "All errors include troubleshooting hints"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.3.1"
+      ],
+      "phase": 7,
+      "epic": 1,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-7.1.2",
+      "title": "Add colored terminal output",
+      "intent": "Improve CLI readability with colors",
+      "acceptance": [
+        "Uses fatih/color for terminal colors",
+        "Success messages in green",
+        "Errors in red",
+        "Warnings in yellow",
+        "Status info in cyan",
+        "Colors disabled when not TTY"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.3.2"
+      ],
+      "phase": 7,
+      "epic": 1,
+      "story_number": 2,
+      "human_testing": {
+        "required": true,
+        "instructions": "Run various trinity commands (status, run, errors). Verify: colors appear correctly in terminal, colors disabled when piped to file, contrast is readable",
+        "url": null
+      }
+    },
+    {
+      "id": "STORY-7.1.3",
+      "title": "Add progress spinners",
+      "intent": "Show activity during long-running operations",
+      "acceptance": [
+        "Spinner shown during Claude execution",
+        "Spinner for database operations",
+        "Clean up on completion or error",
+        "Works in quiet mode (no spinner)"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-7.1.2"
+      ],
+      "phase": 7,
+      "epic": 1,
+      "story_number": 3,
+      "human_testing": {
+        "required": true,
+        "instructions": "Run operations that take time (analyze, run). Verify: spinner animates smoothly, cleans up on completion, cleans up on Ctrl+C, disabled in non-TTY",
+        "url": null
+      }
+    },
+    {
+      "id": "STORY-7.2.1",
+      "title": "Write README with quick start guide",
+      "intent": "Help users get started with Trinity",
+      "acceptance": [
+        "README.md at project root",
+        "Installation instructions",
+        "Quick start: init -> analyze -> plan add -> run",
+        "Links to full documentation"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.3.1"
+      ],
+      "phase": 7,
+      "epic": 2,
+      "story_number": 1
+    },
+    {
+      "id": "STORY-7.2.2",
+      "title": "Add --help for all commands",
+      "intent": "Provide inline help for all CLI commands",
+      "acceptance": [
+        "All commands have Short and Long descriptions",
+        "Examples shown in help output",
+        "Flags documented with defaults",
+        "trinity help <command> works"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-6.3.1"
+      ],
+      "phase": 7,
+      "epic": 2,
+      "story_number": 2
+    },
+    {
+      "id": "STORY-7.3.1",
+      "title": "End-to-end test on sample project",
+      "intent": "Verify complete workflow works",
+      "acceptance": [
+        "Create test project with simple PRD",
+        "Run full init -> plan -> run cycle",
+        "Stories complete successfully",
+        "PRD updates correctly",
+        "No errors in output"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-7.1.1"
+      ],
+      "phase": 7,
+      "epic": 3,
+      "story_number": 1,
+      "human_testing": {
+        "required": true,
+        "instructions": "Run complete workflow on a fresh test project: trinity init, trinity analyze, trinity plan add with simple feature, trinity run. Verify entire flow works end-to-end",
+        "url": null
+      }
+    },
+    {
+      "id": "STORY-7.3.2",
+      "title": "Test crash recovery",
+      "intent": "Verify recovery from interrupted sessions",
+      "acceptance": [
+        "Simulate crash during story execution",
+        "Restart detects stale agent",
+        "Resume option works correctly",
+        "Story completes on retry"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-7.3.1"
+      ],
+      "phase": 7,
+      "epic": 3,
+      "story_number": 2,
+      "human_testing": {
+        "required": true,
+        "instructions": "Start trinity run, kill process mid-story (kill -9), restart trinity run. Verify: crash detected, resume prompt appears, can successfully resume or restart story",
+        "url": null
+      }
+    },
+    {
+      "id": "STORY-7.3.3",
+      "title": "Test dependency resolution",
+      "intent": "Verify dependency system works correctly",
+      "acceptance": [
+        "Stories with unmet deps not selected",
+        "Completing story unblocks dependents",
+        "Phase/epic dependencies resolved",
+        "Circular dependency detection"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-7.3.1"
+      ],
+      "phase": 7,
+      "epic": 3,
+      "story_number": 3,
+      "human_testing": {
+        "required": true,
+        "instructions": "Create PRD with complex dependencies (story->story, story->epic, cross-phase). Run and verify: correct execution order, no story runs before deps, completion unblocks correctly",
+        "url": null
+      }
+    }
+  ]
+}
