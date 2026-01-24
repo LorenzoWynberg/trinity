@@ -17,7 +17,8 @@
       "epic": 1,
       "story_number": 1,
       "merged": true,
-      "merge_commit": "24cdf06"
+      "merge_commit": "24cdf06",
+      "pr_url": "https://github.com/trinity-ai-labs/trinity/pull/16"
     },
     {
       "id": "STORY-1.1.2",

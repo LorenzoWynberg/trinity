@@ -180,7 +180,7 @@ export default async function StoryDetailPage({
       </div>
 
       {/* Metadata */}
-      {(story.skipped || story.merge_commit) && (
+      {(story.skipped || story.merge_commit || story.pr_url) && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">Details</CardTitle>
@@ -190,6 +190,20 @@ export default async function StoryDetailPage({
               <div>
                 <span className="text-muted-foreground">Skip reason:</span>{' '}
                 <span>{story.skip_reason}</span>
+              </div>
+            )}
+            {story.pr_url && (
+              <div>
+                <span className="text-muted-foreground">Pull request:</span>{' '}
+                <a
+                  href={story.pr_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                >
+                  <span>#{story.pr_url.split('/').pop()}</span>
+                  <ExternalLink className="h-3 w-3" />
+                </a>
               </div>
             )}
             {story.merge_commit && (

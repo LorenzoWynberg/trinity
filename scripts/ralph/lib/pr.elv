@@ -188,6 +188,8 @@ fn create {|branch-name story-id story-title|
     var url = (gh pr create --base $base-branch --head $branch-name --title $story-id": "$story-title --body $body 2>&1 | slurp)
     set url = (str:trim-space $url)
     echo "\e[32m\e[1m✓ \e[0m\e[32mPR created: "$url"\e[0m" > /dev/tty
+    # Save PR URL to prd.json
+    prd:set-pr-url $story-id $url
     put $url
   } catch e {
     echo "\e[31m\e[1m✗ \e[0mFailed to create PR: "(to-string $e[reason]) > /dev/tty

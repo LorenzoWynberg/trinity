@@ -13,6 +13,7 @@ export interface Story {
   skipped?: boolean
   skip_reason?: string
   merge_commit?: string
+  pr_url?: string
 }
 
 export interface PRD {

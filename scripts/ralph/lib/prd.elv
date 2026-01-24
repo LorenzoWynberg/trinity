@@ -101,6 +101,13 @@ fn mark-merged {|story-id merge-commit|
   mv $tmp $prd-file
 }
 
+# Save PR URL for a story
+fn set-pr-url {|story-id pr-url|
+  var tmp = (mktemp)
+  jq '(.stories[] | select(.id == "'$story-id'")).pr_url = "'$pr-url'"' $prd-file > $tmp
+  mv $tmp $prd-file
+}
+
 # Check if a story is merged (for dependency checking)
 fn is-merged {|story-id|
   var result = (jq -r '.stories[] | select(.id == "'$story-id'") | .merged // false' $prd-file)
