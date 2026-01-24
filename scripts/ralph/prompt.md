@@ -47,6 +47,7 @@ After build passes, ask: "What's missing or could improve?"
 Update these files:
 - `scripts/ralph/progress.txt`: Add entry with date, changes, learnings
 - `scripts/ralph/prd.json`: Set `"passes": true` for {{CURRENT_STORY}}
+  - NOTE: Do NOT set `merged` - Ralph handles that after PR is merged
 
 Then commit and push:
 ```bash
@@ -66,7 +67,7 @@ Document the blocker:
 Output: `<story-blocked>{{CURRENT_STORY}}</story-blocked>`
 
 ## 8. All Done?
-If ALL stories in prd.json have `"passes": true`, output: `<promise>COMPLETE</promise>`
+If ALL stories in prd.json have `"merged": true`, output: `<promise>COMPLETE</promise>`
 
 ## Important Rules
 - No AI attribution in code, comments, or commits

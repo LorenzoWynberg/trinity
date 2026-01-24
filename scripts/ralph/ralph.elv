@@ -78,6 +78,41 @@ if (prd:all-stories-complete) {
   exit 0
 }
 
+# Check for passed-but-not-merged stories (need to merge before continuing)
+var unmerged = [(prd:get-unmerged-passed)]
+if (> (count $unmerged) 0) {
+  ui:warn "Found "(count $unmerged)" story(s) passed but not merged:"
+  for sid $unmerged {
+    var story-title = (prd:get-story-title $sid)
+    var branch = (prd:get-story-branch $sid)
+    ui:dim "  "$sid": "$story-title" (branch: "$branch")"
+  }
+  echo ""
+
+  for sid $unmerged {
+    var story-title = (prd:get-story-title $sid)
+    var branch = (prd:get-story-branch $sid)
+
+    # Check if branch still exists
+    try {
+      git -C $project-root rev-parse --verify "refs/heads/"$branch > /dev/null 2>&1
+    } catch {
+      # Branch doesn't exist locally, try remote
+      try {
+        git -C $project-root rev-parse --verify "refs/remotes/origin/"$branch > /dev/null 2>&1
+      } catch {
+        ui:dim "Branch "$branch" not found, skipping "$sid
+        continue
+      }
+    }
+
+    # Run PR flow for this story
+    ui:status "Handling unmerged story: "$sid
+    pr:run-flow $sid $branch $story-title 0
+    echo ""
+  }
+}
+
 # Main loop
 var current-iteration = 0
 var resume-mode = $config[resume-mode]

@@ -3,7 +3,7 @@
 use str
 use re
 use ./ui
-use ./claude
+use ./prd
 
 # Configuration (set by init)
 var project-root = ""
@@ -65,16 +65,18 @@ fn update {|branch-name story-id refinements|
   }
 }
 
-# Merge PR
+# Merge PR - returns merge commit SHA or empty string on failure
 fn merge {|branch-name|
   ui:status "Merging PR..."
   try {
-    gh pr merge $branch-name --squash --delete-branch 2>&1
-    ui:success "PR merged and branch deleted"
-    put $true
+    gh pr merge $branch-name --squash --delete-branch 2>&1 | slurp
+    # Get the merge commit SHA from base branch
+    var merge-commit = (str:trim-space (git -C $project-root rev-parse $base-branch | slurp))
+    ui:success "PR merged (commit: "$merge-commit")"
+    put $merge-commit
   } catch e {
     ui:error "Failed to merge PR: "(to-string $e[reason])
-    put $false
+    put ""
   }
 }
 
@@ -166,7 +168,10 @@ fn run-flow {|story-id branch-name story-title current-iteration|
 
       var answer = (prompt-user 0)
       if (re:match '^[yY]$' $answer) {
-        merge $branch-name
+        var commit = (merge $branch-name)
+        if (not (eq $commit "")) {
+          prd:mark-merged $story-id $commit
+        }
         set done = $true
       } else {
         # Default to no (leave open for review)
@@ -174,7 +179,10 @@ fn run-flow {|story-id branch-name story-title current-iteration|
         set done = $true
       }
     } elif $auto-merge {
-      merge $branch-name
+      var commit = (merge $branch-name)
+      if (not (eq $commit "")) {
+        prd:mark-merged $story-id $commit
+      }
       set done = $true
     } else {
       set done = $true
