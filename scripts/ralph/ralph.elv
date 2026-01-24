@@ -116,6 +116,7 @@ if (> (count $unmerged) 0) {
 # Main loop
 var current-iteration = 0
 var resume-mode = $config[resume-mode]
+var pending-feedback = ""  # Feedback from PR review to pass to next Claude run
 
 while (< $current-iteration $config[max-iterations]) {
     set current-iteration = (+ $current-iteration 1)
@@ -171,14 +172,19 @@ while (< $current-iteration $config[max-iterations]) {
 
     git:ensure-on-branch $branch-name
 
-    # Prepare Claude prompt
-    var prep = (claude:prepare $story-id $branch-name $current-state[attempts] $current-iteration "")
+    # Prepare Claude prompt (with any pending feedback)
+    var prep = (claude:prepare $story-id $branch-name $current-state[attempts] $current-iteration $pending-feedback)
     var prompt-file = $prep[prompt-file]
     var output-file = $prep[output-file]
     var story-title = $prep[story-title]
     var claude-config = (claude:get-config)
 
+    # Clear feedback after using it
     var mode-label = "attempt "$current-state[attempts]
+    if (not (eq $pending-feedback "")) {
+      set mode-label = "feedback refinement"
+      set pending-feedback = ""  # Clear after use
+    }
     ui:status "Running Claude ("$mode-label")..."
     ui:dim "  Story:  "$story-id
     ui:dim "  Title:  "$story-title
@@ -285,6 +291,38 @@ while (< $current-iteration $config[max-iterations]) {
     if $signals[complete] {
       echo ""
       ui:success "Story "$story-id" completed!"
+
+      # Run PR flow (may request feedback)
+      echo ""
+      var story-title = (prd:get-story-title $story-id)
+      var pr-result = (pr:run-flow $story-id $branch-name $story-title $current-iteration)
+
+      # Handle feedback loop - re-run Claude with feedback
+      if (eq $pr-result "feedback") {
+        var fb = (pr:get-stored-feedback)
+        if (not (eq $fb "")) {
+          echo ""
+          ui:banner "Feedback Loop - Re-running Claude"
+          ui:dim "Feedback: "$fb
+          echo ""
+
+          # Store feedback for next iteration
+          set pending-feedback = $fb
+
+          # Re-set state to in_progress with current story
+          set current-state[current_story] = $story-id
+          set current-state[branch] = $branch-name
+          set current-state[status] = "in_progress"
+          set current-state[attempts] = (+ $current-state[attempts] 1)
+          state:write $current-state
+
+          # Continue to re-run Claude with feedback on next iteration
+          ui:dim "Feedback received. Re-running story with feedback..."
+          continue
+        }
+      }
+
+      # Reset state after PR handled
       ui:dim "  Resetting state to idle..."
       set current-state[current_story] = $nil
       set current-state[branch] = $nil
@@ -295,18 +333,15 @@ while (< $current-iteration $config[max-iterations]) {
       state:write $current-state
       ui:dim "  State saved."
 
-      # Run PR flow
-      echo ""
-      var story-title = (prd:get-story-title $story-id)
-      pr:run-flow $story-id $branch-name $story-title $current-iteration
-
-      # Sync base branch
-      echo ""
-      git:sync-base-branch
+      if (eq $pr-result "merged") {
+        # Sync base branch only if merged
+        echo ""
+        git:sync-base-branch
+      }
 
       # Pause before next story
       echo ""
-      ui:status "Pausing before next story..."
+      ui:status "Story "$story-id" done. Continue to next story?"
       echo "\e[33mStop loop? [y/N]\e[0m \e[2m(continues in 120s)\e[0m"
       try {
         var answer = (bash -c 'read -t 120 -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
