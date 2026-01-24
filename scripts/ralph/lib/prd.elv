@@ -10,6 +10,11 @@ fn init {|path|
   set prd-file = $path
 }
 
+# Get PRD file path (for other modules)
+fn get-prd-file {
+  put $prd-file
+}
+
 # Get story info for branch naming (phase, epic, story_number)
 fn get-story-info {|story-id|
   var query = ".stories[] | select(.id == \""$story-id"\") | \"\\(.phase)\\t\\(.epic)\\t\\(.story_number)\""
