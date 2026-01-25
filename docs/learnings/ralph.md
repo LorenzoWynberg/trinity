@@ -308,6 +308,33 @@ export function VersionSelector(props) {
 }
 ```
 
+## Story Tags
+
+Stories in the PRD have a `tags` array for categorization and cross-referencing.
+
+### Tag taxonomy
+
+| Category | Tags | Purpose |
+|----------|------|---------|
+| Domain | `core`, `cli`, `db`, `git`, `claude`, `prompts`, `auth` | Where code lives |
+| Feature | `config`, `prd`, `loop`, `validation`, `recovery`, `release`, `skills` | What it does |
+| Concern | `api`, `testing`, `ux`, `docs` | Cross-cutting aspects |
+
+### Uses for tags
+
+1. **Duplicate detection** - Before creating a story, find existing stories with overlapping tags
+2. **Propagation** - When external deps affect `auth`, find all `auth`-tagged stories
+3. **Reverse dependency check** - New `auth` story might need to be depended on by other `auth` stories
+4. **Dashboard filtering** - Filter views by tag
+5. **Impact analysis** - Find all stories affected by a change
+
+### Auto-assignment
+
+Tags are assigned automatically based on:
+- Title patterns (`"claude"` → `claude` tag)
+- Acceptance criteria patterns (`"core/"` → `core` tag)
+- Phase/epic location (Phase 7 → `auth` tag)
+
 ## Elvish
 
 Ralph is written in Elvish shell. See `docs/learnings/elvish.md` for language-specific patterns and gotchas (arity mismatches, value vs byte pipelines, map access, etc.).
