@@ -650,7 +650,7 @@ while (< $current-iteration $config[max-iterations]) {
       # Pass pr_url from state to skip PR prompt if already exists
       echo ""
       var story-title = (prd:get-story-title $story-id)
-      var state-pr-url = (if $current-state[pr_url] { put $current-state[pr_url] } else { put "" })
+      var state-pr-url = (if (and (has-key $current-state pr_url) $current-state[pr_url]) { put $current-state[pr_url] } else { put "" })
       var pr-flow-result = (pr:run-flow $story-id $branch-name $story-title $current-iteration &state-pr-url=$state-pr-url)
       var pr-result = $pr-flow-result[result]
       var pr-url = $pr-flow-result[pr_url]
