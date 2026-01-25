@@ -11,6 +11,8 @@ type StoryNodeData = {
   phase: number
   epic: number
   direction?: 'horizontal' | 'vertical'
+  isDeadEnd?: boolean
+  showDeadEnd?: boolean
 }
 
 const statusColors: Record<string, string> = {
@@ -46,16 +48,21 @@ export const StoryNode = memo(({ data, selected }: NodeProps) => {
       />
       <div
         className={cn(
-          'px-3 py-2 rounded-lg border-2 w-[160px] cursor-pointer transition-all',
+          'rounded-lg border-2 w-[160px] cursor-pointer transition-all overflow-hidden',
           colorClass,
           selected && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
         )}
       >
-        <div className={cn('flex items-center gap-2 mb-1', isVertical && 'justify-center')}>
-          <div className={cn('w-2 h-2 rounded-full shrink-0', dotClass)} />
-          <span className={cn('font-mono text-xs font-medium truncate text-zinc-800 dark:text-zinc-100', !isVertical && 'flex-1')}>{nodeData.label}</span>
+        <div className="px-3 py-2">
+          <div className={cn('flex items-center gap-2 mb-1', isVertical && 'justify-center')}>
+            <div className={cn('w-2 h-2 rounded-full shrink-0', dotClass)} />
+            <span className={cn('font-mono text-xs font-medium truncate text-zinc-800 dark:text-zinc-100', !isVertical && 'flex-1')}>{nodeData.label}</span>
+          </div>
+          <p className={cn('text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2', isVertical && 'text-center')}>{nodeData.title}</p>
         </div>
-        <p className={cn('text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2', isVertical && 'text-center')}>{nodeData.title}</p>
+        {nodeData.showDeadEnd && (
+          <div className="h-1.5 bg-orange-500" />
+        )}
       </div>
       <Handle
         type="source"

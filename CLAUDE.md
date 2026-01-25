@@ -269,6 +269,17 @@ dev (integration) ← features merge here
 feature branches (auto-managed)
 ```
 
+**Branch naming convention:**
+```
+feat/v<VERSION>/story-<PHASE>.<EPIC>.<STORY>
+```
+
+Examples:
+- `feat/v1.0/story-1.2.3` - Story 3 in Epic 2 of Phase 1 for v1.0
+- `feat/v2.0/story-2.1.5` - Story 5 in Epic 1 of Phase 2 for v2.0
+
+Phases are scoped per version - each PRD version starts at Phase 1.
+
 - Features auto-merge to `dev` when complete
 - Dependencies resolve when code is in `dev`
 - New features branch from `dev` (get all merged code)
@@ -318,6 +329,7 @@ Stories track completion in two stages:
   "branch": null
 }
 ```
+commit and push
 
 ### Claude Code Integration
 Trinity shells out to `claude` CLI - it's the execution engine, not just an API. Claude Code handles file I/O, bash commands, and context management.
@@ -364,12 +376,19 @@ See `examples/jetbrains-elvish/` for patterns Trinity will port to Go:
 
 ## Working on Ralph
 
-When working on Ralph (`tools/ralph/`), **always read `docs/learnings/ralph.md` first**. It contains:
-- Streaming patterns for Claude output
-- State management (passes vs merged)
-- PR flow and prompts
-- Activity log organization
-- Release workflow
-- Elvish-specific gotchas
+When working on Ralph (`tools/ralph/`):
+
+1. **Always read `docs/learnings/ralph.md` first**. It contains:
+   - Streaming patterns for Claude output
+   - State management (passes vs merged)
+   - PR flow and prompts
+   - Activity log organization
+   - Release workflow
+   - Elvish-specific gotchas
+
+2. **Always update the activity logs** after making changes:
+   - Location: `logs/activity/ralph/YYYY-MM-DD.md`
+   - Document what was changed, why, and which files were modified
+   - Group related changes under clear section headers
 
 Ralph is written in Elvish shell. The learnings file captures hard-won knowledge about its quirks and patterns.

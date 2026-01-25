@@ -528,10 +528,22 @@ export function useGraphData(version: string = 'all'): GraphData {
           }
         }
 
+        // Find dead-end nodes (stories that nothing depends on)
+        const dependedOn = new Set<string>()
+        storiesData.forEach(story => {
+          if (story.depends_on) {
+            story.depends_on.forEach(depRef => {
+              const resolvedIds = resolveDependency(depRef, storiesData)
+              resolvedIds.forEach(id => dependedOn.add(id))
+            })
+          }
+        })
+
         // Add story nodes
         for (const story of storiesData) {
           const status = getStoryStatus(story, currentStoryId)
           const pos = positions[story.id] || { x: 0, y: 0 }
+          const isDeadEnd = !dependedOn.has(story.id)
           nodeList.push({
             id: story.id,
             type: 'story',
@@ -544,6 +556,7 @@ export function useGraphData(version: string = 'all'): GraphData {
               phase: story.phase,
               epic: story.epic,
               direction: activeLayout,
+              isDeadEnd,
             },
           })
         }

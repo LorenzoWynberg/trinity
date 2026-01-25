@@ -7,11 +7,13 @@ const SETTINGS_FILE = path.join(process.cwd(), 'settings.json')
 type Settings = {
   theme: 'light' | 'dark' | 'system'
   graphDirection: 'horizontal' | 'vertical'
+  showDeadEnds: boolean
 }
 
 const defaultSettings: Settings = {
   theme: 'dark',
-  graphDirection: 'horizontal'
+  graphDirection: 'horizontal',
+  showDeadEnds: false
 }
 
 async function getSettings(): Promise<Settings> {

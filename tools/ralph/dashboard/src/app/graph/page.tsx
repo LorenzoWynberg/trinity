@@ -24,6 +24,7 @@ import { StoryNode } from '@/components/story-node'
 import { VersionNode } from '@/components/version-node'
 import { StoryModal } from '@/components/story-modal'
 import { useGraphData, calculateAutoPositions, resolveDependency, GraphLayoutData } from '@/hooks/use-graph-data'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -80,7 +81,7 @@ function GraphContent() {
   const layoutSaveDebouncer = useDebouncer(saveLayoutData, { wait: 500 })
 
   const [highlightedNodes, setHighlightedNodes] = useState<Set<string>>(new Set())
-  const [highlightedEdges, setHighlightedEdges] = useState<Set<string>>(new Set())
+  const [highlightedEdges, setHighlightedEdges] = useState<Map<string, number>>(new Map()) // edgeId -> depth
 
   const [selectedStory, setSelectedStory] = useState<Story | null>(null)
   const [selectedStatus, setSelectedStatus] = useState<StoryStatus>('pending')
@@ -90,6 +91,30 @@ function GraphContent() {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [newLayoutName, setNewLayoutName] = useState('')
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [showDeadEnds, setShowDeadEnds] = useState(false)
+
+  // Load showDeadEnds setting on mount
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data.showDeadEnds !== undefined) {
+          setShowDeadEnds(data.showDeadEnds)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  // Save showDeadEnds setting when toggled
+  const toggleDeadEnds = useCallback(() => {
+    const newValue = !showDeadEnds
+    setShowDeadEnds(newValue)
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ showDeadEnds: newValue })
+    }).catch(() => {})
+  }, [showDeadEnds])
 
   // Track fullscreen changes
   useEffect(() => {
@@ -233,49 +258,87 @@ function GraphContent() {
     visited.add(nodeId)
 
     const story = stories.find(s => s.id === nodeId)
-    if (story?.depends_on) {
+    if (story?.depends_on && story.depends_on.length > 0) {
       story.depends_on.forEach(depRef => {
-        // Resolve phase/epic/story refs to actual story IDs
         const resolvedIds = resolveDependency(depRef, stories)
         resolvedIds.forEach(depId => getAncestors(depId, visited))
       })
+    } else if (story?.target_version) {
+      // Root story - add version node as ancestor
+      visited.add(`version:${story.target_version}`)
     }
     return visited
   }, [stories])
 
-  // Get edges in the dependency path
-  const getPathEdges = useCallback((nodeId: string): Set<string> => {
-    const pathEdges = new Set<string>()
-    const ancestors = getAncestors(nodeId)
+  // Get edges in the dependency path with depth (distance from clicked node)
+  const getPathEdgesWithDepth = useCallback((nodeId: string, ancestors: Set<string>): Map<string, number> => {
+    const edgeDepths = new Map<string, number>()
+    const nodeDepths = new Map<string, number>()
 
-    ancestors.forEach(ancestorId => {
-      const story = stories.find(s => s.id === ancestorId)
+    // BFS to calculate node depths from the clicked node
+    const queue: [string, number][] = [[nodeId, 0]]
+    while (queue.length > 0) {
+      const [id, depth] = queue.shift()!
+      if (nodeDepths.has(id)) continue
+      nodeDepths.set(id, depth)
+
+      const story = stories.find(s => s.id === id)
       if (story?.depends_on) {
         story.depends_on.forEach(depRef => {
           const resolvedIds = resolveDependency(depRef, stories)
           resolvedIds.forEach(depId => {
-            if (ancestors.has(depId)) {
-              pathEdges.add(`${depId}->${ancestorId}`)
+            if (ancestors.has(depId) && !nodeDepths.has(depId)) {
+              queue.push([depId, depth + 1])
             }
           })
         })
       }
+    }
+
+    // Find max depth to invert (so roots are yellow, clicked node is blue)
+    const maxDepth = Math.max(...Array.from(nodeDepths.values()))
+
+    // Now create edges with inverted depth (version=0/yellow, roots=1, clicked=max/blue)
+    ancestors.forEach(ancestorId => {
+      // Skip version nodes when creating story-to-story edges
+      if (ancestorId.startsWith('version:')) return
+
+      const story = stories.find(s => s.id === ancestorId)
+      if (story?.depends_on && story.depends_on.length > 0) {
+        story.depends_on.forEach(depRef => {
+          const resolvedIds = resolveDependency(depRef, stories)
+          resolvedIds.forEach(depId => {
+            if (ancestors.has(depId)) {
+              const edgeId = `${depId}->${ancestorId}`
+              const nodeDepth = nodeDepths.get(ancestorId) || 0
+              edgeDepths.set(edgeId, maxDepth - nodeDepth + 1) // +1 to leave room for version edge at 0
+            }
+          })
+        })
+      } else if (story?.target_version) {
+        // Root story - add edge from version node (depth 0 = yellow, the very start)
+        const versionNodeId = `version:${story.target_version}`
+        if (ancestors.has(versionNodeId)) {
+          const edgeId = `${versionNodeId}->${ancestorId}`
+          edgeDepths.set(edgeId, 0) // version edge is always the start (yellow)
+        }
+      }
     })
 
-    return pathEdges
-  }, [stories, getAncestors])
+    return edgeDepths
+  }, [stories])
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     if (highlightedNodes.has(node.id) && highlightedNodes.size === getAncestors(node.id).size) {
       setHighlightedNodes(new Set())
-      setHighlightedEdges(new Set())
+      setHighlightedEdges(new Map())
     } else {
       const ancestors = getAncestors(node.id)
-      const pathEdges = getPathEdges(node.id)
+      const pathEdges = getPathEdgesWithDepth(node.id, ancestors)
       setHighlightedNodes(ancestors)
       setHighlightedEdges(pathEdges)
     }
-  }, [getAncestors, getPathEdges, highlightedNodes])
+  }, [getAncestors, getPathEdgesWithDepth, highlightedNodes])
 
   const openStoryModal = useCallback((storyId: string, status: StoryStatus) => {
     const story = stories.find(s => s.id === storyId)
@@ -295,23 +358,56 @@ function GraphContent() {
 
   const onPaneClick = useCallback(() => {
     setHighlightedNodes(new Set())
-    setHighlightedEdges(new Set())
+    setHighlightedEdges(new Map())
   }, [])
+
+  // Depth-based colors for highlighted edges (rainbow gradient from roots to clicked)
+  const depthColors = [
+    '#facc15', // 0 - yellow
+    '#eab308', // 1 - yellow-dark
+    '#f97316', // 2 - orange
+    '#ea580c', // 3 - orange-dark
+    '#ef4444', // 4 - red
+    '#dc2626', // 5 - red-dark
+    '#ec4899', // 6 - pink
+    '#db2777', // 7 - pink-dark
+    '#a855f7', // 8 - purple
+    '#9333ea', // 9 - purple-dark
+    '#6366f1', // 10 - indigo
+    '#4f46e5', // 11 - indigo-dark
+    '#3b82f6', // 12+ - blue
+  ]
+
+  // Get max depth from highlighted edges
+  const maxHighlightDepth = highlightedEdges.size > 0
+    ? Math.max(...Array.from(highlightedEdges.values()))
+    : 0
+
+  // When depth <= 6, use every other color for better spread
+  const getDepthColor = (depth: number) => {
+    if (maxHighlightDepth <= 6) {
+      // Use every other color (0, 2, 4, 6, 8, 10, 12)
+      const stretchedIndex = Math.min(depth * 2, depthColors.length - 1)
+      return depthColors[stretchedIndex]
+    }
+    return depthColors[Math.min(depth, depthColors.length - 1)]
+  }
 
   // Apply highlighting styles to edges
   const defaultEdgeColor = isDark ? '#6b7280' : '#9ca3af'
   const hasHighlighting = highlightedEdges.size > 0
   const styledEdges: Edge[] = edges.map(edge => {
     const isHighlighted = highlightedEdges.has(edge.id)
+    const depth = highlightedEdges.get(edge.id) ?? 0
     return {
       ...edge,
       style: {
         ...edge.style,
         strokeWidth: isHighlighted ? 4 : 2,
-        stroke: isHighlighted ? '#facc15' : (edge.style?.stroke || defaultEdgeColor),
+        stroke: isHighlighted ? getDepthColor(depth) : (edge.style?.stroke || defaultEdgeColor),
         opacity: hasHighlighting && !isHighlighted ? 0 : 1,
       },
-      zIndex: isHighlighted ? 1000 : 0,
+      zIndex: isHighlighted ? 1000 - depth : 0, // closer edges on top
     }
   })
 
@@ -321,6 +417,10 @@ function GraphContent() {
     const hasHighlighting = highlightedNodes.size > 0
     return {
       ...node,
+      data: {
+        ...node.data,
+        showDeadEnd: showDeadEnds && node.data?.isDeadEnd,
+      },
       style: {
         ...node.style,
         opacity: hasHighlighting && !isHighlighted ? 0.3 : 1,
@@ -443,15 +543,16 @@ function GraphContent() {
             </SelectContent>
           </Select>
 
-          {/* Fullscreen button */}
+          {/* Dead ends toggle */}
           <Button
             variant="outline"
-            size="icon"
-            className="h-9 w-9"
-            onClick={handleFullscreen}
-            title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+            size="sm"
+            className={cn("h-9 gap-2", showDeadEnds && "bg-orange-500/20 border-orange-500")}
+            onClick={toggleDeadEnds}
+            title="Show dead-end nodes"
           >
-            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+            <div className={cn("w-2 h-2 rounded-full", showDeadEnds ? "bg-orange-500" : "bg-muted-foreground")} />
+            <span className="text-xs">Dead ends</span>
           </Button>
 
           {/* Set as default button */}
@@ -481,6 +582,17 @@ function GraphContent() {
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
           )}
+
+          {/* Fullscreen button */}
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9"
+            onClick={handleFullscreen}
+            title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          >
+            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+          </Button>
         </div>
 
         <ReactFlow
@@ -534,7 +646,7 @@ function GraphContent() {
           setModalOpen(open)
           if (!open) {
             setHighlightedNodes(new Set())
-            setHighlightedEdges(new Set())
+            setHighlightedEdges(new Map())
           }
         }}
       />
