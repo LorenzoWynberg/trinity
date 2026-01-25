@@ -894,7 +894,8 @@ fn get-stories-summary {|story-ids|
   for sid $story-ids {
     var title = (jq -r '.stories[] | select(.id == "'$sid'") | .title // ""' $prd-file)
     var acceptance = (jq -r '.stories[] | select(.id == "'$sid'") | .acceptance // [] | join("; ")' $prd-file)
-    set summary = $summary"- "$sid": "$title"\n  Acceptance: "$acceptance"\n\n"
+    var tags = (jq -r '.stories[] | select(.id == "'$sid'") | .tags // [] | join(", ")' $prd-file)
+    set summary = $summary"- "$sid": "$title"\n  Tags: ["$tags"]\n  Acceptance: "$acceptance"\n\n"
   }
   put $summary
 }
@@ -904,6 +905,37 @@ fn update-story-acceptance {|story-id new-acceptance-json|
   var tmp = (mktemp)
   jq '(.stories[] | select(.id == "'$story-id'")).acceptance = '$new-acceptance-json $prd-file > $tmp
   mv $tmp $prd-file
+}
+
+# Update a story's tags
+fn update-story-tags {|story-id tags-json|
+  var tmp = (mktemp)
+  jq '(.stories[] | select(.id == "'$story-id'")).tags = '$tags-json $prd-file > $tmp
+  mv $tmp $prd-file
+}
+
+# Update multiple fields on a story
+# fields-json is a JSON object like {"acceptance": [...], "tags": [...]}
+fn update-story {|story-id fields-json|
+  var tmp = (mktemp)
+  jq '(.stories[] | select(.id == "'$story-id'")) |= . + '$fields-json $prd-file > $tmp
+  mv $tmp $prd-file
+}
+
+# Find stories with overlapping tags (for duplicate detection)
+# Returns story IDs that share at least N tags with the given tags
+fn find-similar-by-tags {|tags-json &min-overlap=(num 2)|
+  var result = []
+  try {
+    set result = [(jq -r --argjson tags $tags-json --argjson min $min-overlap '
+      .stories[] |
+      select((.tags // []) as $story_tags |
+        ([$story_tags[] | select(. as $t | $tags | index($t))] | length) >= $min
+      ) |
+      .id
+    ' $prd-file)]
+  } catch _ { }
+  put $@result
 }
 
 # Create a new story in the PRD

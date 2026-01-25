@@ -628,10 +628,16 @@ These stories depend on '$story-id' (directly or transitively):
 
 '$summary'
 
+## Available Tags
+Domain: core, cli, db, git, claude, prompts, auth
+Feature: config, prd, loop, validation, recovery, release, skills
+Concern: api, testing, ux, docs
+
 ## Task
-1. Analyze existing descendants: which need acceptance criteria updates?
+1. Analyze existing descendants: which need acceptance criteria or tag updates?
 2. Identify GAPS: what new stories are needed based on the report?
-3. For new stories, determine proper phase/epic placement and dependencies
+3. Check for DUPLICATES: before creating, verify no similar story exists (same tags + similar intent)
+4. For new stories, determine proper phase/epic placement, dependencies, and tags
 
 Output format (JSON):
 ```json
@@ -640,7 +646,8 @@ Output format (JSON):
     {
       "id": "X.Y.Z",
       "reason": "Why this needs updating",
-      "acceptance": ["Updated criterion 1", "Updated criterion 2"]
+      "acceptance": ["Updated criterion 1", "Updated criterion 2"],
+      "tags": ["auth", "api"]
     }
   ],
   "create": [
@@ -648,6 +655,7 @@ Output format (JSON):
       "title": "Story title",
       "intent": "Why this story is needed",
       "acceptance": ["Criterion 1", "Criterion 2"],
+      "tags": ["auth", "api"],
       "phase": '$phase',
       "epic": '$epic',
       "depends_on": ["'$story-id'"],
@@ -665,8 +673,11 @@ Output format (JSON):
 
 Rules:
 - Only update stories where the report is directly relevant
+- Include tags in updates if they should change (omit if unchanged)
 - Create new stories for functionality revealed by the report but not covered
+- Before creating, check existing stories with similar tags - update instead of duplicate
 - New stories should have proper dependencies (on '$story-id' or other stories)
+- Assign appropriate tags from the taxonomy above
 - Keep acceptance criteria specific, testable, referencing concrete details
 - Use same phase/epic as '$story-id' unless clearly belongs elsewhere
 - Preserve valid existing criteria when updating'
@@ -798,13 +809,28 @@ Rules:
       var sid = $parts[0]
       var reason = $parts[1]
 
-      var new-acceptance = ""
+      # Get update fields
+      var update-obj = ""
       try {
-        set new-acceptance = (echo $json-block | jq -c '.updates[] | select(.id == "'$sid'") | .acceptance')
+        set update-obj = (echo $json-block | jq -c '.updates[] | select(.id == "'$sid'")')
       } catch _ { continue }
 
-      if (and (not (eq $new-acceptance "")) (not (eq $new-acceptance "null"))) {
-        prd:update-story-acceptance $sid $new-acceptance
+      # Build fields to update
+      var fields = [&]
+      var new-acceptance = (echo $update-obj | jq -c '.acceptance // null')
+      var new-tags = (echo $update-obj | jq -c '.tags // null')
+
+      if (and (not (eq $new-acceptance "null")) (not (eq $new-acceptance ""))) {
+        set fields[acceptance] = $new-acceptance
+      }
+      if (and (not (eq $new-tags "null")) (not (eq $new-tags ""))) {
+        set fields[tags] = $new-tags
+      }
+
+      if (> (count $fields) 0) {
+        # Convert fields map to JSON
+        var fields-json = (put $fields | to-json)
+        prd:update-story $sid $fields-json
         ui:success "  ✓ Updated "$sid > /dev/tty
       }
     }
@@ -833,13 +859,14 @@ Rules:
         continue
       }
 
-      # Build full story JSON
+      # Build full story JSON (ensure tags defaults to empty array)
       var new-story = (echo $item | jq -c '. + {
         "id": "'$new-id'",
         "story_number": '$story-num',
         "target_version": "'(prd:get-current-version)'",
         "passes": false,
-        "merged": false
+        "merged": false,
+        "tags": (.tags // [])
       }')
 
       prd:create-story $new-story
