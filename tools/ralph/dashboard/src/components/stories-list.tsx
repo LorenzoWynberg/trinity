@@ -15,6 +15,7 @@ import type { Story, StoryStatus } from '@/lib/types'
 type StoriesListProps = {
   stories: Story[]
   currentStoryId: string | null
+  versions: string[]
 }
 
 function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatus {
@@ -25,7 +26,8 @@ function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatu
   return 'pending'
 }
 
-export function StoriesList({ stories, currentStoryId }: StoriesListProps) {
+export function StoriesList({ stories, currentStoryId, versions }: StoriesListProps) {
+  const [selectedVersion, setSelectedVersion] = useState<string>('all')
   const [selectedPhase, setSelectedPhase] = useState<string>('all')
   const [selectedEpics, setSelectedEpics] = useState<Record<number, string>>({})
 
@@ -48,6 +50,11 @@ export function StoriesList({ stories, currentStoryId }: StoriesListProps) {
   const filteredStories = useMemo(() => {
     let result = stories
 
+    // Filter by version
+    if (selectedVersion !== 'all') {
+      result = result.filter(s => s.target_version === selectedVersion)
+    }
+
     // Filter by phase
     if (selectedPhase !== 'all') {
       result = result.filter(s => s.phase === parseInt(selectedPhase))
@@ -61,7 +68,7 @@ export function StoriesList({ stories, currentStoryId }: StoriesListProps) {
     })
 
     return result
-  }, [stories, selectedPhase, selectedEpics])
+  }, [stories, selectedVersion, selectedPhase, selectedEpics])
 
   // Group filtered stories by status
   const storiesByStatus = useMemo(() => ({
@@ -78,22 +85,45 @@ export function StoriesList({ stories, currentStoryId }: StoriesListProps) {
 
   return (
     <div className="space-y-6">
-      {/* Phase Filter */}
-      <div className="flex items-center gap-4">
-        <label className="text-sm font-medium">Phase:</label>
-        <Select value={selectedPhase} onValueChange={setSelectedPhase}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All phases" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All phases</SelectItem>
-            {phases.map(phase => (
-              <SelectItem key={phase} value={phase.toString()}>
-                Phase {phase}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Filters */}
+      <div className="flex items-center gap-6 flex-wrap">
+        {/* Version Filter */}
+        {versions.length >= 1 && (
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium">Version:</label>
+            <Select value={selectedVersion} onValueChange={setSelectedVersion}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="All versions" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All versions</SelectItem>
+                {versions.map(version => (
+                  <SelectItem key={version} value={version}>
+                    {version}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Phase Filter */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">Phase:</label>
+          <Select value={selectedPhase} onValueChange={setSelectedPhase}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="All phases" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All phases</SelectItem>
+              {phases.map(phase => (
+                <SelectItem key={phase} value={phase.toString()}>
+                  Phase {phase}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Tabs defaultValue="all">

@@ -70,7 +70,12 @@ All state lives in the database. Solo mode uses SQLite (`trinity.db`). Teams use
 phases (id, name, status, depends_on, priority)
 epics (id, phase_id, name, path, status, depends_on, priority)
 stories (id, epic_id, title, intent, acceptance, status, depends_on, priority,
-         human_testing_required, human_testing_instructions, human_testing_url)
+         human_testing_required, human_testing_instructions, human_testing_url,
+         target_version)  -- e.g., "v1.0", "v2.0"
+
+-- Versions/Releases
+versions (id, name, status, released_at, git_tag, release_notes)
+-- status: planning, in_progress, released
 
 -- Tags (shared, many-to-many)
 tags (id, name)
@@ -130,6 +135,15 @@ db.Agents.Register(workspace, epic)
 db.Agents.Heartbeat(id)
 db.Agents.Stale(timeout)                // Find crashed agents
 db.Agents.Release(id)
+
+// Versions
+db.Versions.List()                      // All versions
+db.Versions.Get(name)                   // e.g., "v1.0"
+db.Versions.Create(name)                // Create new version
+db.Versions.Progress(name)              // Stories done/total for version
+db.Versions.Release(name, tag, notes)   // Mark released, create git tag
+db.Stories.ByVersion(name)              // All stories for a version
+db.Stories.GetNext(version)             // Next runnable for specific version
 ```
 
 **Internal commands (Claude calls these):**
@@ -189,9 +203,14 @@ trinity status
 trinity config show|set|edit
 trinity skills list|suggest|add|remove|search
 
+# Versions
+trinity version list                # Show all versions with progress
+trinity version status [name]       # Detailed progress for version
+trinity version create <name>       # Create new version (e.g., v2.0)
+
 # Ship
 trinity hotfix "description"
-trinity release
+trinity release [version]           # Tag release, merge dev → main
 
 # Internal (Claude calls these)
 trinity internal complete|add-story|log|learn|move-story
@@ -257,6 +276,7 @@ feature branches (auto-managed)
   "acceptance": ["Criterion 1", "Criterion 2"],
   "passes": false,
   "depends_on": ["mvp:auth:STORY-1.1.1"],
+  "target_version": "v1.0",
   "human_testing": {
     "required": true,
     "instructions": "Test login with valid/invalid credentials",
@@ -307,3 +327,15 @@ See `examples/jetbrains-elvish/` for patterns Trinity will port to Go:
 - `ralph.elv` - Full loop implementation
 - `prd.json` - 60+ stories with dependencies
 - `prompt.md` - Story execution template
+
+## Working on Ralph
+
+When working on Ralph (`tools/ralph/`), **always read `docs/learnings/ralph.md` first**. It contains:
+- Streaming patterns for Claude output
+- State management (passes vs merged)
+- PR flow and prompts
+- Activity log organization
+- Release workflow
+- Elvish-specific gotchas
+
+Ralph is written in Elvish shell. The learnings file captures hard-won knowledge about its quirks and patterns.

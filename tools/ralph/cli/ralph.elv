@@ -16,12 +16,13 @@ use ./lib/prd
 use ./lib/claude
 use ./lib/pr
 use ./lib/metrics
+use ./lib/release
 
 # Get script directory and paths
 var script-dir = (path:dir (src)[name])
 var project-root = (path:dir (path:dir $script-dir))
 var prompt-file = (path:join $script-dir "prompt.md")
-var prd-file = (path:join $script-dir "prd.json")
+var prd-dir = (path:join $script-dir "prd")
 var progress-file = (path:join $script-dir "progress.txt")
 var state-file = (path:join $script-dir "state.json")
 var metrics-file = (path:join $script-dir "metrics.json")
@@ -29,21 +30,38 @@ var metrics-file = (path:join $script-dir "metrics.json")
 # Parse arguments and validate
 cli:parse-args $args
 cli:check-dependencies
-cli:check-files $prompt-file $prd-file $progress-file
 
 # Get config
 var config = (cli:get-config)
 
+# Initialize PRD module with directory
+prd:init $prd-dir
+
+# Select version (auto or by flag)
+var active-version = (prd:select-version $config[target-version])
+if (eq $active-version "") {
+  if (not (eq $config[target-version] "")) {
+    ui:error "Version "$config[target-version]" not found or has no stories"
+  } else {
+    ui:success "All versions complete!"
+  }
+  exit 0
+}
+
+# Now check files (with selected PRD file)
+var prd-file = (prd:get-prd-file)
+cli:check-files $prompt-file $prd-file $progress-file
+
 # Load prompt template
 var prompt-template = (cat $prompt-file | slurp)
 
-# Initialize modules
+# Initialize remaining modules
 state:init $state-file
 git:init $project-root $config[base-branch]
-prd:init $prd-file
 claude:init $project-root $prompt-template $config[claude-timeout] $config[quiet-mode] $config[max-iterations]
 pr:init $project-root $config[base-branch] $config[auto-pr] $config[auto-merge]
 metrics:init $metrics-file
+release:init $project-root $config[base-branch] "main" $config[claude-timeout]
 
 # Handle status mode (show and exit)
 if $config[status-mode] {
@@ -68,6 +86,13 @@ if $config[stats-mode] {
   exit 0
 }
 
+# Handle version status mode (show version progress and exit)
+if $config[version-status-mode] {
+  echo ""
+  prd:show-version-status
+  exit 0
+}
+
 # Handle plan mode (generate plan and exit)
 if $config[plan-mode] {
   echo ""
@@ -82,7 +107,11 @@ if $config[plan-mode] {
     set story-id = $current-state[current_story]
     ui:status "Planning for current story: "$story-id
   } else {
-    set story-id = (prd:get-next-story)
+    if (not (eq $config[target-version] "")) {
+      set story-id = (prd:get-next-story-for-version $config[target-version])
+    } else {
+      set story-id = (prd:get-next-story)
+    }
     if (eq $story-id "") {
       ui:warn "No stories available to plan"
       exit 0
@@ -119,7 +148,13 @@ if $config[plan-mode] {
 claude:archive-old-logs
 
 # Run pre-flight checks
-if (not (claude:preflight-checks)) {
+var preflight-ok = $true
+try {
+  set preflight-ok = (claude:preflight-checks | take 1)
+} catch _ {
+  set preflight-ok = $false
+}
+if (not $preflight-ok) {
   ui:warn "Pre-flight checks failed. Fix issues above or proceed with caution."
   echo "\e[33mContinue anyway? [y/N]\e[0m"
   try {
@@ -141,6 +176,7 @@ ui:box "RALPH - Autonomous Development Loop" "info"
 echo ""
 ui:dim "Project:        "$project-root
 ui:dim "Base branch:    "$config[base-branch]
+ui:dim "Target version: "$active-version" (prd/"$active-version".json)"
 ui:dim "Max iterations: "$config[max-iterations]
 if $config[quiet-mode] {
   ui:dim "Mode:           quiet (Claude output hidden)"
@@ -204,10 +240,24 @@ if (not (eq $config[skip-story-id] "")) {
 
   # Log to activity
   var today = (date '+%Y-%m-%d')
-  var activity-file = (path:join $project-root "docs" "activity" $today".md")
+  var timestamp = (date '+%Y-%m-%d %H:%M')
+  var activity-file = (path:join $project-root "logs" "activity" "trinity" $today".md")
+  var story-title = (prd:get-story-title $config[skip-story-id])
+  var story-info = (prd:get-story-info $config[skip-story-id])
+  var info-parts = [(str:split "\t" $story-info)]
+  var phase = $info-parts[0]
+  var epic = $info-parts[1]
+
   echo "" >> $activity-file
-  echo "## Skipped: "$config[skip-story-id] >> $activity-file
-  echo "Reason: "$config[skip-reason] >> $activity-file
+  echo "## "$config[skip-story-id]": "$story-title >> $activity-file
+  echo "" >> $activity-file
+  echo "**Phase:** "$phase" | **Epic:** "$epic" | **Version:** "$active-version >> $activity-file
+  echo "**Skipped:** "$timestamp >> $activity-file
+  echo "" >> $activity-file
+  echo "### Reason" >> $activity-file
+  echo $config[skip-reason] >> $activity-file
+  echo "" >> $activity-file
+  echo "---" >> $activity-file
 
   ui:success "Story skipped. Dependents can now proceed."
   exit 0
@@ -224,7 +274,81 @@ echo ""
 
 # Check if all stories are already complete
 if (prd:all-stories-complete) {
-  ui:success "All stories are complete!"
+  echo ""
+  ui:box "ALL STORIES COMPLETE - READY FOR RELEASE" "success"
+
+  # Skip release flow if requested
+  if $config[skip-release] {
+    ui:dim "Release skipped (--skip-release)"
+    echo "<promise>COMPLETE</promise>"
+    exit 0
+  }
+
+  # Check if already released
+  if (prd:is-version-released $active-version) {
+    ui:success $active-version" already released!"
+    echo "<promise>COMPLETE</promise>"
+    exit 0
+  }
+
+  # Run release flow
+  var release-tag = $config[release-tag]
+  if (eq $release-tag "") {
+    set release-tag = $active-version
+  }
+
+  while $true {
+    # Show summary
+    release:show-summary $active-version
+
+    # Human gate (unless --auto-release)
+    if $config[auto-release] {
+      ui:dim "Auto-release enabled, proceeding..."
+    } else {
+      var approval = (release:prompt-approval $release-tag)
+
+      if (eq $approval[action] "cancel") {
+        ui:dim "Release cancelled. Run again when ready."
+        exit 0
+      }
+
+      if (eq $approval[action] "feedback") {
+        # Run hotfix directly (not a PRD story)
+        ui:status "Running hotfix for release feedback..."
+        var hotfix-result = (release:run-hotfix $active-version $approval[feedback])
+        if $hotfix-result[success] {
+          ui:success "Hotfix merged to dev"
+          echo ""
+          ui:box "RELEASE GATE - Try Again" "info"
+          # Loop back to release prompt
+          continue
+        } else {
+          ui:error "Hotfix failed: "$hotfix-result[error]
+          exit 1
+        }
+      }
+
+      # Update tag if edited
+      set release-tag = $approval[tag]
+    }
+
+    # Execute release
+    var result = (release:run $active-version $release-tag)
+
+    if $result[success] {
+      echo ""
+      ui:box "RELEASED: "$active-version" ("$result[tag]")" "success"
+      if $config[notify-enabled] {
+        ui:notify "Ralph" "Released "$active-version" as "$result[tag]
+      }
+    } else {
+      ui:error "Release failed: "$result[error]
+      exit 1
+    }
+
+    break
+  }
+
   echo "<promise>COMPLETE</promise>"
   exit 0
 }
@@ -294,7 +418,12 @@ while (< $current-iteration $config[max-iterations]) {
       ui:status "Continuing story: "$story-id
     } else {
       ui:status "Finding next story..."
-      set story-id = (prd:get-next-story)
+      if (not (eq $config[target-version] "")) {
+        ui:dim "  Filtering for version: "$config[target-version]
+        set story-id = (prd:get-next-story-for-version $config[target-version])
+      } else {
+        set story-id = (prd:get-next-story)
+      }
       if (eq $story-id "") {
         ui:warn "No stories available (all complete or blocked)"
         break
@@ -624,11 +753,82 @@ while (< $current-iteration $config[max-iterations]) {
 
     if $signals[all_complete] {
       echo ""
-      ui:box "ALL STORIES COMPLETE!" "success"
+      ui:box "ALL STORIES COMPLETE - READY FOR RELEASE" "success"
       if $config[notify-enabled] {
         ui:notify "Ralph" "All stories complete!"
       }
       ui:dim "Total iterations: "$current-iteration
+
+      # Skip release flow if requested
+      if $config[skip-release] {
+        ui:dim "Release skipped (--skip-release)"
+        exit 0
+      }
+
+      # Check if already released
+      if (prd:is-version-released $active-version) {
+        ui:success $active-version" already released!"
+        exit 0
+      }
+
+      # Run release flow
+      var release-tag = $config[release-tag]
+      if (eq $release-tag "") {
+        set release-tag = $active-version
+      }
+
+      while $true {
+        # Show summary
+        release:show-summary $active-version
+
+        # Human gate (unless --auto-release)
+        if $config[auto-release] {
+          ui:dim "Auto-release enabled, proceeding..."
+        } else {
+          var approval = (release:prompt-approval $release-tag)
+
+          if (eq $approval[action] "cancel") {
+            ui:dim "Release cancelled. Run again when ready."
+            exit 0
+          }
+
+          if (eq $approval[action] "feedback") {
+            # Run hotfix directly (not a PRD story)
+            ui:status "Running hotfix for release feedback..."
+            var hotfix-result = (release:run-hotfix $active-version $approval[feedback])
+            if $hotfix-result[success] {
+              ui:success "Hotfix merged to dev"
+              echo ""
+              ui:box "RELEASE GATE - Try Again" "info"
+              # Loop back to release prompt
+              continue
+            } else {
+              ui:error "Hotfix failed: "$hotfix-result[error]
+              exit 1
+            }
+          }
+
+          # Update tag if edited
+          set release-tag = $approval[tag]
+        }
+
+        # Execute release
+        var result = (release:run $active-version $release-tag)
+
+        if $result[success] {
+          echo ""
+          ui:box "RELEASED: "$active-version" ("$result[tag]")" "success"
+          if $config[notify-enabled] {
+            ui:notify "Ralph" "Released "$active-version" as "$result[tag]
+          }
+        } else {
+          ui:error "Release failed: "$result[error]
+          exit 1
+        }
+
+        break
+      }
+
       exit 0
     }
 

@@ -1,6 +1,7 @@
 import { getLearnings } from '@/lib/data'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Markdown } from '@/components/markdown'
 import { BookOpen, AlertTriangle, Lightbulb, FileCode } from 'lucide-react'
 
 export const revalidate = 5
@@ -64,11 +65,7 @@ export default async function LearningsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <pre className="whitespace-pre-wrap text-sm font-mono bg-muted p-4 rounded-lg overflow-auto">
-                    {learning.content}
-                  </pre>
-                </div>
+                <Markdown content={learning.content} />
               </CardContent>
             </Card>
           </TabsContent>
