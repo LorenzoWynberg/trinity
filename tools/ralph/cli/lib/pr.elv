@@ -375,8 +375,9 @@ fn get-stored-feedback {
 
 # Run the full PR and merge flow with feedback loops
 # Takes optional state-pr-url to skip PR creation if already exists
-# Returns: map with &result and &pr_url
-fn run-flow {|story-id branch-name story-title current-iteration &state-pr-url=""|
+# Takes optional feedback-pending to indicate we're coming back from a feedback loop
+# Returns: map with &result and &pr_url and &stage (for feedback routing)
+fn run-flow {|story-id branch-name story-title current-iteration &state-pr-url="" &feedback-pending=$false|
   var pr-url = $state-pr-url
   var pr-exists = $false
   set feedback = ""  # Reset feedback
@@ -392,25 +393,63 @@ fn run-flow {|story-id branch-name story-title current-iteration &state-pr-url="
     }
   }
 
-  # === PR PROMPT (skip if PR already exists from state) ===
-  if (and (not $auto-pr) (eq $state-pr-url "")) {
-    if $pr-exists {
-      ui:status "PR exists: "$pr-url > /dev/tty
-      ui:status "Update PR?" > /dev/tty
-    } else {
-      ui:status "Create PR to "$base-branch"?" > /dev/tty
-    }
-    echo "\e[33m[Y]es / [n]o\e[0m" > /dev/tty
+  # === CREATE PR PROMPT (skip if PR already exists or auto-pr) ===
+  if (and (not $auto-pr) (not $pr-exists)) {
+    ui:status "Create PR to "$base-branch"?" > /dev/tty
+    echo "\e[33m[Y]es / [n]o / [f]eedback\e[0m" > /dev/tty
 
     var answer = (prompt-user 0)
     if (re:match '^[nN]$' $answer) {
       ui:dim "Skipping PR (branch pushed: "$branch-name")" > /dev/tty
-      put [&result="skipped" &pr_url=""]
+      put [&result="skipped" &pr_url="" &stage="create"]
+      return
+    } elif (re:match '^[fF]$' $answer) {
+      set feedback = (get-feedback)
+      if (not (eq $feedback "")) {
+        add-feedback-to-history $feedback
+        ui:status "Feedback received. Will re-run Claude with changes..." > /dev/tty
+        put [&result="feedback" &pr_url="" &stage="create"]
+      } else {
+        ui:dim "No feedback provided" > /dev/tty
+        put [&result="skipped" &pr_url="" &stage="create"]
+      }
       return
     }
+    # Default to yes - continue to create PR
   }
 
-  # Handle PR create (don't update description here - save for merge)
+  # === UPDATE PR PROMPT (when coming back from feedback with existing PR) ===
+  if (and $pr-exists $feedback-pending (not $auto-pr)) {
+    ui:status "PR exists: "$pr-url > /dev/tty
+    ui:status "Update PR with changes?" > /dev/tty
+    echo "\e[33m[Y]es / [n]o / [f]eedback\e[0m" > /dev/tty
+
+    var answer = (prompt-user 0)
+    if (re:match '^[nN]$' $answer) {
+      ui:dim "Skipping PR update" > /dev/tty
+      # Fall through to merge prompt
+    } elif (re:match '^[fF]$' $answer) {
+      set feedback = (get-feedback)
+      if (not (eq $feedback "")) {
+        add-feedback-to-history $feedback
+        post-feedback-comment $branch-name $feedback
+        ui:status "Feedback received. Will re-run Claude with changes..." > /dev/tty
+        put [&result="feedback" &pr_url=$pr-url &stage="update"]
+      } else {
+        ui:dim "No feedback provided" > /dev/tty
+      }
+      return
+    } else {
+      # Default to yes - update the PR description
+      update $branch-name $story-id $story-title
+    }
+  } elif (and $pr-exists $feedback-pending $auto-pr) {
+    # Auto-update PR when auto-pr flag is set
+    ui:status "Auto-updating PR..." > /dev/tty
+    update $branch-name $story-id $story-title
+  }
+
+  # Handle PR create if it doesn't exist yet
   if (not $pr-exists) {
     set pr-url = (create $branch-name $story-id $story-title)
     if (not (eq $pr-url "")) {
@@ -433,7 +472,7 @@ fn run-flow {|story-id branch-name story-title current-iteration &state-pr-url="
         prd:mark-merged $story-id $commit
         clear-feedback-history  # Clear on successful merge
       }
-      put [&result="merged" &pr_url=""]
+      put [&result="merged" &pr_url="" &stage="merge"]
     } elif (re:match '^[fF]$' $answer) {
       set feedback = (get-feedback)
       if (not (eq $feedback "")) {
@@ -441,15 +480,15 @@ fn run-flow {|story-id branch-name story-title current-iteration &state-pr-url="
         # Post feedback as PR comment (visible on GitHub)
         post-feedback-comment $branch-name $feedback
         ui:status "Feedback received. Will re-run Claude with changes..." > /dev/tty
-        put [&result="feedback" &pr_url=$pr-url]
+        put [&result="feedback" &pr_url=$pr-url &stage="merge"]
       } else {
         ui:dim "No feedback provided, leaving PR open" > /dev/tty
-        put [&result="open" &pr_url=$pr-url]
+        put [&result="open" &pr_url=$pr-url &stage="merge"]
       }
     } else {
       # Default to no (leave open for review)
       ui:dim "PR left open for review" > /dev/tty
-      put [&result="open" &pr_url=$pr-url]
+      put [&result="open" &pr_url=$pr-url &stage="merge"]
     }
   } elif $auto-merge {
     # Update PR description before merge
@@ -459,8 +498,8 @@ fn run-flow {|story-id branch-name story-title current-iteration &state-pr-url="
       prd:mark-merged $story-id $commit
       clear-feedback-history  # Clear on successful merge
     }
-    put [&result="merged" &pr_url=""]
+    put [&result="merged" &pr_url="" &stage="merge"]
   } else {
-    put [&result="open" &pr_url=$pr-url]
+    put [&result="open" &pr_url=$pr-url &stage="merge"]
   }
 }

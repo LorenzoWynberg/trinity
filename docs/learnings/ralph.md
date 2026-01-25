@@ -37,9 +37,12 @@ Two-stage completion tracking:
 ## PR Flow
 
 ### Prompts with defaults
-- PR creation: `[Y]es / [n]o` - defaults to yes
-- Merge: `[y]es / [N]o` - defaults to no (leave for review)
+- PR creation: `[Y]es / [n]o / [f]eedback` - defaults to yes
+- PR update (after feedback): `[Y]es / [n]o / [f]eedback` - defaults to yes
+- Merge: `[y]es merge / [N]o leave open / [f]eedback` - defaults to no (leave for review)
 - Stop loop: `[y/N]` with 120s timeout - defaults to continue
+
+All prompts support `[f]eedback` which restarts the Claude loop with user feedback.
 
 ## Activity Logging
 
@@ -51,23 +54,49 @@ Read 2 most recent logs and include via `{{RECENT_ACTIVITY_LOGS}}` placeholder. 
 
 ## Feedback Loop
 
-### PR-level feedback
-At merge prompt, user can choose:
-- `[y]es` - merge the PR
-- `[N]o` - leave open for review (default)
-- `[f]eedback` - provide feedback and re-run Claude
+### Three checkpoints with feedback
+All three checkpoints support `[f]eedback` option that restarts the loop:
 
-When feedback is given:
-1. User enters feedback text (press Enter twice to finish)
-2. Ralph passes feedback to Claude via `{{FEEDBACK}}` placeholder
+1. **Create PR prompt**: `[Y]es / [n]o / [f]eedback`
+   - Before PR is created, user can give feedback to refine the work
+
+2. **Update PR prompt**: `[Y]es / [n]o / [f]eedback`
+   - After coming back from feedback loop, asks if PR should be updated
+   - If `--auto-pr` flag, auto-updates without prompting
+
+3. **Merge prompt**: `[y]es merge / [N]o leave open / [f]eedback`
+   - At merge time, user can request more changes
+
+### Feedback restarts the loop
+When feedback is given at any checkpoint:
+1. User enters feedback text via editor ($EDITOR or vim)
+2. Feedback becomes the prompt for Claude (uses dedicated feedback template)
 3. Claude runs full cycle: implement changes, build, test, format, self-review
-4. If complete, returns to PR flow (can give more feedback or merge)
+4. Returns to the checkpoint where feedback was given
+5. Can give more feedback or proceed
 
-### Feedback in prompt template
+### Prompt templates
+- `prompt.md` - Main story execution template
+- `prompts/feedback.md` - Feedback template (includes original task context)
+- `prompts/partials/workflow.md` - Shared workflow instructions (verification, self-review, learnings, etc.)
+
+### Feedback template structure
 ```markdown
-{{FEEDBACK}}
+# Feedback on {{CURRENT_STORY}}
+
+## Original Task
+{{ORIGINAL_TASK}}  # Story title + acceptance criteria
+
+## Feedback
+> {{FEEDBACK}}    # User's feedback text
+
+{{WORKFLOW}}      # Shared workflow instructions
 ```
-Expands to a section with the user's feedback and instructions when provided.
+
+This gives Claude:
+1. Context about what the task was
+2. What was requested to change
+3. Same workflow instructions as normal execution
 
 ## PR Description Generation
 
