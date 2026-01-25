@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Coins, Clock, Hash, TrendingUp } from 'lucide-react'
+import { Coins, Clock, Hash, TrendingUp, CheckCircle, GitPullRequest, GitMerge } from 'lucide-react'
 import type { Metrics, Story } from '@/lib/types'
 
 function formatDuration(seconds: number): string {
@@ -87,7 +87,7 @@ export default function MetricsPage() {
     )
   }
 
-  if (!metrics || metrics.stories_completed === 0) {
+  if (!metrics || metrics.stories.length === 0) {
     return (
       <div className="p-8">
         <h1 className="text-2xl font-bold mb-4">Metrics</h1>
@@ -150,7 +150,29 @@ export default function MetricsPage() {
         )}
       </div>
 
-      {/* Summary Stats */}
+      {/* Story Pipeline Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatsCard
+          title="Stories Passed"
+          value={metrics.stories_passed || 0}
+          description="Claude finished work"
+          icon={<CheckCircle className="h-4 w-4" />}
+        />
+        <StatsCard
+          title="PRs Created"
+          value={metrics.stories_prd || 0}
+          description="Pull requests opened"
+          icon={<GitPullRequest className="h-4 w-4" />}
+        />
+        <StatsCard
+          title="Stories Merged"
+          value={metrics.stories_merged || 0}
+          description="PRs merged to base"
+          icon={<GitMerge className="h-4 w-4" />}
+        />
+      </div>
+
+      {/* Token & Time Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
           title="Total Tokens"
@@ -161,7 +183,7 @@ export default function MetricsPage() {
         <StatsCard
           title="Total Time"
           value={formatDuration(filteredTotals.duration)}
-          description={`${filteredTotals.count} stories`}
+          description={`${filteredTotals.count} stories recorded`}
           icon={<Clock className="h-4 w-4" />}
         />
         <StatsCard
