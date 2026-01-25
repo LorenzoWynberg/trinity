@@ -399,6 +399,7 @@ function GraphContent() {
   // depth <= 6: use every 4th color (spread across full spectrum)
   // depth 7-12: use every 2nd color
   // depth > 12: use all 25 colors
+  // Colors go from cyan (selected) -> yellow (roots/version)
   const getDepthColor = (depth: number) => {
     let index: number
     if (maxHighlightDepth <= 6) {
@@ -408,7 +409,8 @@ function GraphContent() {
     } else {
       index = Math.min(depth, depthColors.length - 1)
     }
-    return depthColors[index]
+    // Reverse: selected=cyan (end), roots=yellow (start)
+    return depthColors[depthColors.length - 1 - index]
   }
 
   // Apply highlighting styles to edges
