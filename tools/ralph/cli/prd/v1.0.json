@@ -26,10 +26,14 @@
     },
     {
       "id": 7,
-      "name": "Polish"
+      "name": "Authentication"
     },
     {
       "id": 8,
+      "name": "Polish"
+    },
+    {
+      "id": 9,
       "name": "Release"
     }
   ],
@@ -147,20 +151,25 @@
     {
       "phase": 7,
       "id": 1,
+      "name": "License Validation"
+    },
+    {
+      "phase": 8,
+      "id": 1,
       "name": "UX Polish"
     },
     {
-      "phase": 7,
+      "phase": 8,
       "id": 2,
       "name": "Documentation"
     },
     {
-      "phase": 7,
+      "phase": 8,
       "id": 3,
       "name": "Testing"
     },
     {
-      "phase": 8,
+      "phase": 9,
       "id": 1,
       "name": "Release"
     }
@@ -1911,7 +1920,7 @@
       "title": "Implement trinity hotfix command",
       "intent": "Enable quick fixes outside the normal PRD flow",
       "acceptance": [
-        "trinity hotfix 'description' creates branch hotfix/<slugified-description> from dev (e.g., 'fix login bug' \u2192 hotfix/fix-login-bug)",
+        "trinity hotfix 'description' creates branch hotfix/<slugified-description> from dev (e.g., 'fix login bug' → hotfix/fix-login-bug)",
         "Uses prompts/templates/hotfix.md template with description placeholder",
         "Runs Claude with streaming output, same as story execution",
         "On completion, creates PR to dev branch with title 'hotfix: <description>'",
@@ -1938,7 +1947,7 @@
         "Shows release summary (stories completed, commits, files changed)",
         "Approval prompt: [Y]es / [n]o / [e]dit tag / [f]eedback",
         "Feedback option runs hotfix and returns to prompt",
-        "Creates PR (dev \u2192 main), merges, tags ON MAIN (not dev)",
+        "Creates PR (dev → main), merges, tags ON MAIN (not dev)",
         "--auto flag skips approval prompt (for CI/CD)",
         "--dry-run shows summary without prompting",
         "Validates all stories have merged=true before release"
@@ -2035,7 +2044,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "7.1.1",
+      "id": "8.1.1",
       "title": "Add comprehensive error messages",
       "intent": "Provide helpful error messages for common issues",
       "acceptance": [
@@ -2050,13 +2059,13 @@
       "depends_on": [
         "6.3.1"
       ],
-      "phase": 7,
+      "phase": 8,
       "epic": 1,
       "story_number": 1,
       "target_version": "v1.0"
     },
     {
-      "id": "7.1.2",
+      "id": "8.1.2",
       "title": "Add colored terminal output",
       "intent": "Improve CLI readability with colors",
       "acceptance": [
@@ -2071,7 +2080,7 @@
       "depends_on": [
         "6.3.2"
       ],
-      "phase": 7,
+      "phase": 8,
       "epic": 1,
       "story_number": 2,
       "human_testing": {
@@ -2082,7 +2091,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "7.1.3",
+      "id": "8.1.3",
       "title": "Add progress spinners",
       "intent": "Show activity during long-running operations",
       "acceptance": [
@@ -2093,9 +2102,9 @@
       ],
       "passes": false,
       "depends_on": [
-        "7.1.2"
+        "8.1.2"
       ],
-      "phase": 7,
+      "phase": 8,
       "epic": 1,
       "story_number": 3,
       "human_testing": {
@@ -2106,7 +2115,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "7.2.1",
+      "id": "8.2.1",
       "title": "Write README with quick start guide",
       "intent": "Help users get started with Trinity",
       "acceptance": [
@@ -2119,13 +2128,13 @@
       "depends_on": [
         "6.3.1"
       ],
-      "phase": 7,
+      "phase": 8,
       "epic": 2,
       "story_number": 1,
       "target_version": "v1.0"
     },
     {
-      "id": "7.2.2",
+      "id": "8.2.2",
       "title": "Add --help for all commands",
       "intent": "Provide inline help for all CLI commands",
       "acceptance": [
@@ -2138,13 +2147,13 @@
       "depends_on": [
         "6.3.1"
       ],
-      "phase": 7,
+      "phase": 8,
       "epic": 2,
       "story_number": 2,
       "target_version": "v1.0"
     },
     {
-      "id": "7.3.1",
+      "id": "8.3.1",
       "title": "End-to-end test on sample project",
       "intent": "Verify complete workflow works",
       "acceptance": [
@@ -2156,9 +2165,9 @@
       ],
       "passes": false,
       "depends_on": [
-        "7.1.1"
+        "8.1.1"
       ],
-      "phase": 7,
+      "phase": 8,
       "epic": 3,
       "story_number": 1,
       "human_testing": {
@@ -2169,7 +2178,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "7.3.2",
+      "id": "8.3.2",
       "title": "Test crash recovery",
       "intent": "Verify recovery from interrupted sessions",
       "acceptance": [
@@ -2180,9 +2189,9 @@
       ],
       "passes": false,
       "depends_on": [
-        "7.3.1"
+        "8.3.1"
       ],
-      "phase": 7,
+      "phase": 8,
       "epic": 3,
       "story_number": 2,
       "human_testing": {
@@ -2193,7 +2202,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "7.3.3",
+      "id": "8.3.3",
       "title": "Test dependency resolution",
       "intent": "Verify dependency system works correctly",
       "acceptance": [
@@ -2204,9 +2213,9 @@
       ],
       "passes": false,
       "depends_on": [
-        "7.3.1"
+        "8.3.1"
       ],
-      "phase": 7,
+      "phase": 8,
       "epic": 3,
       "story_number": 3,
       "human_testing": {
@@ -2217,11 +2226,11 @@
       "target_version": "v1.0"
     },
     {
-      "id": "8.1.1",
+      "id": "9.1.1",
       "title": "Final human testing and v1.0 sign-off",
       "intent": "Comprehensive manual validation before release - wraps all loose ends",
       "acceptance": [
-        "Complete workflow test: init \u2192 analyze \u2192 plan add \u2192 run \u2192 release",
+        "Complete workflow test: init → analyze → plan add → run → release",
         "Multi-story execution with dependencies works correctly",
         "Human approval gates (approve/reject) function properly",
         "PR feedback loop (trinity pr feedback) allows iteration",
@@ -2240,7 +2249,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "7",
+        "8",
         "1.1.3",
         "1.2.3",
         "6.4.4",
@@ -2274,13 +2283,14 @@
         "6.7.3",
         "6.8.2",
         "6.8.3",
-        "7.1.3",
-        "7.2.1",
-        "7.2.2",
-        "7.3.2",
-        "7.3.3"
+        "8.1.3",
+        "8.2.1",
+        "8.2.2",
+        "8.3.2",
+        "8.3.3",
+        "7.1.6"
       ],
-      "phase": 8,
+      "phase": 9,
       "epic": 1,
       "story_number": 1,
       "target_version": "v1.0",
@@ -2289,6 +2299,141 @@
         "instructions": "Run through complete workflow on fresh project. Test all major features: init, analyze, plan, run, approve/reject, pr feedback, release, hotfix. Document any issues. Sign off when ready for v1.0.",
         "url": null
       }
+    },
+    {
+      "id": "7.1.1",
+      "title": "Create auth package structure",
+      "intent": "Establish authentication module for license validation",
+      "acceptance": [
+        "core/auth/auth.go exists with Auth struct",
+        "Auth struct holds API endpoint URL and cached validation result",
+        "Uses ~/.trinity/auth.json for storing cached license key",
+        "Load() reads cached key from disk if exists",
+        "Save(key) persists key to disk"
+      ],
+      "passes": false,
+      "depends_on": [
+        "1.1.1"
+      ],
+      "phase": 7,
+      "epic": 1,
+      "story_number": 1,
+      "target_version": "v1.0"
+    },
+    {
+      "id": "7.1.2",
+      "title": "Implement license key validation",
+      "intent": "Validate license key against auth API before running operations",
+      "acceptance": [
+        "Validate(key) calls auth API endpoint to verify license",
+        "API endpoint provided via external deps report (e.g., POST /api/licenses/validate)",
+        "Returns LicenseInfo struct with: valid (bool), tier (string), expires_at (time.Time), features ([]string)",
+        "Handles network errors gracefully with offline mode fallback",
+        "Caches successful validation for 24 hours to reduce API calls",
+        "Returns clear error for invalid/expired licenses"
+      ],
+      "passes": false,
+      "depends_on": [
+        "7.1.1"
+      ],
+      "phase": 7,
+      "epic": 1,
+      "story_number": 2,
+      "target_version": "v1.0",
+      "external_deps": [
+        {
+          "name": "License API",
+          "description": "API endpoint for validating license keys. Should accept POST with {key: string} and return {valid: bool, tier: string, expires_at: timestamp, features: [string]}"
+        }
+      ]
+    },
+    {
+      "id": "7.1.3",
+      "title": "Implement offline validation fallback",
+      "intent": "Allow Trinity to work offline when API is unreachable",
+      "acceptance": [
+        "If API unreachable and cached validation < 7 days old, allow operation",
+        "If API unreachable and cached validation > 7 days old, require online validation",
+        "Show warning when running in offline mode: \"Running in offline mode (last validated X days ago)\"",
+        "--offline flag forces offline mode without attempting API call",
+        "Log offline validation events for debugging"
+      ],
+      "passes": false,
+      "depends_on": [
+        "7.1.2"
+      ],
+      "phase": 7,
+      "epic": 1,
+      "story_number": 3,
+      "target_version": "v1.0"
+    },
+    {
+      "id": "7.1.4",
+      "title": "Implement trinity auth login command",
+      "intent": "Allow users to enter their license key",
+      "acceptance": [
+        "trinity auth login prompts for license key",
+        "Validates key immediately against API",
+        "On success: saves key, shows license info (tier, expiration)",
+        "On failure: shows clear error, does not save key",
+        "trinity auth login --key <key> accepts key as flag (for CI/automation)"
+      ],
+      "passes": false,
+      "depends_on": [
+        "7.1.2",
+        "1.1.2"
+      ],
+      "phase": 7,
+      "epic": 1,
+      "story_number": 4,
+      "target_version": "v1.0",
+      "human_testing": {
+        "required": true,
+        "instructions": "Test trinity auth login with valid and invalid keys. Verify: prompts correctly, validates against API, saves on success, shows clear errors on failure",
+        "url": null
+      }
+    },
+    {
+      "id": "7.1.5",
+      "title": "Implement trinity auth logout and status commands",
+      "intent": "Allow users to check auth status and logout",
+      "acceptance": [
+        "trinity auth status shows: logged in/out, license tier, expiration, features",
+        "If offline, shows cached info with warning",
+        "trinity auth logout removes saved key from ~/.trinity/auth.json",
+        "Confirms logout before removing",
+        "Shows helpful message after logout"
+      ],
+      "passes": false,
+      "depends_on": [
+        "7.1.4"
+      ],
+      "phase": 7,
+      "epic": 1,
+      "story_number": 5,
+      "target_version": "v1.0"
+    },
+    {
+      "id": "7.1.6",
+      "title": "Integrate license check into run command",
+      "intent": "Gate trinity run behind valid license",
+      "acceptance": [
+        "Before trinity run executes, check for valid license",
+        "If no saved key, prompt: \"No license found. Run trinity auth login or enter key now:\"",
+        "If key invalid/expired, show error and exit",
+        "If valid, proceed with run",
+        "--skip-auth flag bypasses check (for development/testing only)",
+        "Free tier may have limitations (e.g., max stories per day) based on license.features"
+      ],
+      "passes": false,
+      "depends_on": [
+        "7.1.3",
+        "6.3.1"
+      ],
+      "phase": 7,
+      "epic": 1,
+      "story_number": 6,
+      "target_version": "v1.0"
     }
   ]
 }
