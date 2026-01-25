@@ -382,7 +382,10 @@ When working on Ralph (`tools/ralph/`):
    - `docs/learnings/ralph.md` - Ralph-specific patterns (state management, PR flow, release workflow)
    - `docs/learnings/elvish.md` - Elvish language gotchas (arity mismatches, value vs byte pipelines, map access)
 
-2. **Update learnings when fixing bugs**: When you fix a bug or discover a new pattern, add it to the appropriate learnings file. This prevents the same issues from recurring.
+2. **Update learnings when fixing bugs**: When you fix a bug or discover a new pattern, add it to the appropriate learnings file. Gotchas stay with their category:
+   - Elvish language gotchas → `elvish.md`
+   - Ralph-specific gotchas → `ralph.md`
+   - No separate gotchas file - keep them organized by topic.
 
 3. **Always update the activity logs** after making changes:
    - Location: `logs/activity/ralph/YYYY-MM-DD.md`
