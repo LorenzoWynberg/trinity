@@ -313,6 +313,8 @@ function isDepMet(prd: PRD, dep: string): boolean {
 }
 
 // Get stories that are blocked by unmerged dependencies
+// Only returns "first generation" blocked - stories directly blocked by passed/in-progress work
+// Not transitively blocked (blocked by something that's also blocked)
 export function getBlockedStories(prd: PRD): BlockedInfo[] {
   const blocked: BlockedInfo[] = []
 
@@ -324,15 +326,20 @@ export function getBlockedStories(prd: PRD): BlockedInfo[] {
     if (story.depends_on && story.depends_on.length > 0) {
       for (const dep of story.depends_on) {
         if (!isDepMet(prd, dep)) {
-          const blockerStory = dep.startsWith('STORY-')
-            ? prd.stories.find(s => s.id === dep)
-            : undefined
-          blocked.push({
-            story,
-            blockedBy: dep,
-            blockerStory
-          })
-          break // Only show first unmet dependency
+          // Only include if blocker is passed (awaiting merge) not blocked itself
+          if (dep.startsWith('STORY-')) {
+            const blockerStory = prd.stories.find(s => s.id === dep)
+            // First gen: blocker must be passed (not merged) - meaning work is done, just needs merge
+            if (blockerStory?.passes && !blockerStory?.merged) {
+              blocked.push({
+                story,
+                blockedBy: dep,
+                blockerStory
+              })
+              break
+            }
+          }
+          // For phase/epic deps, skip for now (complex to determine first-gen)
         }
       }
     }
