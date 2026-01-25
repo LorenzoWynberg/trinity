@@ -312,9 +312,15 @@ function isDepMet(prd: PRD, dep: string): boolean {
   return false
 }
 
+// Check if a story is blocked (has unmet dependencies)
+function isStoryBlocked(prd: PRD, story: Story): boolean {
+  if (!story.depends_on || story.depends_on.length === 0) return false
+  return story.depends_on.some(dep => !isDepMet(prd, dep))
+}
+
 // Get stories that are blocked by unmerged dependencies
-// Only returns "first generation" blocked - stories directly blocked by passed/in-progress work
-// Not transitively blocked (blocked by something that's also blocked)
+// Only returns "first generation" blocked - stories whose blocker is NOT itself blocked
+// This shows the immediate next row, not transitive chains
 export function getBlockedStories(prd: PRD): BlockedInfo[] {
   const blocked: BlockedInfo[] = []
 
@@ -326,11 +332,10 @@ export function getBlockedStories(prd: PRD): BlockedInfo[] {
     if (story.depends_on && story.depends_on.length > 0) {
       for (const dep of story.depends_on) {
         if (!isDepMet(prd, dep)) {
-          // Only include if blocker is passed (awaiting merge) not blocked itself
           if (dep.startsWith('STORY-')) {
             const blockerStory = prd.stories.find(s => s.id === dep)
-            // First gen: blocker must be passed (not merged) - meaning work is done, just needs merge
-            if (blockerStory?.passes && !blockerStory?.merged) {
+            // First gen: blocker must NOT be blocked itself (it's either in progress, pending with no deps, or passed)
+            if (blockerStory && !isStoryBlocked(prd, blockerStory)) {
               blocked.push({
                 story,
                 blockedBy: dep,
