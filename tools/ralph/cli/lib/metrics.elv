@@ -18,13 +18,15 @@ fn init {|path|
   "total_input_tokens": 0,
   "total_output_tokens": 0,
   "total_duration_seconds": 0,
-  "stories_completed": 0,
+  "stories_passed": 0,
+  "stories_prd": 0,
+  "stories_merged": 0,
   "stories": []
 }' > $metrics-file
   }
 }
 
-# Record metrics for a completed story
+# Record metrics for a passed story (Claude finished work)
 fn record {|story-id duration-seconds input-tokens output-tokens|
   var timestamp = (date -u '+%Y-%m-%dT%H:%M:%SZ')
   var total-tokens = (+ $input-tokens $output-tokens)
@@ -36,7 +38,7 @@ fn record {|story-id duration-seconds input-tokens output-tokens|
     .total_input_tokens += '$input-tokens' |
     .total_output_tokens += '$output-tokens' |
     .total_duration_seconds += '$duration-seconds' |
-    .stories_completed += 1 |
+    .stories_passed += 1 |
     .stories += [{
       "story_id": "'$story-id'",
       "timestamp": "'$timestamp'",
@@ -46,6 +48,20 @@ fn record {|story-id duration-seconds input-tokens output-tokens|
       "total_tokens": '$total-tokens'
     }]
   ' $metrics-file > $tmp
+  mv $tmp $metrics-file
+}
+
+# Record a PR created for a story
+fn record-pr {|story-id|
+  var tmp = (mktemp)
+  jq '.stories_prd += 1' $metrics-file > $tmp
+  mv $tmp $metrics-file
+}
+
+# Record a story merge (PR merged to base branch)
+fn record-merge {|story-id|
+  var tmp = (mktemp)
+  jq '.stories_merged += 1' $metrics-file > $tmp
   mv $tmp $metrics-file
 }
 
@@ -81,14 +97,16 @@ fn show-stats {
   var input = (echo $metrics | jq -r '.total_input_tokens')
   var output = (echo $metrics | jq -r '.total_output_tokens')
   var duration = (echo $metrics | jq -r '.total_duration_seconds')
-  var stories = (echo $metrics | jq -r '.stories_completed')
+  var passed = (echo $metrics | jq -r '.stories_passed')
+  var prd = (echo $metrics | jq -r '.stories_prd')
+  var merged = (echo $metrics | jq -r '.stories_merged')
 
-  # Calculate averages
+  # Calculate averages (based on passed stories)
   var avg-tokens = 0
   var avg-duration = 0
-  if (> $stories 0) {
-    set avg-tokens = (/ $total $stories)
-    set avg-duration = (/ $duration $stories)
+  if (> $passed 0) {
+    set avg-tokens = (/ $total $passed)
+    set avg-duration = (/ $duration $passed)
   }
 
   # Format duration
@@ -99,7 +117,9 @@ fn show-stats {
   echo "  RALPH METRICS"
   echo "═══════════════════════════════════════════════════════"
   echo ""
-  echo "Stories completed:  "$stories
+  echo "Stories passed:     "$passed
+  echo "Stories PR'd:       "$prd
+  echo "Stories merged:     "$merged
   echo "Total time:         "$hours"h "$mins"m"
   echo ""
   echo "Token usage:"

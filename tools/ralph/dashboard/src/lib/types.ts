@@ -62,7 +62,9 @@ export interface Metrics {
   total_input_tokens: number
   total_output_tokens: number
   total_duration_seconds: number
-  stories_completed: number
+  stories_passed: number
+  stories_prd: number
+  stories_merged: number
   stories: StoryMetric[]
 }
 

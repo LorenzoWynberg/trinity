@@ -47,15 +47,21 @@ Run ralph to pick up where you left off.
 
 Also distinguishes "passed but no PR yet" (user said no to PR creation) from "PR exists but not merged".
 
-### Passes vs Merged
-Two-stage completion tracking:
-- `passes: true` - Claude completed the work and pushed
-- `merged: true` - PR actually merged to base branch
+### Three-Stage Completion
+Metrics track three distinct stages:
+- `stories_passed` - Claude completed the work and pushed
+- `stories_prd` - PR created on GitHub
+- `stories_merged` - PR merged to base branch
+
+PRD state tracks two flags per story:
+- `passes: true` - Claude completed the work
+- `merged: true` - PR merged to base branch
 
 **Why this matters:**
 - Dependencies check `merged`, not `passes`
 - Prevents next story from starting before code is in dev
-- Allows handling "completed but not merged" scenarios
+- Allows identifying "passed but no PR" vs "PR open but not merged" scenarios
+- Metrics give visibility into the full pipeline
 
 ## PR Flow
 

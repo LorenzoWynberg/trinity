@@ -93,7 +93,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         <StatsCard
           title="Total Time"
           value={formatDuration(stats.totalDuration)}
-          description={`${metrics?.stories_completed || 0} stories passed`}
+          description={`${metrics?.stories_passed || 0} passed, ${metrics?.stories_prd || 0} PR'd, ${metrics?.stories_merged || 0} merged`}
           icon={<Clock className="h-4 w-4" />}
         />
       </div>

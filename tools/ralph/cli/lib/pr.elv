@@ -4,6 +4,7 @@ use str
 use re
 use ./ui
 use ./prd
+use ./metrics
 
 # Configuration (set by init)
 var project-root = ""
@@ -191,6 +192,8 @@ fn create {|branch-name story-id story-title|
     echo "\e[32m\e[1m✓ \e[0m\e[32mPR created: "$url"\e[0m" > /dev/tty
     # Save PR URL to prd.json
     prd:set-pr-url $story-id $url
+    # Track PR created metric
+    metrics:record-pr $story-id
     put $url
   } catch e {
     echo "\e[31m\e[1m✗ \e[0mFailed to create PR: "(to-string $e[reason]) > /dev/tty
@@ -473,6 +476,7 @@ fn run-flow {|story-id branch-name story-title current-iteration &state-pr-url="
       var commit = (merge $branch-name)
       if (not (eq $commit "")) {
         prd:mark-merged $story-id $commit
+        metrics:record-merge $story-id  # Track merge metric
         clear-feedback-history  # Clear on successful merge
       }
       put [&result="merged" &pr_url="" &stage="merge"]
@@ -499,6 +503,7 @@ fn run-flow {|story-id branch-name story-title current-iteration &state-pr-url="
     var commit = (merge $branch-name)
     if (not (eq $commit "")) {
       prd:mark-merged $story-id $commit
+      metrics:record-merge $story-id  # Track merge metric
       clear-feedback-history  # Clear on successful merge
     }
     put [&result="merged" &pr_url="" &stage="merge"]
