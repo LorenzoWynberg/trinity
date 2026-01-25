@@ -18,3 +18,22 @@ Goal: Build Trinity v1.0 - CLI MVP with autonomous development loop
 - Phase 7: Polish (UX, docs, testing)
 
 ---
+
+## 2026-01-25
+
+### Story 1.1.1: Create Go workspace structure
+**Status:** Complete
+
+**Changes:**
+- Created `go.work` with use directives for core and cli modules
+- Created `core/go.mod` (module github.com/trinity-ai-labs/trinity/core)
+- Created `core/core.go` with Version variable
+- Created `cli/go.mod` with replace directive for local core reference
+- Created `cli/cmd/trinity/main.go` importing core module
+- Verified go work sync and go build succeed
+
+**Learnings:**
+- Go workspaces require at least one .go file with package declaration in each module
+- replace directive needed in cli/go.mod for local development
+
+---
