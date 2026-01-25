@@ -292,9 +292,15 @@ export function getTotalStats(prd: PRD, metrics: Metrics | null) {
 
 // Check if a dependency is met (story is merged)
 function isDepMet(prd: PRD, dep: string): boolean {
+  // Handle X.Y.Z format (short story ID like "1.1.1")
+  if (/^\d+\.\d+\.\d+$/.test(dep)) {
+    const story = prd.stories.find(s => s.id === dep)
+    return story?.merged === true
+  }
   // Handle STORY-X.Y.Z format
   if (dep.startsWith('STORY-')) {
-    const story = prd.stories.find(s => s.id === dep)
+    const id = dep.replace('STORY-', '')
+    const story = prd.stories.find(s => s.id === id)
     return story?.merged === true
   }
   // Handle phase:epic format (e.g., "1:2")
@@ -318,6 +324,20 @@ function isStoryBlocked(prd: PRD, story: Story): boolean {
   return story.depends_on.some(dep => !isDepMet(prd, dep))
 }
 
+// Find a story by dependency string (handles both "1.1.1" and "STORY-1.1.1" formats)
+function findStoryByDep(prd: PRD, dep: string): Story | undefined {
+  // Check if it's a story reference (X.Y.Z format)
+  if (/^\d+\.\d+\.\d+$/.test(dep)) {
+    return prd.stories.find(s => s.id === dep)
+  }
+  // Check STORY-X.Y.Z format
+  if (dep.startsWith('STORY-')) {
+    const id = dep.replace('STORY-', '')
+    return prd.stories.find(s => s.id === id)
+  }
+  return undefined
+}
+
 // Get stories that are blocked by unmerged dependencies
 // Only returns "first generation" blocked - stories whose blocker is NOT itself blocked
 // This shows the immediate next row, not transitive chains
@@ -332,10 +352,10 @@ export function getBlockedStories(prd: PRD): BlockedInfo[] {
     if (story.depends_on && story.depends_on.length > 0) {
       for (const dep of story.depends_on) {
         if (!isDepMet(prd, dep)) {
-          if (dep.startsWith('STORY-')) {
-            const blockerStory = prd.stories.find(s => s.id === dep)
+          const blockerStory = findStoryByDep(prd, dep)
+          if (blockerStory) {
             // First gen: blocker must NOT be blocked itself (it's either in progress, pending with no deps, or passed)
-            if (blockerStory && !isStoryBlocked(prd, blockerStory)) {
+            if (!isStoryBlocked(prd, blockerStory)) {
               blocked.push({
                 story,
                 blockedBy: dep,
