@@ -1,6 +1,6 @@
 # Ralph Learnings
 
-> **TL;DR:** Two-stage completion (passes→merged), activity logs split by project (trinity/ for Ralph's work, ralph/ for human docs), release workflow with human gate and hotfix loop, PR defaults (yes create, no merge).
+> **TL;DR:** Two-stage completion (passes→merged), blocked state detection with dependency info, activity logs split by project (trinity/ for Ralph's work, ralph/ for human docs), release workflow with human gate and hotfix loop, PR defaults (yes create, no merge).
 
 ## Streaming Claude Output
 
@@ -24,6 +24,29 @@ Key flags:
 
 ## State Management
 
+### Blocked State Detection
+
+When no runnable stories exist, Ralph distinguishes between:
+- **All complete** - every story merged, ready for release
+- **Blocked** - stories exist but dependencies aren't met
+
+Blocked state shows detailed info:
+```
+╔════════════════════════════════════════════════════════╗
+║  BLOCKED - WAITING ON DEPENDENCIES
+╚════════════════════════════════════════════════════════╝
+
+Unmerged PRs:
+  • STORY-1.1.1 (Create Go workspace): https://github.com/...
+
+Pending stories blocked by unmerged work:
+  • STORY-1.1.2 (Create CLI entrypoint) → waiting on STORY-1.1.1
+
+Run ralph to pick up where you left off.
+```
+
+Also distinguishes "passed but no PR yet" (user said no to PR creation) from "PR exists but not merged".
+
 ### Passes vs Merged
 Two-stage completion tracking:
 - `passes: true` - Claude completed the work and pushed
@@ -43,6 +66,16 @@ Two-stage completion tracking:
 - Stop loop: `[y/N]` with 120s timeout - defaults to continue
 
 All prompts support `[f]eedback` which restarts the Claude loop with user feedback.
+
+### Skipping PR creation
+If user says `[n]o` to PR creation, shows acknowledgment:
+```
+⚠ No PR created. Story STORY-1.1.1 is passed but unmerged.
+Dependent stories will remain blocked until PR is created and merged.
+Branch: feat/story-1.1.1
+```
+
+The merge prompt is skipped (can't merge what doesn't exist). Story stays in "passed but no PR" state, visible in blocked state output.
 
 ## Activity Logging
 
@@ -121,10 +154,13 @@ logs/activity/
 │   ├── YYYY-MM-DD.md
 │   └── archive/YYYY-MM/
 └── ralph/          # Humans write here (Ralph's own development)
-    └── YYYY-MM-DD.md
+    ├── YYYY-MM-DD.md
+    └── archive/YYYY-MM/
 ```
 
 **Key distinction:** Ralph works ON Trinity, so Ralph writes to `trinity/` logs. The `ralph/` folder is for human documentation about Ralph itself.
+
+**Note:** Currently `trinity/` is empty because Ralph hasn't completed any Trinity CLI stories yet - it's still being built. The `ralph/` folder has logs from human development of Ralph.
 
 ### Archive structure
 Old logs go to `archive/YYYY-MM/filename.md` subdirectories, not flat in archive folder.
