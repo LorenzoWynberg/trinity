@@ -3,9 +3,16 @@ import { StoriesList } from '@/components/stories-list'
 
 export const revalidate = 5
 
-export default async function StoriesPage() {
+interface PageProps {
+  searchParams: Promise<{ version?: string }>
+}
+
+export default async function StoriesPage({ searchParams }: PageProps) {
+  const { version: selectedVersion } = await searchParams
+  const currentVersion = selectedVersion || 'all'
+
   const [prd, state, versions] = await Promise.all([
-    getPRD(),
+    getPRD(currentVersion),
     getState(),
     getVersions()
   ])
@@ -31,7 +38,7 @@ export default async function StoriesPage() {
         </p>
       </div>
 
-      <StoriesList stories={prd.stories} currentStoryId={currentStoryId} versions={versions} />
+      <StoriesList stories={prd.stories} currentStoryId={currentStoryId} versions={versions} currentVersion={currentVersion} />
     </div>
   )
 }

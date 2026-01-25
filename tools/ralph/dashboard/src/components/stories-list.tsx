@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { StoryCard } from '@/components/story-card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -16,6 +17,7 @@ type StoriesListProps = {
   stories: Story[]
   currentStoryId: string | null
   versions: string[]
+  currentVersion: string
 }
 
 function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatus {
@@ -26,8 +28,9 @@ function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatu
   return 'pending'
 }
 
-export function StoriesList({ stories, currentStoryId, versions }: StoriesListProps) {
-  const [selectedVersion, setSelectedVersion] = useState<string>('all')
+export function StoriesList({ stories, currentStoryId, versions, currentVersion }: StoriesListProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [selectedPhase, setSelectedPhase] = useState<string>('all')
   const [selectedEpics, setSelectedEpics] = useState<Record<number, string>>({})
 
@@ -47,13 +50,22 @@ export function StoriesList({ stories, currentStoryId, versions }: StoriesListPr
   }, [stories, phases])
 
   // Filter stories based on selections
+  // Handle version change via URL
+  const handleVersionChange = (version: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (version === 'all') {
+      params.delete('version')
+    } else {
+      params.set('version', version)
+    }
+    const query = params.toString()
+    router.push(query ? `/stories?${query}` : '/stories')
+  }
+
   const filteredStories = useMemo(() => {
     let result = stories
 
-    // Filter by version
-    if (selectedVersion !== 'all') {
-      result = result.filter(s => s.target_version === selectedVersion)
-    }
+    // Stories are already filtered by version server-side
 
     // Filter by phase
     if (selectedPhase !== 'all') {
@@ -68,7 +80,7 @@ export function StoriesList({ stories, currentStoryId, versions }: StoriesListPr
     })
 
     return result
-  }, [stories, selectedVersion, selectedPhase, selectedEpics])
+  }, [stories, selectedPhase, selectedEpics])
 
   // Group filtered stories by status
   const storiesByStatus = useMemo(() => ({
@@ -91,7 +103,7 @@ export function StoriesList({ stories, currentStoryId, versions }: StoriesListPr
         {versions.length >= 1 && (
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium">Version:</label>
-            <Select value={selectedVersion} onValueChange={setSelectedVersion}>
+            <Select value={currentVersion} onValueChange={handleVersionChange}>
               <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder="All versions" />
               </SelectTrigger>
