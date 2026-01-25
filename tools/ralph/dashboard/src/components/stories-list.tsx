@@ -83,17 +83,11 @@ function StoriesListInner({ prd, currentStoryId, versions, currentVersion }: Sto
     return result
   }, [stories, phases])
 
-  // Filter stories based on selections
   // Handle version change via URL
   const handleVersionChange = (version: string) => {
     const params = new URLSearchParams(searchParams.toString())
-    if (version === 'all') {
-      params.delete('version')
-    } else {
-      params.set('version', version)
-    }
-    const query = params.toString()
-    router.push(query ? `/stories?${query}` : '/stories')
+    params.set('version', version)
+    router.push(`/stories?${params.toString()}`)
   }
 
   const filteredStories = useMemo(() => {
@@ -134,15 +128,14 @@ function StoriesListInner({ prd, currentStoryId, versions, currentVersion }: Sto
       {/* Filters */}
       <div className="flex items-center gap-6 flex-wrap">
         {/* Version Filter */}
-        {versions.length >= 1 && (
+        {versions.length > 1 && (
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium">Version:</label>
             <Select value={currentVersion} onValueChange={handleVersionChange}>
               <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="All versions" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All versions</SelectItem>
                 {versions.map(version => (
                   <SelectItem key={version} value={version}>
                     {version}

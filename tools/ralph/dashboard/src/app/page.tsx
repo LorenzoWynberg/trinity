@@ -1,4 +1,4 @@
-import { getPRD, getState, getMetrics, getPhaseProgress, getTotalStats, getStoryById, getVersions, getBlockedStories, getUnmergedPassed } from '@/lib/data'
+import { getPRD, getState, getMetrics, getPhaseProgress, getTotalStats, getStoryById, getVersions, getBlockedStories, getUnmergedPassed, getSettings } from '@/lib/data'
 import { StatsCard } from '@/components/stats-card'
 import { ProgressBar } from '@/components/progress-bar'
 import { CurrentWork } from '@/components/current-work'
@@ -34,13 +34,26 @@ interface PageProps {
 
 export default async function DashboardPage({ searchParams }: PageProps) {
   const { version: selectedVersion } = await searchParams
-  const currentVersion = selectedVersion || 'all'
 
-  const [prd, state, metrics, versions] = await Promise.all([
+  const [settings, versions] = await Promise.all([
+    getSettings(),
+    getVersions()
+  ])
+
+  // Resolve the current version: URL param > settings default > first available
+  let currentVersion: string
+  if (selectedVersion && versions.includes(selectedVersion)) {
+    currentVersion = selectedVersion
+  } else if (settings.defaultVersion !== 'first' && versions.includes(settings.defaultVersion)) {
+    currentVersion = settings.defaultVersion
+  } else {
+    currentVersion = versions.length > 0 ? versions[0] : 'v0.1'
+  }
+
+  const [prd, state, metrics] = await Promise.all([
     getPRD(currentVersion),
     getState(),
-    getMetrics(),
-    getVersions()
+    getMetrics()
   ])
 
   if (!prd) {

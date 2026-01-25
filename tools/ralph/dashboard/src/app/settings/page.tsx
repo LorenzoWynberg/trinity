@@ -4,15 +4,38 @@ import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Sun, Moon, Monitor } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const [versions, setVersions] = useState<string[]>([])
+  const [defaultVersion, setDefaultVersion] = useState<string>('first')
 
   useEffect(() => {
     setMounted(true)
+    // Fetch available versions
+    fetch('/api/versions')
+      .then(res => res.json())
+      .then(data => setVersions(data.versions || []))
+      .catch(() => {})
+    // Fetch current settings
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data.defaultVersion) {
+          setDefaultVersion(data.defaultVersion)
+        }
+      })
+      .catch(() => {})
   }, [])
 
   const saveTheme = async (newTheme: string) => {
@@ -25,6 +48,19 @@ export default function SettingsPage() {
       })
     } catch (error) {
       console.error('Failed to save theme:', error)
+    }
+  }
+
+  const saveDefaultVersion = async (version: string) => {
+    setDefaultVersion(version)
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ defaultVersion: version }),
+      })
+    } catch (error) {
+      console.error('Failed to save default version:', error)
     }
   }
 
@@ -69,6 +105,38 @@ export default function SettingsPage() {
                   </Button>
                 ))}
               </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Stories</CardTitle>
+          <CardDescription>
+            Configure the default view for the Stories page
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-3 block">Default Version</label>
+              <Select value={defaultVersion} onValueChange={saveDefaultVersion}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select version" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="first">First available</SelectItem>
+                  {versions.map(version => (
+                    <SelectItem key={version} value={version}>
+                      {version}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground mt-2">
+                The version shown when you open the Stories page
+              </p>
             </div>
           </div>
         </CardContent>

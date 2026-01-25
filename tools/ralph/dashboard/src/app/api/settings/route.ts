@@ -8,12 +8,14 @@ type Settings = {
   theme: 'light' | 'dark' | 'system'
   graphDirection: 'horizontal' | 'vertical'
   showDeadEnds: boolean
+  defaultVersion: string // 'first' means use first available version
 }
 
 const defaultSettings: Settings = {
   theme: 'dark',
   graphDirection: 'horizontal',
-  showDeadEnds: false
+  showDeadEnds: false,
+  defaultVersion: 'first'
 }
 
 async function getSettings(): Promise<Settings> {

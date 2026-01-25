@@ -8,6 +8,30 @@ const RALPH_CLI_DIR = path.join(PROJECT_ROOT, 'tools/ralph/cli')
 const PRD_DIR = path.join(RALPH_CLI_DIR, 'prd')
 const DOCS_DIR = path.join(PROJECT_ROOT, 'docs')
 const LOGS_DIR = path.join(PROJECT_ROOT, 'logs')
+const SETTINGS_FILE = path.join(process.cwd(), 'settings.json')
+
+export type Settings = {
+  theme: 'light' | 'dark' | 'system'
+  graphDirection: 'horizontal' | 'vertical'
+  showDeadEnds: boolean
+  defaultVersion: string
+}
+
+const defaultSettings: Settings = {
+  theme: 'dark',
+  graphDirection: 'horizontal',
+  showDeadEnds: false,
+  defaultVersion: 'first'
+}
+
+export async function getSettings(): Promise<Settings> {
+  try {
+    const content = await fs.readFile(SETTINGS_FILE, 'utf-8')
+    return { ...defaultSettings, ...JSON.parse(content) }
+  } catch {
+    return defaultSettings
+  }
+}
 
 // Get list of available versions from prd/ directory
 export async function getVersions(): Promise<string[]> {

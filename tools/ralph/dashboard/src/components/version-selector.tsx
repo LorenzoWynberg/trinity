@@ -21,13 +21,13 @@ function VersionSelectorInner({ versions, currentVersion }: VersionSelectorProps
 
   const handleVersionChange = (version: string) => {
     const params = new URLSearchParams(searchParams.toString())
-    if (version === 'all') {
-      params.delete('version')
-    } else {
-      params.set('version', version)
-    }
-    const query = params.toString()
-    router.push(query ? `/?${query}` : '/')
+    params.set('version', version)
+    router.push(`/?${params.toString()}`)
+  }
+
+  // Don't show selector if only one version
+  if (versions.length <= 1) {
+    return null
   }
 
   return (
@@ -36,7 +36,6 @@ function VersionSelectorInner({ versions, currentVersion }: VersionSelectorProps
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">All Versions</SelectItem>
         {versions.map((version) => (
           <SelectItem key={version} value={version}>
             {version}
