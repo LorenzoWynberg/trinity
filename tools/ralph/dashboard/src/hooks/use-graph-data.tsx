@@ -30,6 +30,57 @@ function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatu
   return 'pending'
 }
 
+// Resolve a dependency reference to story IDs
+// Supports: STORY-X.Y.Z, X (phase), X:Y (phase:epic), vN.N:... (cross-version)
+export function resolveDependency(dep: string, stories: Story[]): string[] {
+  // Strip version prefix if present (e.g., "v1.0:1" -> "1")
+  let target = dep
+  if (/^v[0-9]+\.[0-9]+:/.test(dep)) {
+    target = dep.split(':').slice(1).join(':')
+  } else if (/^v[0-9]+\.[0-9]+$/.test(dep)) {
+    // Entire version - return all stories in that version
+    // For now, skip cross-version visualization
+    return []
+  }
+
+  // Specific story (STORY-X.Y.Z)
+  if (target.startsWith('STORY-')) {
+    return stories.some(s => s.id === target) ? [target] : []
+  }
+
+  // Phase:Epic (e.g., "1:2")
+  if (/^[0-9]+:[0-9]+$/.test(target)) {
+    const [phase, epic] = target.split(':').map(Number)
+    const epicStories = stories.filter(s => s.phase === phase && s.epic === epic)
+    // Return leaf stories in this epic (stories not depended on by other stories in the epic)
+    const epicIds = new Set(epicStories.map(s => s.id))
+    const dependedOn = new Set<string>()
+    epicStories.forEach(s => {
+      s.depends_on?.forEach(d => {
+        if (d.startsWith('STORY-') && epicIds.has(d)) dependedOn.add(d)
+      })
+    })
+    return epicStories.filter(s => !dependedOn.has(s.id)).map(s => s.id)
+  }
+
+  // Just phase (e.g., "1")
+  if (/^[0-9]+$/.test(target)) {
+    const phase = Number(target)
+    const phaseStories = stories.filter(s => s.phase === phase)
+    // Return leaf stories in this phase (stories not depended on by other stories in the phase)
+    const phaseIds = new Set(phaseStories.map(s => s.id))
+    const dependedOn = new Set<string>()
+    phaseStories.forEach(s => {
+      s.depends_on?.forEach(d => {
+        if (d.startsWith('STORY-') && phaseIds.has(d)) dependedOn.add(d)
+      })
+    })
+    return phaseStories.filter(s => !dependedOn.has(s.id)).map(s => s.id)
+  }
+
+  return []
+}
+
 // Calculate depth of each node (longest path from root)
 function calculateDepths(stories: Story[]): Map<string, number> {
   const depths = new Map<string, number>()
@@ -46,11 +97,16 @@ function calculateDepths(stories: Story[]): Map<string, number> {
       return 0
     }
 
-    const maxDepDep = Math.max(
-      ...story.depends_on
-        .filter(dep => storyMap.has(dep))
-        .map(dep => getDepth(dep, visited))
-    )
+    // Resolve all dependencies (including phase/epic refs) to story IDs
+    const resolvedDeps = story.depends_on.flatMap(dep => resolveDependency(dep, stories))
+    const validDeps = resolvedDeps.filter(dep => storyMap.has(dep))
+
+    if (validDeps.length === 0) {
+      depths.set(id, 0)
+      return 0
+    }
+
+    const maxDepDep = Math.max(...validDeps.map(dep => getDepth(dep, visited)))
     const depth = maxDepDep + 1
     depths.set(id, depth)
     return depth
@@ -527,31 +583,35 @@ export function useGraphData(version: string = 'all'): GraphData {
 
         for (const story of storiesData) {
           if (story.depends_on) {
-            for (const depId of story.depends_on) {
-              const actualDepId = depId.includes(':') ? depId.split(':').pop()! : depId
+            for (const depRef of story.depends_on) {
+              // Resolve dependency reference to actual story IDs
+              // Handles: STORY-X.Y.Z, phase (1), phase:epic (1:2), cross-version (v1.0:...)
+              const resolvedIds = resolveDependency(depRef, storiesData)
 
-              if (nodeIds.has(actualDepId)) {
-                const depStory = storiesData.find(s => s.id === actualDepId)
-                const isDepMerged = depStory?.merged
-                const isCrossVersion = depStory?.target_version !== story.target_version
+              for (const actualDepId of resolvedIds) {
+                if (nodeIds.has(actualDepId)) {
+                  const depStory = storiesData.find(s => s.id === actualDepId)
+                  const isDepMerged = depStory?.merged
+                  const isCrossVersion = depStory?.target_version !== story.target_version
 
-                edgeList.push({
-                  id: `${actualDepId}->${story.id}`,
-                  source: actualDepId,
-                  target: story.id,
-                  type: 'smoothstep',
-                  markerEnd: {
-                    type: MarkerType.ArrowClosed,
-                    width: 12,
-                    height: 12,
-                  },
-                  style: {
-                    strokeWidth: isCrossVersion ? 3 : 2,
-                    stroke: isDepMerged ? '#22c55e' : (isCrossVersion ? '#f59e0b' : '#6b7280'),
-                    strokeDasharray: isCrossVersion ? '5,5' : undefined,
-                  },
-                  animated: getStoryStatus(story, currentStoryId) === 'in_progress',
-                })
+                  edgeList.push({
+                    id: `${actualDepId}->${story.id}`,
+                    source: actualDepId,
+                    target: story.id,
+                    type: 'smoothstep',
+                    markerEnd: {
+                      type: MarkerType.ArrowClosed,
+                      width: 12,
+                      height: 12,
+                    },
+                    style: {
+                      strokeWidth: isCrossVersion ? 3 : 2,
+                      stroke: isDepMerged ? '#22c55e' : (isCrossVersion ? '#f59e0b' : '#6b7280'),
+                      strokeDasharray: isCrossVersion ? '5,5' : undefined,
+                    },
+                    animated: getStoryStatus(story, currentStoryId) === 'in_progress',
+                  })
+                }
               }
             }
           }

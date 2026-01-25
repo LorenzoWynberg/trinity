@@ -171,10 +171,22 @@ Claude never writes to DB directly - calls internal commands. Trinity queues and
 - **Epic**: Complete feature ("Auth", "Payments")
 - **Story**: Single implementable task ("Add login form")
 
-**Universal dependency syntax** (3-level hierarchy):
+**Universal dependency syntax** (colon-separated hierarchy):
 ```
-"mvp"                        → whole phase
-"mvp:auth"                   → epic in phase
+# Same version (version prefix optional)
+"1"                          → phase 1 (all stories in phase must be merged)
+"1:2"                        → epic 2 in phase 1 (all stories in epic must be merged)
+"STORY-1.2.3"                → specific story
+
+# Cross-version (version prefix required)
+"v1.0"                       → entire v1.0 (all stories must be merged)
+"v1.0:1"                     → phase 1 in v1.0
+"v1.0:1:2"                   → epic 2 in phase 1 in v1.0
+"v1.0:STORY-1.2.3"           → specific story in v1.0
+
+# Named phases/epics (Trinity style)
+"mvp"                        → phase named "mvp"
+"mvp:auth"                   → epic "auth" in phase "mvp"
 "mvp:auth:STORY-1.1.2"       → specific story
 ```
 

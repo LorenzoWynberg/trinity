@@ -23,7 +23,7 @@ import { ArrowRight, ArrowDown, Save, Trash2, Loader2, Star, Maximize, Minimize 
 import { StoryNode } from '@/components/story-node'
 import { VersionNode } from '@/components/version-node'
 import { StoryModal } from '@/components/story-modal'
-import { useGraphData, calculateAutoPositions, GraphLayoutData } from '@/hooks/use-graph-data'
+import { useGraphData, calculateAutoPositions, resolveDependency, GraphLayoutData } from '@/hooks/use-graph-data'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -227,15 +227,17 @@ function GraphContent() {
     }
   }, [])
 
-  // Get all ancestors (dependencies) recursively
+  // Get all ancestors (dependencies) recursively - handles phase/epic deps
   const getAncestors = useCallback((nodeId: string, visited: Set<string> = new Set()): Set<string> => {
     if (visited.has(nodeId)) return visited
     visited.add(nodeId)
 
     const story = stories.find(s => s.id === nodeId)
     if (story?.depends_on) {
-      story.depends_on.forEach(depId => {
-        getAncestors(depId, visited)
+      story.depends_on.forEach(depRef => {
+        // Resolve phase/epic/story refs to actual story IDs
+        const resolvedIds = resolveDependency(depRef, stories)
+        resolvedIds.forEach(depId => getAncestors(depId, visited))
       })
     }
     return visited
@@ -249,10 +251,13 @@ function GraphContent() {
     ancestors.forEach(ancestorId => {
       const story = stories.find(s => s.id === ancestorId)
       if (story?.depends_on) {
-        story.depends_on.forEach(depId => {
-          if (ancestors.has(depId)) {
-            pathEdges.add(`${depId}->${ancestorId}`)
-          }
+        story.depends_on.forEach(depRef => {
+          const resolvedIds = resolveDependency(depRef, stories)
+          resolvedIds.forEach(depId => {
+            if (ancestors.has(depId)) {
+              pathEdges.add(`${depId}->${ancestorId}`)
+            }
+          })
         })
       }
     })
@@ -282,7 +287,10 @@ function GraphContent() {
   }, [stories])
 
   const onNodeDoubleClick = useCallback((_: React.MouseEvent, node: Node) => {
-    openStoryModal(node.id, node.data?.status as StoryStatus || 'pending')
+    // Only open modal for story nodes, not version headers
+    if (node.type === 'story') {
+      openStoryModal(node.id, node.data?.status as StoryStatus || 'pending')
+    }
   }, [openStoryModal])
 
   const onPaneClick = useCallback(() => {
@@ -485,6 +493,7 @@ function GraphContent() {
           onPaneClick={onPaneClick}
           nodeTypes={nodeTypes}
           connectionMode={ConnectionMode.Loose}
+          zoomOnDoubleClick={false}
           fitView
           fitViewOptions={{ padding: 0.1 }}
           minZoom={0.1}
