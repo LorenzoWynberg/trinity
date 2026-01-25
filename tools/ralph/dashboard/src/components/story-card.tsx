@@ -34,7 +34,9 @@ export function StoryCard({ story, status }: StoryCardProps) {
         <CardContent className="pt-0">
           <div className="text-xs text-muted-foreground space-y-1">
             <div className="flex items-center gap-2">
-              <span>Phase {story.phase} • Epic {story.epic}</span>
+              <span>
+                {story.phase_name || `Phase ${story.phase}`} • {story.epic_name || `Epic ${story.epic}`}
+              </span>
               {story.target_version && (
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                   {story.target_version}

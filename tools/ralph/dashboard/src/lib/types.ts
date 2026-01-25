@@ -16,6 +16,9 @@ export interface Story {
   pr_url?: string
   target_version?: string
   external_deps?: { name: string; description: string }[]
+  // Enriched fields (added at load time)
+  phase_name?: string
+  epic_name?: string
 }
 
 export interface Phase {

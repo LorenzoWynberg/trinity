@@ -1,6 +1,6 @@
 import fs from 'fs/promises'
 import path from 'path'
-import type { PRD, State, Metrics, PhaseProgress, EpicProgress, Story, VersionInfo, BlockedInfo } from './types'
+import type { PRD, State, Metrics, PhaseProgress, EpicProgress, Story, VersionInfo, BlockedInfo, Phase, Epic } from './types'
 
 // Paths relative to project root
 const PROJECT_ROOT = path.join(process.cwd(), '../../..')
@@ -33,8 +33,28 @@ export async function getPRDForVersion(version: string): Promise<PRD | null> {
   try {
     const content = await fs.readFile(path.join(PRD_DIR, `${version}.json`), 'utf-8')
     const prd = JSON.parse(content)
-    // Tag stories with their version
-    prd.stories = prd.stories.map((s: Story) => ({ ...s, target_version: version }))
+
+    // Build name lookups
+    const phaseNames = new Map<number, string>()
+    const epicNames = new Map<string, string>()
+    if (prd.phases) {
+      for (const p of prd.phases) {
+        phaseNames.set(p.id, p.name)
+      }
+    }
+    if (prd.epics) {
+      for (const e of prd.epics) {
+        epicNames.set(`${e.phase}-${e.id}`, e.name)
+      }
+    }
+
+    // Enrich stories with version and names
+    prd.stories = prd.stories.map((s: Story) => ({
+      ...s,
+      target_version: version,
+      phase_name: phaseNames.get(s.phase),
+      epic_name: epicNames.get(`${s.phase}-${s.epic}`)
+    }))
     return prd
   } catch {
     return null
@@ -48,6 +68,8 @@ export async function getAllPRDs(): Promise<PRD | null> {
     if (versions.length === 0) return null
 
     const allStories: Story[] = []
+    const allPhases: Phase[] = []
+    const allEpics: Epic[] = []
     let projectName = ''
 
     for (const version of versions) {
@@ -55,12 +77,29 @@ export async function getAllPRDs(): Promise<PRD | null> {
       if (prd) {
         projectName = prd.project
         allStories.push(...prd.stories)
+        // Merge phases and epics (dedup by id for phases, by phase+id for epics)
+        if (prd.phases) {
+          for (const p of prd.phases) {
+            if (!allPhases.find(x => x.id === p.id)) {
+              allPhases.push(p)
+            }
+          }
+        }
+        if (prd.epics) {
+          for (const e of prd.epics) {
+            if (!allEpics.find(x => x.phase === e.phase && x.id === e.id)) {
+              allEpics.push(e)
+            }
+          }
+        }
       }
     }
 
     return {
       project: projectName,
       version: 'all',
+      phases: allPhases,
+      epics: allEpics,
       stories: allStories
     }
   } catch {
