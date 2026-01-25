@@ -378,22 +378,18 @@ See `examples/jetbrains-elvish/` for patterns Trinity will port to Go:
 
 When working on Ralph (`tools/ralph/`):
 
-1. **Always read `docs/learnings/ralph.md` first**. It contains:
-   - Streaming patterns for Claude output
-   - State management (passes vs merged)
-   - PR flow and prompts
-   - Activity log organization
-   - Release workflow
-   - Elvish-specific gotchas
+1. **Always read the learnings files first**:
+   - `docs/learnings/ralph.md` - Ralph-specific patterns (state management, PR flow, release workflow)
+   - `docs/learnings/elvish.md` - Elvish language gotchas (arity mismatches, value vs byte pipelines, map access)
 
-2. **Update learnings when fixing bugs**: When you fix an Elvish bug or discover a new pattern, add it to `docs/learnings/ralph.md`. This prevents the same issues from recurring.
+2. **Update learnings when fixing bugs**: When you fix a bug or discover a new pattern, add it to the appropriate learnings file. This prevents the same issues from recurring.
 
 3. **Always update the activity logs** after making changes:
    - Location: `logs/activity/ralph/YYYY-MM-DD.md`
    - Document what was changed, why, and which files were modified
    - Group related changes under clear section headers
 
-Ralph is written in Elvish shell. The learnings file captures hard-won knowledge about its quirks and patterns.
+Ralph is written in Elvish shell. The learnings files capture hard-won knowledge about its quirks and patterns.
 
 ### resetProject shorthand
 
