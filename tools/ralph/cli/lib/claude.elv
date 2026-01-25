@@ -8,18 +8,35 @@ use ./prd
 
 # Configuration (set by init)
 var project-root = ""
+var script-dir = ""
 var prompt-template = ""
+var feedback-template = ""
+var workflow-partial = ""
 var claude-timeout = 1800
 var quiet-mode = $false
 var max-iterations = 100
 
 # Initialize with configuration
-fn init {|root template timeout quiet max-iter|
+fn init {|root sdir template timeout quiet max-iter|
   set project-root = $root
+  set script-dir = $sdir
   set prompt-template = $template
   set claude-timeout = $timeout
   set quiet-mode = $quiet
   set max-iterations = $max-iter
+
+  # Load feedback template and workflow partial (relative to script directory)
+  var prompts-dir = (path:join $sdir "prompts")
+  try {
+    set feedback-template = (cat (path:join $prompts-dir "feedback.md") | slurp)
+  } catch _ {
+    set feedback-template = ""
+  }
+  try {
+    set workflow-partial = (cat (path:join $prompts-dir "partials" "workflow.md") | slurp)
+  } catch _ {
+    set workflow-partial = ""
+  }
 }
 
 # Pre-flight checks before starting
@@ -173,10 +190,41 @@ fn get-recent-activity-logs {
 # Prepare prompt and return paths needed for streaming
 # Returns: [&prompt-file=<path> &output-file=<path> &story-title=<title>]
 fn prepare {|story-id branch-name attempt iteration feedback|
-  # Build feedback section if provided
-  var feedback-section = ""
-  if (not (eq $feedback "")) {
-    set feedback-section = "## User Feedback (Refinement Request)
+  var prompt = ""
+
+  # If feedback is provided and we have a feedback template, use it
+  # Otherwise fall back to injecting feedback into the main template
+  if (and (not (eq $feedback "")) (not (eq $feedback-template ""))) {
+    # Use dedicated feedback template
+    set prompt = $feedback-template
+
+    # Get original task summary (story title + acceptance)
+    var original-task = ""
+    try {
+      var prd-file = (prd:get-prd-file)
+      var title = (jq -r '.stories[] | select(.id == "'$story-id'") | .title // ""' $prd-file 2>/dev/null | slurp | str:trim-space)
+      var acceptance = (jq -r '.stories[] | select(.id == "'$story-id'") | .acceptance | join("\n- ") // ""' $prd-file 2>/dev/null | slurp | str:trim-space)
+      if (not (eq $acceptance "")) {
+        set acceptance = "- "$acceptance
+      }
+      set original-task = "**"$story-id"**: "$title"
+
+**Acceptance Criteria:**
+"$acceptance
+    } catch _ {
+      set original-task = "Story "$story-id
+    }
+
+    set prompt = (str:replace &max=-1 "{{ORIGINAL_TASK}}" $original-task $prompt)
+    set prompt = (str:replace &max=-1 "{{FEEDBACK}}" $feedback $prompt)
+    set prompt = (str:replace &max=-1 "{{WORKFLOW}}" $workflow-partial $prompt)
+  } else {
+    # Use main template with optional feedback section
+    set prompt = $prompt-template
+
+    var feedback-section = ""
+    if (not (eq $feedback "")) {
+      set feedback-section = "## User Feedback (Refinement Request)
 
 The user has reviewed your work and requested the following changes:
 
@@ -191,15 +239,16 @@ The user has reviewed your work and requested the following changes:
 
 Stay focused on the feedback - don't refactor unrelated code.
 "
+    }
+    set prompt = (str:replace &max=-1 "{{FEEDBACK}}" $feedback-section $prompt)
   }
 
-  # Build prompt from template
-  var prompt = (str:replace &max=-1 "{{ITERATION}}" (to-string $iteration) $prompt-template)
+  # Common replacements for both templates
+  set prompt = (str:replace &max=-1 "{{ITERATION}}" (to-string $iteration) $prompt)
   set prompt = (str:replace &max=-1 "{{MAX_ITERATIONS}}" (to-string $max-iterations) $prompt)
   set prompt = (str:replace &max=-1 "{{CURRENT_STORY}}" $story-id $prompt)
   set prompt = (str:replace &max=-1 "{{BRANCH}}" $branch-name $prompt)
   set prompt = (str:replace &max=-1 "{{ATTEMPT}}" (to-string $attempt) $prompt)
-  set prompt = (str:replace &max=-1 "{{FEEDBACK}}" $feedback-section $prompt)
   set prompt = (str:replace &max=-1 "{{VERSION}}" (prd:get-current-version) $prompt)
 
   # Add dependency info

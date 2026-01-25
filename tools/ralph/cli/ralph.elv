@@ -58,7 +58,7 @@ var prompt-template = (cat $prompt-file | slurp)
 # Initialize remaining modules
 state:init $state-file
 git:init $project-root $config[base-branch]
-claude:init $project-root $prompt-template $config[claude-timeout] $config[quiet-mode] $config[max-iterations]
+claude:init $project-root $script-dir $prompt-template $config[claude-timeout] $config[quiet-mode] $config[max-iterations]
 pr:init $project-root $config[base-branch] $config[auto-pr] $config[auto-merge]
 metrics:init $metrics-file
 release:init $project-root $config[base-branch] "main" $config[claude-timeout]
@@ -383,7 +383,7 @@ if (> (count $unmerged) 0) {
 
     # Run PR flow for this story
     ui:status "Handling unmerged story: "$sid
-    pr:run-flow $sid $branch $story-title 0
+    var _ = (pr:run-flow $sid $branch $story-title 0)
     echo ""
   }
 }
@@ -510,10 +510,12 @@ while (< $current-iteration $config[max-iterations]) {
       echo ""
     }
 
-    # Clear feedback after using it
+    # Clear feedback after using it, track if this was a feedback refinement
     var mode-label = "attempt "$current-state[attempts]
+    var was-feedback-refinement = $false
     if (not (eq $pending-feedback "")) {
       set mode-label = "feedback refinement"
+      set was-feedback-refinement = $true
       set pending-feedback = ""  # Clear after use
     }
     ui:status "Running Claude ("$mode-label")..."
@@ -657,7 +659,7 @@ while (< $current-iteration $config[max-iterations]) {
       echo ""
       var story-title = (prd:get-story-title $story-id)
       var state-pr-url = (if (and (has-key $current-state pr_url) $current-state[pr_url]) { put $current-state[pr_url] } else { put "" })
-      var pr-flow-result = (pr:run-flow $story-id $branch-name $story-title $current-iteration &state-pr-url=$state-pr-url)
+      var pr-flow-result = (pr:run-flow $story-id $branch-name $story-title $current-iteration &state-pr-url=$state-pr-url &feedback-pending=$was-feedback-refinement)
       var pr-result = $pr-flow-result[result]
       var pr-url = $pr-flow-result[pr_url]
 
