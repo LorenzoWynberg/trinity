@@ -1369,12 +1369,16 @@ Rules:
       set phase-a-context = $phase-a-context"- UPDATED: "$parts[0]" ("$parts[1]")\n"
     }
   }
-  for item $create-items {
-    var cr-title = (echo $item | jq -r '.title')
-    set phase-a-context = $phase-a-context"- CREATED: '"$cr-title"'\n"
+  if (> (count $creates) 0) {
+    for create $creates {
+      var parts = [(str:split "|" $create)]
+      set phase-a-context = $phase-a-context"- CREATED: '"$parts[0]"'\n"
+    }
   }
-  for skip $skips {
-    set phase-a-context = $phase-a-context"- SKIPPED: "$skip"\n"
+  if (> (count $skips) 0) {
+    for skip $skips {
+      set phase-a-context = $phase-a-context"- SKIPPED: "$skip"\n"
+    }
   }
 
   # Find stories with tag overlap that are NOT descendants
