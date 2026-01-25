@@ -361,21 +361,33 @@ function GraphContent() {
     setHighlightedEdges(new Map())
   }, [])
 
-  // Depth-based colors for highlighted edges (rainbow gradient from roots to clicked)
+  // Depth-based colors for highlighted edges (25-color rainbow gradient)
   const depthColors = [
     '#facc15', // 0 - yellow
-    '#eab308', // 1 - yellow-dark
-    '#f97316', // 2 - orange
-    '#ea580c', // 3 - orange-dark
-    '#ef4444', // 4 - red
-    '#dc2626', // 5 - red-dark
-    '#ec4899', // 6 - pink
-    '#db2777', // 7 - pink-dark
-    '#a855f7', // 8 - purple
-    '#9333ea', // 9 - purple-dark
-    '#6366f1', // 10 - indigo
-    '#4f46e5', // 11 - indigo-dark
-    '#3b82f6', // 12+ - blue
+    '#eab308', // 1 - yellow-600
+    '#ca8a04', // 2 - yellow-700
+    '#fbbf24', // 3 - amber-400
+    '#f59e0b', // 4 - amber-500
+    '#f97316', // 5 - orange
+    '#ea580c', // 6 - orange-600
+    '#c2410c', // 7 - orange-700
+    '#ef4444', // 8 - red
+    '#dc2626', // 9 - red-600
+    '#b91c1c', // 10 - red-700
+    '#f43f5e', // 11 - rose
+    '#e11d48', // 12 - rose-600
+    '#ec4899', // 13 - pink
+    '#db2777', // 14 - pink-600
+    '#c026d3', // 15 - fuchsia
+    '#a855f7', // 16 - purple
+    '#9333ea', // 17 - purple-600
+    '#7c3aed', // 18 - violet
+    '#6366f1', // 19 - indigo
+    '#4f46e5', // 20 - indigo-600
+    '#3b82f6', // 21 - blue
+    '#2563eb', // 22 - blue-600
+    '#0ea5e9', // 23 - sky
+    '#06b6d4', // 24 - cyan
   ]
 
   // Get max depth from highlighted edges
@@ -383,14 +395,20 @@ function GraphContent() {
     ? Math.max(...Array.from(highlightedEdges.values()))
     : 0
 
-  // When depth <= 6, use every other color for better spread
+  // Adaptive color spacing based on max depth
+  // depth <= 6: use every 4th color (spread across full spectrum)
+  // depth 7-12: use every 2nd color
+  // depth > 12: use all 25 colors
   const getDepthColor = (depth: number) => {
+    let index: number
     if (maxHighlightDepth <= 6) {
-      // Use every other color (0, 2, 4, 6, 8, 10, 12)
-      const stretchedIndex = Math.min(depth * 2, depthColors.length - 1)
-      return depthColors[stretchedIndex]
+      index = Math.min(depth * 4, depthColors.length - 1)
+    } else if (maxHighlightDepth <= 12) {
+      index = Math.min(depth * 2, depthColors.length - 1)
+    } else {
+      index = Math.min(depth, depthColors.length - 1)
     }
-    return depthColors[Math.min(depth, depthColors.length - 1)]
+    return depthColors[index]
   }
 
   // Apply highlighting styles to edges
