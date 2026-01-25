@@ -72,7 +72,6 @@ epics (id, phase_id, name, path, status, depends_on, priority)
 stories (id, epic_id, title, intent, acceptance, status, depends_on, priority,
          human_testing_required, human_testing_instructions, human_testing_url,
          target_version,       -- e.g., "v1.0", "v2.0"
-         complexity,           -- "instant" | "config" | "build" (effort indicator)
          external_deps,        -- JSON array of external dependencies (see below)
          external_deps_report, -- User-provided report of external dep implementation
          -- Completion tracking (two-stage: passes then merged)
