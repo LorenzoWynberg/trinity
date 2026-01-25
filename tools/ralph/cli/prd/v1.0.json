@@ -120,6 +120,44 @@
       "target_version": "v1.0"
     },
     {
+      "id": "STORY-1.3.1",
+      "title": "Add target_version field to story schema",
+      "intent": "Enable stories to be associated with specific release versions",
+      "acceptance": [
+        "Story struct has target_version field (string)",
+        "Database schema includes target_version column",
+        "Stories can be queried by version",
+        "Default version is v1.0 for existing stories"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-2.1.1"
+      ],
+      "phase": 1,
+      "epic": 3,
+      "story_number": 1,
+      "target_version": "v1.0"
+    },
+    {
+      "id": "STORY-1.3.2",
+      "title": "Implement version CLI commands",
+      "intent": "Allow users to view and manage release versions",
+      "acceptance": [
+        "trinity version list shows all versions with progress",
+        "trinity version status [name] shows detailed progress",
+        "trinity version create <name> creates new version",
+        "Progress shows stories done/total per version"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-1.3.1"
+      ],
+      "phase": 1,
+      "epic": 3,
+      "story_number": 2,
+      "target_version": "v1.0"
+    },
+    {
       "id": "STORY-2.1.1",
       "title": "Create SQLite database connection",
       "intent": "Establish database connectivity for storing all Trinity state",
@@ -208,7 +246,10 @@
         "db.Stories.Get(id) returns single story",
         "db.Stories.Insert(story) creates story",
         "db.Stories.Update(id, changes) modifies story",
-        "Human testing fields (required, instructions, url, status) stored"
+        "Human testing fields (required, instructions, url, status) stored",
+        "Completion tracking fields: passes, merged, merge_commit, pr_url, branch",
+        "passes = Claude completed work and pushed",
+        "merged = PR merged to integration branch"
       ],
       "passes": false,
       "depends_on": [
@@ -228,7 +269,9 @@
         "Dependency resolution checks all depends_on items",
         "Supports phase, epic, and story-level dependencies",
         "Returns nil when no stories available",
-        "Respects human_testing.status - stories awaiting approval not selected"
+        "Respects human_testing.status - stories awaiting approval not selected",
+        "Dependencies check merged field, not passes",
+        "Story with passes=true, merged=false still blocks dependents"
       ],
       "passes": false,
       "depends_on": [
@@ -555,6 +598,28 @@
       "phase": 3,
       "epic": 2,
       "story_number": 3,
+      "target_version": "v1.0"
+    },
+    {
+      "id": "STORY-3.2.4",
+      "title": "Implement git PR and tag operations",
+      "intent": "Provide PR creation, merging, and git tag operations for release workflow",
+      "acceptance": [
+        "core/git/pr.go exists",
+        "CreatePR(title, body, base, head) creates PR via gh pr create",
+        "MergePR(prNumber) merges PR via gh pr merge",
+        "GetPR(prNumber) returns PR status (open, merged, closed)",
+        "CreateTag(name, message, commit) creates annotated git tag",
+        "PushTag(name) pushes tag to remote",
+        "Uses gh CLI for GitHub, extensible for GitLab later"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-3.2.3"
+      ],
+      "phase": 3,
+      "epic": 2,
+      "story_number": 4,
       "target_version": "v1.0"
     },
     {
@@ -1469,19 +1534,46 @@
       "title": "Implement trinity release command",
       "intent": "Ship completed work from dev to main",
       "acceptance": [
-        "trinity release merges dev to main via PR",
-        "--dry-run shows what would be released",
-        "--tag v1.0.0 creates git tag",
-        "--direct merges without PR",
-        "Validates all stories complete before release"
+        "Interactive release with human approval gate",
+        "Shows release summary (stories completed, commits, files changed)",
+        "Approval prompt: [Y]es / [n]o / [e]dit tag / [f]eedback",
+        "Feedback option runs hotfix and returns to prompt",
+        "Creates PR (dev → main), merges, tags ON MAIN (not dev)",
+        "--auto flag skips approval prompt (for CI/CD)",
+        "--dry-run shows summary without prompting",
+        "Validates all stories have merged=true before release"
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.3.1"
+        "STORY-6.3.1",
+        "STORY-3.2.4"
       ],
       "phase": 6,
       "epic": 7,
       "story_number": 2,
+      "target_version": "v1.0"
+    },
+    {
+      "id": "STORY-6.7.3",
+      "title": "Implement trinity pr command",
+      "intent": "Allow iteration on PRs before merge via feedback loop",
+      "acceptance": [
+        "trinity pr shows current story PR status",
+        "trinity pr feedback 'description' runs Claude with feedback, updates PR",
+        "trinity pr merge merges current PR",
+        "trinity pr close closes PR without merging",
+        "Interactive mode: [m]erge / [f]eedback / [c]lose / [v]iew",
+        "Feedback loop allows multiple iterations without restarting story",
+        "Updates story merge_commit and pr_url fields on merge"
+      ],
+      "passes": false,
+      "depends_on": [
+        "STORY-3.2.4",
+        "STORY-6.3.1"
+      ],
+      "phase": 6,
+      "epic": 7,
+      "story_number": 3,
       "target_version": "v1.0"
     },
     {
@@ -1723,62 +1815,69 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-1.3.1",
-      "title": "Add target_version field to story schema",
-      "intent": "Enable stories to be associated with specific release versions",
+      "id": "STORY-8.1.1",
+      "title": "Final human testing and v1.0 sign-off",
+      "intent": "Comprehensive manual validation before release - wraps all loose ends",
       "acceptance": [
-        "Story struct has target_version field (string)",
-        "Database schema includes target_version column",
-        "Stories can be queried by version",
-        "Default version is v1.0 for existing stories"
+        "Complete workflow test: init → analyze → plan add → run → release",
+        "Multi-story execution with dependencies works correctly",
+        "Human approval gates (approve/reject) function properly",
+        "PR feedback loop (trinity pr feedback) allows iteration",
+        "Release workflow with human gate completes successfully",
+        "Hotfix flow works for quick fixes",
+        "Error handling shows helpful messages",
+        "Crash recovery and resume work as expected",
+        "README quick start works for new users",
+        "All --help output is accurate and helpful",
+        "No critical bugs or UX issues remain",
+        "Ready for v1.0 release"
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.1.1"
+        "STORY-1.1.3",
+        "STORY-1.2.3",
+        "STORY-1.3.2",
+        "STORY-2.2.2",
+        "STORY-3.1.5",
+        "STORY-3.1.6",
+        "STORY-4.1.1",
+        "STORY-4.1.6",
+        "STORY-4.1.8",
+        "STORY-4.2.1",
+        "STORY-4.2.2",
+        "STORY-4.2.3",
+        "STORY-4.2.4",
+        "STORY-5.1.2",
+        "STORY-5.2.3",
+        "STORY-6.2.3",
+        "STORY-6.2.4",
+        "STORY-6.4.2",
+        "STORY-6.5.1",
+        "STORY-6.5.2",
+        "STORY-6.5.3",
+        "STORY-6.5.4",
+        "STORY-6.5.5",
+        "STORY-6.6.2",
+        "STORY-6.7.1",
+        "STORY-6.7.2",
+        "STORY-6.7.3",
+        "STORY-6.8.2",
+        "STORY-6.8.3",
+        "STORY-7.1.3",
+        "STORY-7.2.1",
+        "STORY-7.2.2",
+        "STORY-7.3.2",
+        "STORY-7.3.3"
       ],
-      "phase": 1,
-      "epic": 3,
+      "phase": 8,
+      "epic": 1,
       "story_number": 1,
-      "target_version": "v1.0"
-    },
-    {
-      "id": "STORY-1.3.2",
-      "title": "Implement version CLI commands",
-      "intent": "Allow users to view and manage release versions",
-      "acceptance": [
-        "trinity version list shows all versions with progress",
-        "trinity version status [name] shows detailed progress",
-        "trinity version create <name> creates new version",
-        "Progress shows stories done/total per version"
-      ],
-      "passes": false,
-      "depends_on": [
-        "STORY-1.3.1"
-      ],
-      "phase": 1,
-      "epic": 3,
-      "story_number": 2,
-      "target_version": "v1.0"
-    },
-    {
-      "id": "STORY-1.3.3",
-      "title": "Implement release command with git tagging",
-      "intent": "Create tagged releases when a version is complete",
-      "acceptance": [
-        "trinity release [version] creates git tag",
-        "Validates all stories for version are merged",
-        "Merges dev to main",
-        "Updates version status to released",
-        "Stores release_notes and released_at"
-      ],
-      "passes": false,
-      "depends_on": [
-        "STORY-1.3.2"
-      ],
-      "phase": 1,
-      "epic": 3,
-      "story_number": 3,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "human_testing": {
+        "required": true,
+        "instructions": "Run through complete workflow on fresh project. Test all major features: init, analyze, plan, run, approve/reject, pr feedback, release, hotfix. Document any issues. Sign off when ready for v1.0.",
+        "url": null
+      }
     }
   ]
 }

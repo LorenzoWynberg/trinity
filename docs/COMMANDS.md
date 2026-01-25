@@ -10,11 +10,12 @@ trinity analyze           # Analyze codebase + suggest skills
 trinity plan              # Plan management (add, show, refine, skip, retry)
 trinity run               # Execute dev loop
 trinity approve/reject    # Human testing gates
+trinity pr                # PR feedback loop (iterate before merge)
 trinity status            # Overview
 trinity config            # Configuration (show, set, edit)
 trinity skills            # Manage skills (list, suggest, add, remove, search)
 trinity hotfix            # Quick fixes
-trinity release           # Ship to main
+trinity release           # Ship to main (with human approval gate)
 trinity auth              # Authentication (v0.2+)
 ```
 
@@ -205,14 +206,82 @@ trinity hotfix --commit-only      # Commit but don't create PR
 
 ### `trinity release`
 
-Ship to production.
+Ship to production with human approval gate.
 
 ```bash
-trinity release                   # Merge dev → main (creates PR)
-trinity release --dry-run         # Show what would be released
-trinity release --tag v1.0.0      # Merge and create git tag
+trinity release                   # Interactive release with approval gate
+trinity release --dry-run         # Show what would be released (no prompt)
+trinity release --tag v1.0.0      # Specify git tag (default: from version)
+trinity release --auto            # Skip approval prompt (CI/CD use)
 trinity release --direct          # Direct merge (no PR)
 ```
+
+**Interactive flow:**
+```
+$ trinity release
+
+╔═══════════════════════════════════════════════╗
+║  RELEASE SUMMARY - v1.0                       ║
+╚═══════════════════════════════════════════════╝
+
+Stories: 86 completed
+Commits: 142 (dev ahead of main)
+Files:   347 changed (+12,456 / -1,234)
+
+Release tag: v1.0
+
+[Y]es release  [n]o cancel  [e]dit tag  [f]eedback
+> _
+```
+
+**Approval options:**
+- `[Y]es` - Proceed with release (create PR, merge, tag on main, push)
+- `[n]o` - Cancel release
+- `[e]dit tag` - Change the version tag
+- `[f]eedback` - Provide feedback, run hotfix, then return to prompt
+
+**Feedback flow:** When you choose `[f]eedback`, Trinity opens your editor for feedback, creates a hotfix branch, runs Claude to address it, merges back to dev, and returns to the release prompt.
+
+**Important:** Git tag is created on `main` after merge, not on `dev`.
+
+---
+
+### `trinity pr`
+
+Manage PRs created by Trinity.
+
+```bash
+trinity pr                        # Show current story's PR status
+trinity pr feedback "description" # Give feedback, Claude iterates
+trinity pr merge                  # Merge current PR
+trinity pr close                  # Close without merging
+```
+
+**PR feedback flow:**
+```
+$ trinity pr
+
+PR #123: feat(auth): add login form
+Status: Open, CI passing
+Branch: feat/story-1.2.3 → dev
+
+[m]erge  [f]eedback  [c]lose  [v]iew in browser
+> f
+
+Enter feedback (press Enter twice to finish):
+> The loading state isn't showing on the button
+> Also add error handling for network failures
+>
+
+Running Claude with feedback...
+✓ Changes committed and pushed
+PR #123 updated
+
+[m]erge  [f]eedback  [c]lose  [v]iew in browser
+> _
+```
+
+This allows iteration on a completed story without restarting the full loop.
 
 ---
 

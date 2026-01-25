@@ -356,6 +356,7 @@ export function useGraphData(version: string = 'all'): GraphData {
 
   // Delete a custom layout
   const deleteCustomLayout = useCallback(async (name: string) => {
+    const wasActive = currentLayoutRef.current.active === name
     try {
       await fetch(`/api/graph-layout?version=${version}&layout=${encodeURIComponent(name)}`, {
         method: 'DELETE',
@@ -363,7 +364,15 @@ export function useGraphData(version: string = 'all'): GraphData {
       // Refresh layout data
       const res = await fetch(`/api/graph-layout?version=${version}`)
       const data = await res.json()
+
+      // If we deleted the active layout, explicitly fall back to default/horizontal
+      if (wasActive) {
+        data.active = data.defaultLayout || 'horizontal'
+      }
+
+      // Update both state and ref to ensure consistency
       setLayoutData(data)
+      currentLayoutRef.current = data
     } catch (error) {
       console.error('Failed to delete layout:', error)
     }

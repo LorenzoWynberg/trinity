@@ -71,7 +71,13 @@ phases (id, name, status, depends_on, priority)
 epics (id, phase_id, name, path, status, depends_on, priority)
 stories (id, epic_id, title, intent, acceptance, status, depends_on, priority,
          human_testing_required, human_testing_instructions, human_testing_url,
-         target_version)  -- e.g., "v1.0", "v2.0"
+         target_version,       -- e.g., "v1.0", "v2.0"
+         -- Completion tracking (two-stage: passes then merged)
+         passes,               -- Claude completed work and pushed
+         merged,               -- PR merged to integration branch
+         merge_commit,         -- Git SHA of merge commit
+         pr_url,               -- Link to PR
+         branch)               -- Feature branch name
 
 -- Versions/Releases
 versions (id, name, status, released_at, git_tag, release_notes)
@@ -256,6 +262,18 @@ feature branches (auto-managed)
 - New features branch from `dev` (get all merged code)
 - `trinity release` merges `dev` → `main`
 
+### Two-Stage Completion
+
+Stories track completion in two stages:
+
+1. **`passes: true`** - Claude completed the work and pushed to feature branch
+2. **`merged: true`** - PR merged to integration branch (dev)
+
+**Why this matters:**
+- Dependencies check `merged`, not `passes` - prevents starting work before code is available
+- Allows "completed but not merged" scenarios (waiting for review, CI)
+- `merge_commit` and `pr_url` provide audit trail and dashboard links
+
 ## Core Concepts
 
 ### Autonomous Dev Loop
@@ -274,14 +292,18 @@ feature branches (auto-managed)
   "title": "Story title",
   "intent": "Why this matters",
   "acceptance": ["Criterion 1", "Criterion 2"],
-  "passes": false,
   "depends_on": ["mvp:auth:STORY-1.1.1"],
   "target_version": "v1.0",
   "human_testing": {
     "required": true,
     "instructions": "Test login with valid/invalid credentials",
     "url": "/login"
-  }
+  },
+  "passes": false,
+  "merged": false,
+  "merge_commit": null,
+  "pr_url": null,
+  "branch": null
 }
 ```
 
