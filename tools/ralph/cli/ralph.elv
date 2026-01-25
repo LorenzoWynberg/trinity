@@ -240,10 +240,24 @@ if (not (eq $config[skip-story-id] "")) {
 
   # Log to activity
   var today = (date '+%Y-%m-%d')
+  var timestamp = (date '+%Y-%m-%d %H:%M')
   var activity-file = (path:join $project-root "logs" "activity" "trinity" $today".md")
+  var story-title = (prd:get-story-title $config[skip-story-id])
+  var story-info = (prd:get-story-info $config[skip-story-id])
+  var info-parts = [(str:split "\t" $story-info)]
+  var phase = $info-parts[0]
+  var epic = $info-parts[1]
+
   echo "" >> $activity-file
-  echo "## Skipped: "$config[skip-story-id] >> $activity-file
-  echo "Reason: "$config[skip-reason] >> $activity-file
+  echo "## "$config[skip-story-id]": "$story-title >> $activity-file
+  echo "" >> $activity-file
+  echo "**Phase:** "$phase" | **Epic:** "$epic" | **Version:** "$active-version >> $activity-file
+  echo "**Skipped:** "$timestamp >> $activity-file
+  echo "" >> $activity-file
+  echo "### Reason" >> $activity-file
+  echo $config[skip-reason] >> $activity-file
+  echo "" >> $activity-file
+  echo "---" >> $activity-file
 
   ui:success "Story skipped. Dependents can now proceed."
   exit 0

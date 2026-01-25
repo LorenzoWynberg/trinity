@@ -21,7 +21,33 @@ Read these files first:
 
 If attempt > 1 or refinement: check `git log` and `git diff` for previous work. Focus on the feedback if provided.
 
-**Activity Log:** Create or update `logs/activity/trinity/YYYY-MM-DD.md` (today's date). Add entry for starting work on {{VERSION}} / {{CURRENT_STORY}}. Include version in headers (e.g., "## {{VERSION}} - {{CURRENT_STORY}}: Title"). Before archiving old logs: extract learnings to `docs/learnings/`. Archive logs older than 7 days to `logs/activity/trinity/archive/YYYY-MM/`.
+**Activity Log:** Create or update `logs/activity/trinity/YYYY-MM-DD.md` (today's date) using this template:
+
+```markdown
+## {{CURRENT_STORY}}: [Story Title from PRD]
+
+**Phase:** [phase number] | **Epic:** [epic number] | **Version:** {{VERSION}}
+**Started:** [current timestamp, e.g., 2026-01-24 17:30]
+**Branch:** {{BRANCH}}
+
+### What was done
+- [Change 1]
+- [Change 2]
+
+### Files modified
+- `path/to/file.go` - Description of changes
+
+### Acceptance criteria met
+- [x] Criterion 1
+- [x] Criterion 2
+
+### Learnings
+- [Any gotchas, patterns, or insights discovered]
+
+---
+```
+
+Before archiving old logs: extract learnings to `docs/learnings/`. Archive logs older than 7 days to `logs/activity/trinity/archive/YYYY-MM/`.
 
 ### Recent Activity Logs (Detailed Context)
 Review these recent activity logs for detailed context on recent work:
