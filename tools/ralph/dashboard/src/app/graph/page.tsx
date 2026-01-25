@@ -252,23 +252,39 @@ function GraphContent() {
     }
   }, [])
 
+  // Extract storyId from versioned nodeId (e.g., "v1.0:1.1.1" -> "1.1.1")
+  const extractStoryId = useCallback((nodeId: string): string => {
+    if (nodeId.startsWith('version:')) return nodeId
+    const parts = nodeId.split(':')
+    return parts.length > 1 ? parts[1] : nodeId
+  }, [])
+
+  // Get version from nodeId (e.g., "v1.0:1.1.1" -> "v1.0")
+  const extractVersion = useCallback((nodeId: string): string | null => {
+    if (nodeId.startsWith('version:')) return nodeId.replace('version:', '')
+    const parts = nodeId.split(':')
+    return parts.length > 1 ? parts[0] : null
+  }, [])
+
   // Get all ancestors (dependencies) recursively - handles phase/epic deps
   const getAncestors = useCallback((nodeId: string, visited: Set<string> = new Set()): Set<string> => {
     if (visited.has(nodeId)) return visited
     visited.add(nodeId)
 
-    const story = stories.find(s => s.id === nodeId)
+    const storyId = extractStoryId(nodeId)
+    const version = extractVersion(nodeId)
+    const story = stories.find(s => s.id === storyId && (!version || s.target_version === version))
     if (story?.depends_on && story.depends_on.length > 0) {
       story.depends_on.forEach(depRef => {
-        const resolvedIds = resolveDependency(depRef, stories)
-        resolvedIds.forEach(depId => getAncestors(depId, visited))
+        const resolved = resolveDependency(depRef, stories, story.target_version)
+        resolved.forEach(r => getAncestors(r.nodeId, visited))
       })
     } else if (story?.target_version) {
       // Root story - add version node as ancestor
       visited.add(`version:${story.target_version}`)
     }
     return visited
-  }, [stories])
+  }, [stories, extractStoryId, extractVersion])
 
   // Get edges in the dependency path with depth (distance from clicked node)
   const getPathEdgesWithDepth = useCallback((nodeId: string, ancestors: Set<string>): Map<string, number> => {
@@ -282,13 +298,15 @@ function GraphContent() {
       if (nodeDepths.has(id)) continue
       nodeDepths.set(id, depth)
 
-      const story = stories.find(s => s.id === id)
+      const storyId = extractStoryId(id)
+      const version = extractVersion(id)
+      const story = stories.find(s => s.id === storyId && (!version || s.target_version === version))
       if (story?.depends_on) {
         story.depends_on.forEach(depRef => {
-          const resolvedIds = resolveDependency(depRef, stories)
-          resolvedIds.forEach(depId => {
-            if (ancestors.has(depId) && !nodeDepths.has(depId)) {
-              queue.push([depId, depth + 1])
+          const resolved = resolveDependency(depRef, stories, story.target_version)
+          resolved.forEach(r => {
+            if (ancestors.has(r.nodeId) && !nodeDepths.has(r.nodeId)) {
+              queue.push([r.nodeId, depth + 1])
             }
           })
         })
@@ -303,13 +321,15 @@ function GraphContent() {
       // Skip version nodes when creating story-to-story edges
       if (ancestorId.startsWith('version:')) return
 
-      const story = stories.find(s => s.id === ancestorId)
+      const storyId = extractStoryId(ancestorId)
+      const version = extractVersion(ancestorId)
+      const story = stories.find(s => s.id === storyId && (!version || s.target_version === version))
       if (story?.depends_on && story.depends_on.length > 0) {
         story.depends_on.forEach(depRef => {
-          const resolvedIds = resolveDependency(depRef, stories)
-          resolvedIds.forEach(depId => {
-            if (ancestors.has(depId)) {
-              const edgeId = `${depId}->${ancestorId}`
+          const resolved = resolveDependency(depRef, stories, story.target_version)
+          resolved.forEach(r => {
+            if (ancestors.has(r.nodeId)) {
+              const edgeId = `${r.nodeId}->${ancestorId}`
               const nodeDepth = nodeDepths.get(ancestorId) || 0
               edgeDepths.set(edgeId, nodeDepth) // clicked's incoming edges = 0 (yellow)
             }
@@ -326,7 +346,7 @@ function GraphContent() {
     })
 
     return edgeDepths
-  }, [stories])
+  }, [stories, extractStoryId, extractVersion])
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     if (highlightedNodes.has(node.id) && highlightedNodes.size === getAncestors(node.id).size) {
@@ -340,14 +360,16 @@ function GraphContent() {
     }
   }, [getAncestors, getPathEdgesWithDepth, highlightedNodes])
 
-  const openStoryModal = useCallback((storyId: string, status: StoryStatus) => {
-    const story = stories.find(s => s.id === storyId)
+  const openStoryModal = useCallback((nodeId: string, status: StoryStatus) => {
+    const storyId = extractStoryId(nodeId)
+    const version = extractVersion(nodeId)
+    const story = stories.find(s => s.id === storyId && (!version || s.target_version === version))
     if (story) {
       setSelectedStory(story)
       setSelectedStatus(status)
       setModalOpen(true)
     }
-  }, [stories])
+  }, [stories, extractStoryId, extractVersion])
 
   const onNodeDoubleClick = useCallback((_: React.MouseEvent, node: Node) => {
     // Only open modal for story nodes, not version headers

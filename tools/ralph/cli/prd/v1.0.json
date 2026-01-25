@@ -1,7 +1,7 @@
 {
   "stories": [
     {
-      "id": "STORY-1.1.1",
+      "id": "1.1.1",
       "title": "Create Go workspace structure",
       "intent": "Establish the Go monorepo workspace with proper module boundaries",
       "acceptance": [
@@ -19,7 +19,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-1.1.2",
+      "id": "1.1.2",
       "title": "Create CLI entrypoint with Cobra",
       "intent": "Set up the main CLI application structure using Cobra command framework",
       "acceptance": [
@@ -31,7 +31,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-1.1.1"
+        "1.1.1"
       ],
       "phase": 1,
       "epic": 1,
@@ -39,7 +39,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-1.1.3",
+      "id": "1.1.3",
       "title": "Add version command",
       "intent": "Provide version information for troubleshooting and releases",
       "acceptance": [
@@ -49,7 +49,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-1.1.2"
+        "1.1.2"
       ],
       "phase": 1,
       "epic": 1,
@@ -57,7 +57,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-1.2.1",
+      "id": "1.2.1",
       "title": "Create config package structure",
       "intent": "Set up configuration management for Trinity settings",
       "acceptance": [
@@ -68,7 +68,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-1.1.1"
+        "1.1.1"
       ],
       "phase": 1,
       "epic": 2,
@@ -76,7 +76,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-1.2.2",
+      "id": "1.2.2",
       "title": "Implement project config management",
       "intent": "Manage per-project configuration stored in ~/.trinity/projects/",
       "acceptance": [
@@ -87,7 +87,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-1.2.1"
+        "1.2.1"
       ],
       "phase": 1,
       "epic": 2,
@@ -95,7 +95,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-1.2.3",
+      "id": "1.2.3",
       "title": "Add config CLI commands",
       "intent": "Allow users to view and modify configuration via CLI",
       "acceptance": [
@@ -106,8 +106,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-1.1.2",
-        "STORY-1.2.2"
+        "1.1.2",
+        "1.2.2"
       ],
       "phase": 1,
       "epic": 2,
@@ -120,7 +120,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-1.3.1",
+      "id": "1.3.1",
       "title": "Add target_version field to story schema",
       "intent": "Enable stories to be associated with specific release versions",
       "acceptance": [
@@ -131,7 +131,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.1.1"
+        "2.1.1"
       ],
       "phase": 1,
       "epic": 3,
@@ -139,7 +139,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-1.3.2",
+      "id": "1.3.2",
       "title": "Implement version CLI commands",
       "intent": "Allow users to view and manage release versions",
       "acceptance": [
@@ -150,7 +150,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-1.3.1"
+        "1.3.1"
       ],
       "phase": 1,
       "epic": 3,
@@ -158,7 +158,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-2.1.1",
+      "id": "2.1.1",
       "title": "Create SQLite database connection",
       "intent": "Establish database connectivity for storing all Trinity state",
       "acceptance": [
@@ -170,7 +170,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-1.2.2"
+        "1.2.2"
       ],
       "phase": 2,
       "epic": 1,
@@ -178,7 +178,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-2.1.2",
+      "id": "2.1.2",
       "title": "Create database schema migrations",
       "intent": "Manage database schema versioning and automatic migrations",
       "acceptance": [
@@ -189,7 +189,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.1.1"
+        "2.1.1"
       ],
       "phase": 2,
       "epic": 1,
@@ -197,7 +197,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-2.1.3",
+      "id": "2.1.3",
       "title": "Implement phases table and API",
       "intent": "Store PRD phases in database with full CRUD operations",
       "acceptance": [
@@ -209,7 +209,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.1.2"
+        "2.1.2"
       ],
       "phase": 2,
       "epic": 1,
@@ -217,7 +217,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-2.1.4",
+      "id": "2.1.4",
       "title": "Implement epics table and API",
       "intent": "Store PRD epics in database with parent phase relationships",
       "acceptance": [
@@ -229,7 +229,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.1.3"
+        "2.1.3"
       ],
       "phase": 2,
       "epic": 1,
@@ -237,7 +237,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-2.1.5",
+      "id": "2.1.5",
       "title": "Implement stories table and API",
       "intent": "Store PRD stories with full story data including human testing fields",
       "acceptance": [
@@ -253,7 +253,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.1.4"
+        "2.1.4"
       ],
       "phase": 2,
       "epic": 1,
@@ -261,7 +261,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-2.1.6",
+      "id": "2.1.6",
       "title": "Implement story selection logic",
       "intent": "Get next runnable story respecting dependencies",
       "acceptance": [
@@ -275,7 +275,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.1.5"
+        "2.1.5"
       ],
       "phase": 2,
       "epic": 1,
@@ -283,7 +283,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-2.2.1",
+      "id": "2.2.1",
       "title": "Implement tags table",
       "intent": "Store shared tags used across PRD items and learnings",
       "acceptance": [
@@ -295,7 +295,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.1.2"
+        "2.1.2"
       ],
       "phase": 2,
       "epic": 2,
@@ -303,7 +303,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-2.2.2",
+      "id": "2.2.2",
       "title": "Implement tag associations",
       "intent": "Enable many-to-many relationships between tags and PRD items",
       "acceptance": [
@@ -314,8 +314,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.2.1",
-        "STORY-2.1.5"
+        "2.2.1",
+        "2.1.5"
       ],
       "phase": 2,
       "epic": 2,
@@ -323,7 +323,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-2.3.1",
+      "id": "2.3.1",
       "title": "Implement activity_logs table and API",
       "intent": "Track all agent activity for debugging and auditing",
       "acceptance": [
@@ -335,7 +335,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.1.2"
+        "2.1.2"
       ],
       "phase": 2,
       "epic": 3,
@@ -343,7 +343,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-2.3.2",
+      "id": "2.3.2",
       "title": "Implement learnings table and API",
       "intent": "Store lessons learned during development for future reference",
       "acceptance": [
@@ -355,7 +355,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.2.1"
+        "2.2.1"
       ],
       "phase": 2,
       "epic": 3,
@@ -363,7 +363,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-2.4.1",
+      "id": "2.4.1",
       "title": "Implement agents table and API",
       "intent": "Track running agents and their current work",
       "acceptance": [
@@ -375,7 +375,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.1.2"
+        "2.1.2"
       ],
       "phase": 2,
       "epic": 4,
@@ -383,7 +383,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-2.4.2",
+      "id": "2.4.2",
       "title": "Implement command queue table and API",
       "intent": "Queue internal commands from Claude for sequential processing",
       "acceptance": [
@@ -395,7 +395,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.4.1"
+        "2.4.1"
       ],
       "phase": 2,
       "epic": 4,
@@ -403,7 +403,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-2.4.3",
+      "id": "2.4.3",
       "title": "Implement token_usage table and API",
       "intent": "Track Claude token usage for cost visibility",
       "acceptance": [
@@ -415,7 +415,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.1.2"
+        "2.1.2"
       ],
       "phase": 2,
       "epic": 4,
@@ -423,7 +423,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-3.1.1",
+      "id": "3.1.1",
       "title": "Create Claude environment validation",
       "intent": "Verify Claude CLI is installed and working before operations",
       "acceptance": [
@@ -435,7 +435,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-1.1.1"
+        "1.1.1"
       ],
       "phase": 3,
       "epic": 1,
@@ -443,7 +443,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-3.1.2",
+      "id": "3.1.2",
       "title": "Implement Claude invocation wrapper",
       "intent": "Provide clean interface for executing Claude with prompts",
       "acceptance": [
@@ -455,7 +455,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-3.1.1"
+        "3.1.1"
       ],
       "phase": 3,
       "epic": 1,
@@ -463,7 +463,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-3.1.3",
+      "id": "3.1.3",
       "title": "Implement streaming output support",
       "intent": "Enable real-time output display from Claude",
       "acceptance": [
@@ -475,7 +475,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-3.1.2"
+        "3.1.2"
       ],
       "phase": 3,
       "epic": 1,
@@ -483,7 +483,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-3.1.4",
+      "id": "3.1.4",
       "title": "Implement signal parsing",
       "intent": "Detect completion and blocked signals from Claude output",
       "acceptance": [
@@ -495,7 +495,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-3.1.2"
+        "3.1.2"
       ],
       "phase": 3,
       "epic": 1,
@@ -503,7 +503,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-3.1.5",
+      "id": "3.1.5",
       "title": "Implement timeout handling",
       "intent": "Prevent hung Claude sessions with configurable timeout",
       "acceptance": [
@@ -515,7 +515,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-3.1.2"
+        "3.1.2"
       ],
       "phase": 3,
       "epic": 1,
@@ -523,7 +523,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-3.1.6",
+      "id": "3.1.6",
       "title": "Implement token usage parsing",
       "intent": "Extract token counts from Claude stream output",
       "acceptance": [
@@ -534,7 +534,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-3.1.3"
+        "3.1.3"
       ],
       "phase": 3,
       "epic": 1,
@@ -542,7 +542,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-3.2.1",
+      "id": "3.2.1",
       "title": "Create git validation functions",
       "intent": "Verify git repository state before operations",
       "acceptance": [
@@ -554,7 +554,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-1.1.1"
+        "1.1.1"
       ],
       "phase": 3,
       "epic": 2,
@@ -562,7 +562,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-3.2.2",
+      "id": "3.2.2",
       "title": "Implement git branch operations",
       "intent": "Manage feature branches for story work",
       "acceptance": [
@@ -574,7 +574,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-3.2.1"
+        "3.2.1"
       ],
       "phase": 3,
       "epic": 2,
@@ -582,7 +582,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-3.2.3",
+      "id": "3.2.3",
       "title": "Implement git sync operations",
       "intent": "Keep local repo in sync with remote",
       "acceptance": [
@@ -593,7 +593,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-3.2.2"
+        "3.2.2"
       ],
       "phase": 3,
       "epic": 2,
@@ -601,7 +601,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-3.2.4",
+      "id": "3.2.4",
       "title": "Implement git PR and tag operations",
       "intent": "Provide PR creation, merging, and git tag operations for release workflow",
       "acceptance": [
@@ -615,7 +615,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-3.2.3"
+        "3.2.3"
       ],
       "phase": 3,
       "epic": 2,
@@ -623,7 +623,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-4.0.1",
+      "id": "4.0.1",
       "title": "Create prompts directory structure",
       "intent": "Scaffold the embedded prompts directory with proper organization",
       "acceptance": [
@@ -635,7 +635,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-1.1.1"
+        "1.1.1"
       ],
       "phase": 4,
       "epic": 0,
@@ -643,7 +643,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-4.1.1",
+      "id": "4.1.1",
       "title": "Create prompt template loader",
       "intent": "Load and manage prompt templates with placeholder substitution",
       "acceptance": [
@@ -655,7 +655,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.0.1"
+        "4.0.1"
       ],
       "phase": 4,
       "epic": 1,
@@ -663,7 +663,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-4.1.2",
+      "id": "4.1.2",
       "title": "Create story-execute.md prompt template",
       "intent": "Define the main prompt template for story execution",
       "acceptance": [
@@ -675,7 +675,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.0.1"
+        "4.0.1"
       ],
       "phase": 4,
       "epic": 1,
@@ -683,7 +683,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-4.1.3",
+      "id": "4.1.3",
       "title": "Create analyze.md prompt template",
       "intent": "Define prompt for codebase analysis",
       "acceptance": [
@@ -695,8 +695,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.0.1",
-        "STORY-4.3.1"
+        "4.0.1",
+        "4.3.1"
       ],
       "phase": 4,
       "epic": 1,
@@ -704,7 +704,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-4.1.4",
+      "id": "4.1.4",
       "title": "Create plan-add-init.md prompt template",
       "intent": "Define prompt for creating new PRD from scratch",
       "acceptance": [
@@ -716,8 +716,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.0.1",
-        "STORY-4.3.2"
+        "4.0.1",
+        "4.3.2"
       ],
       "phase": 4,
       "epic": 1,
@@ -725,7 +725,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-4.1.5",
+      "id": "4.1.5",
       "title": "Create plan-add-extend.md prompt template",
       "intent": "Define prompt for adding to existing PRD",
       "acceptance": [
@@ -737,7 +737,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.1.4"
+        "4.1.4"
       ],
       "phase": 4,
       "epic": 1,
@@ -745,7 +745,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-4.1.6",
+      "id": "4.1.6",
       "title": "Create plan-refine.md prompt template",
       "intent": "Define prompt for refining existing PRD stories",
       "acceptance": [
@@ -757,8 +757,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.1.5",
-        "STORY-4.3.3"
+        "4.1.5",
+        "4.3.3"
       ],
       "phase": 4,
       "epic": 1,
@@ -766,7 +766,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-4.1.7",
+      "id": "4.1.7",
       "title": "Create init-analyze.md prompt template",
       "intent": "Define prompt for initial project analysis during trinity init",
       "acceptance": [
@@ -778,7 +778,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.0.1"
+        "4.0.1"
       ],
       "phase": 4,
       "epic": 1,
@@ -786,7 +786,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-4.1.8",
+      "id": "4.1.8",
       "title": "Create init-claude-md.md prompt template",
       "intent": "Define prompt for generating project CLAUDE.md",
       "acceptance": [
@@ -798,7 +798,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.1.7"
+        "4.1.7"
       ],
       "phase": 4,
       "epic": 1,
@@ -806,7 +806,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-4.2.1",
+      "id": "4.2.1",
       "title": "Create internal complete prompt",
       "intent": "Define prompt for validating story completion",
       "acceptance": [
@@ -817,7 +817,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.0.1"
+        "4.0.1"
       ],
       "phase": 4,
       "epic": 2,
@@ -825,7 +825,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-4.2.2",
+      "id": "4.2.2",
       "title": "Create internal learn prompt",
       "intent": "Define prompt for processing learnings",
       "acceptance": [
@@ -836,7 +836,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.0.1"
+        "4.0.1"
       ],
       "phase": 4,
       "epic": 2,
@@ -844,7 +844,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-4.2.3",
+      "id": "4.2.3",
       "title": "Create internal add-story prompt",
       "intent": "Define prompt for properly adding new stories",
       "acceptance": [
@@ -855,7 +855,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.0.1"
+        "4.0.1"
       ],
       "phase": 4,
       "epic": 2,
@@ -863,7 +863,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-4.2.4",
+      "id": "4.2.4",
       "title": "Create internal move-story prompt",
       "intent": "Define prompt for handling story renumbering",
       "acceptance": [
@@ -874,7 +874,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.0.1"
+        "4.0.1"
       ],
       "phase": 4,
       "epic": 2,
@@ -882,7 +882,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-4.3.1",
+      "id": "4.3.1",
       "title": "Create analyze.json response schema",
       "intent": "Define expected JSON structure for analyze command output",
       "acceptance": [
@@ -894,7 +894,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.0.1"
+        "4.0.1"
       ],
       "phase": 4,
       "epic": 3,
@@ -902,7 +902,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-4.3.2",
+      "id": "4.3.2",
       "title": "Create plan-add.json response schema",
       "intent": "Define expected JSON structure for plan add command output",
       "acceptance": [
@@ -914,7 +914,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.0.1"
+        "4.0.1"
       ],
       "phase": 4,
       "epic": 3,
@@ -922,7 +922,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-4.3.3",
+      "id": "4.3.3",
       "title": "Create plan-refine.json response schema",
       "intent": "Define expected JSON structure for plan refine command output",
       "acceptance": [
@@ -934,7 +934,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-4.0.1"
+        "4.0.1"
       ],
       "phase": 4,
       "epic": 3,
@@ -942,7 +942,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-5.1.1",
+      "id": "5.1.1",
       "title": "Create loop package structure",
       "intent": "Set up the core autonomous development loop",
       "acceptance": [
@@ -953,8 +953,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.1.6",
-        "STORY-3.1.4"
+        "2.1.6",
+        "3.1.4"
       ],
       "phase": 5,
       "epic": 1,
@@ -962,7 +962,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-5.1.2",
+      "id": "5.1.2",
       "title": "Implement story selection in loop",
       "intent": "Select next story respecting dependencies and state",
       "acceptance": [
@@ -975,7 +975,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-5.1.1"
+        "5.1.1"
       ],
       "phase": 5,
       "epic": 1,
@@ -983,7 +983,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-5.1.3",
+      "id": "5.1.3",
       "title": "Implement branch management in loop",
       "intent": "Create and manage feature branches for each story",
       "acceptance": [
@@ -994,8 +994,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-5.1.1",
-        "STORY-3.2.2"
+        "5.1.1",
+        "3.2.2"
       ],
       "phase": 5,
       "epic": 1,
@@ -1003,7 +1003,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-5.1.4",
+      "id": "5.1.4",
       "title": "Implement story execution in loop",
       "intent": "Execute Claude on a story with full context",
       "acceptance": [
@@ -1015,8 +1015,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-5.1.3",
-        "STORY-4.1.2"
+        "5.1.3",
+        "4.1.2"
       ],
       "phase": 5,
       "epic": 1,
@@ -1024,7 +1024,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-5.1.5",
+      "id": "5.1.5",
       "title": "Implement iteration control",
       "intent": "Control loop iterations with max limit and pause points",
       "acceptance": [
@@ -1035,7 +1035,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-5.1.4"
+        "5.1.4"
       ],
       "phase": 5,
       "epic": 1,
@@ -1043,7 +1043,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-5.1.6",
+      "id": "5.1.6",
       "title": "Implement human testing gate in loop",
       "intent": "Pause loop when story requires human verification",
       "acceptance": [
@@ -1055,7 +1055,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-5.1.4"
+        "5.1.4"
       ],
       "phase": 5,
       "epic": 1,
@@ -1063,7 +1063,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-5.2.1",
+      "id": "5.2.1",
       "title": "Implement state persistence",
       "intent": "Save loop state for crash recovery",
       "acceptance": [
@@ -1074,8 +1074,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-5.1.4",
-        "STORY-2.4.1"
+        "5.1.4",
+        "2.4.1"
       ],
       "phase": 5,
       "epic": 2,
@@ -1083,7 +1083,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-5.2.2",
+      "id": "5.2.2",
       "title": "Implement crash detection",
       "intent": "Detect and recover from crashed agents",
       "acceptance": [
@@ -1094,7 +1094,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-5.2.1"
+        "5.2.1"
       ],
       "phase": 5,
       "epic": 2,
@@ -1102,7 +1102,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-5.2.3",
+      "id": "5.2.3",
       "title": "Implement resume flow",
       "intent": "Resume interrupted work from last checkpoint",
       "acceptance": [
@@ -1113,7 +1113,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-5.2.2"
+        "5.2.2"
       ],
       "phase": 5,
       "epic": 2,
@@ -1121,7 +1121,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.1.1",
+      "id": "6.1.1",
       "title": "Implement trinity init command",
       "intent": "Initialize Trinity for a new project",
       "acceptance": [
@@ -1133,9 +1133,9 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-1.2.2",
-        "STORY-2.1.2",
-        "STORY-1.1.2"
+        "1.2.2",
+        "2.1.2",
+        "1.1.2"
       ],
       "phase": 6,
       "epic": 1,
@@ -1148,7 +1148,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.1.2",
+      "id": "6.1.2",
       "title": "Implement trinity analyze command",
       "intent": "Analyze codebase to understand structure and suggest skills",
       "acceptance": [
@@ -1159,8 +1159,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.1.1",
-        "STORY-4.1.3"
+        "6.1.1",
+        "4.1.3"
       ],
       "phase": 6,
       "epic": 1,
@@ -1173,7 +1173,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.2.1",
+      "id": "6.2.1",
       "title": "Implement trinity plan add command",
       "intent": "Add new work items to the PRD",
       "acceptance": [
@@ -1185,8 +1185,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.1.1",
-        "STORY-4.1.4"
+        "6.1.1",
+        "4.1.4"
       ],
       "phase": 6,
       "epic": 2,
@@ -1199,7 +1199,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.2.2",
+      "id": "6.2.2",
       "title": "Implement trinity plan show command",
       "intent": "Display current PRD structure",
       "acceptance": [
@@ -1211,7 +1211,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.2.1"
+        "6.2.1"
       ],
       "phase": 6,
       "epic": 2,
@@ -1224,7 +1224,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.2.3",
+      "id": "6.2.3",
       "title": "Implement trinity plan skip/retry commands",
       "intent": "Allow skipping blocked stories and retrying failed ones",
       "acceptance": [
@@ -1235,7 +1235,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.2.2"
+        "6.2.2"
       ],
       "phase": 6,
       "epic": 2,
@@ -1243,7 +1243,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.2.4",
+      "id": "6.2.4",
       "title": "Implement trinity plan refine command",
       "intent": "Allow refinement of PRD stories for better clarity",
       "acceptance": [
@@ -1255,7 +1255,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.2.2"
+        "6.2.2"
       ],
       "phase": 6,
       "epic": 2,
@@ -1263,7 +1263,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.3.1",
+      "id": "6.3.1",
       "title": "Implement trinity run command",
       "intent": "Execute the autonomous development loop",
       "acceptance": [
@@ -1275,8 +1275,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-5.1.5",
-        "STORY-1.1.2"
+        "5.1.5",
+        "1.1.2"
       ],
       "phase": 6,
       "epic": 3,
@@ -1289,7 +1289,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.3.2",
+      "id": "6.3.2",
       "title": "Implement run output display",
       "intent": "Show real-time progress during run",
       "acceptance": [
@@ -1300,7 +1300,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.3.1"
+        "6.3.1"
       ],
       "phase": 6,
       "epic": 3,
@@ -1313,7 +1313,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.4.1",
+      "id": "6.4.1",
       "title": "Implement trinity status command",
       "intent": "Show current project status and progress",
       "acceptance": [
@@ -1324,8 +1324,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.1.1",
-        "STORY-1.1.2"
+        "6.1.1",
+        "1.1.2"
       ],
       "phase": 6,
       "epic": 4,
@@ -1338,7 +1338,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.4.2",
+      "id": "6.4.2",
       "title": "Implement trinity status --cost flag",
       "intent": "Show token usage and cost summary",
       "acceptance": [
@@ -1349,8 +1349,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.4.1",
-        "STORY-2.4.3"
+        "6.4.1",
+        "2.4.3"
       ],
       "phase": 6,
       "epic": 4,
@@ -1358,7 +1358,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.5.1",
+      "id": "6.5.1",
       "title": "Implement trinity internal complete command",
       "intent": "Allow Claude to signal story completion",
       "acceptance": [
@@ -1369,8 +1369,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.4.2",
-        "STORY-1.1.2"
+        "2.4.2",
+        "1.1.2"
       ],
       "phase": 6,
       "epic": 5,
@@ -1378,7 +1378,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.5.2",
+      "id": "6.5.2",
       "title": "Implement trinity internal learn command",
       "intent": "Allow Claude to add learnings",
       "acceptance": [
@@ -1389,8 +1389,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.3.2",
-        "STORY-1.1.2"
+        "2.3.2",
+        "1.1.2"
       ],
       "phase": 6,
       "epic": 5,
@@ -1398,7 +1398,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.5.3",
+      "id": "6.5.3",
       "title": "Implement trinity internal add-story command",
       "intent": "Allow Claude to add discovered stories",
       "acceptance": [
@@ -1409,8 +1409,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.1.5",
-        "STORY-1.1.2"
+        "2.1.5",
+        "1.1.2"
       ],
       "phase": 6,
       "epic": 5,
@@ -1418,7 +1418,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.5.4",
+      "id": "6.5.4",
       "title": "Implement trinity internal log command",
       "intent": "Allow Claude to write activity logs",
       "acceptance": [
@@ -1429,8 +1429,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.3.1",
-        "STORY-1.1.2"
+        "2.3.1",
+        "1.1.2"
       ],
       "phase": 6,
       "epic": 5,
@@ -1438,7 +1438,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.5.5",
+      "id": "6.5.5",
       "title": "Implement trinity internal move-story command",
       "intent": "Allow Claude to renumber stories and update references",
       "acceptance": [
@@ -1449,8 +1449,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-2.1.5",
-        "STORY-1.1.2"
+        "2.1.5",
+        "1.1.2"
       ],
       "phase": 6,
       "epic": 5,
@@ -1458,7 +1458,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.6.1",
+      "id": "6.6.1",
       "title": "Implement trinity approve command",
       "intent": "Allow human approval of stories requiring manual testing",
       "acceptance": [
@@ -1471,7 +1471,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-5.1.6"
+        "5.1.6"
       ],
       "phase": 6,
       "epic": 6,
@@ -1484,7 +1484,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.6.2",
+      "id": "6.6.2",
       "title": "Implement trinity reject command",
       "intent": "Allow human rejection with feedback for iteration",
       "acceptance": [
@@ -1497,7 +1497,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.6.1"
+        "6.6.1"
       ],
       "phase": 6,
       "epic": 6,
@@ -1510,7 +1510,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.7.1",
+      "id": "6.7.1",
       "title": "Implement trinity hotfix command",
       "intent": "Enable quick fixes outside the normal PRD flow",
       "acceptance": [
@@ -1522,7 +1522,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.3.1"
+        "6.3.1"
       ],
       "phase": 6,
       "epic": 7,
@@ -1530,7 +1530,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.7.2",
+      "id": "6.7.2",
       "title": "Implement trinity release command",
       "intent": "Ship completed work from dev to main",
       "acceptance": [
@@ -1545,8 +1545,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.3.1",
-        "STORY-3.2.4"
+        "6.3.1",
+        "3.2.4"
       ],
       "phase": 6,
       "epic": 7,
@@ -1554,7 +1554,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.7.3",
+      "id": "6.7.3",
       "title": "Implement trinity pr command",
       "intent": "Allow iteration on PRs before merge via feedback loop",
       "acceptance": [
@@ -1568,8 +1568,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-3.2.4",
-        "STORY-6.3.1"
+        "3.2.4",
+        "6.3.1"
       ],
       "phase": 6,
       "epic": 7,
@@ -1577,7 +1577,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.8.1",
+      "id": "6.8.1",
       "title": "Implement trinity skills list command",
       "intent": "Show installed Claude Code skills",
       "acceptance": [
@@ -1588,7 +1588,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-1.1.2"
+        "1.1.2"
       ],
       "phase": 6,
       "epic": 8,
@@ -1596,7 +1596,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.8.2",
+      "id": "6.8.2",
       "title": "Implement trinity skills suggest command",
       "intent": "Suggest skills based on detected project stack",
       "acceptance": [
@@ -1607,8 +1607,8 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.8.1",
-        "STORY-6.1.2"
+        "6.8.1",
+        "6.1.2"
       ],
       "phase": 6,
       "epic": 8,
@@ -1616,7 +1616,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-6.8.3",
+      "id": "6.8.3",
       "title": "Implement trinity skills add/remove commands",
       "intent": "Install and remove Claude Code skills",
       "acceptance": [
@@ -1627,7 +1627,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.8.1"
+        "6.8.1"
       ],
       "phase": 6,
       "epic": 8,
@@ -1635,7 +1635,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-7.1.1",
+      "id": "7.1.1",
       "title": "Add comprehensive error messages",
       "intent": "Provide helpful error messages for common issues",
       "acceptance": [
@@ -1646,7 +1646,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.3.1"
+        "6.3.1"
       ],
       "phase": 7,
       "epic": 1,
@@ -1654,7 +1654,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-7.1.2",
+      "id": "7.1.2",
       "title": "Add colored terminal output",
       "intent": "Improve CLI readability with colors",
       "acceptance": [
@@ -1667,7 +1667,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.3.2"
+        "6.3.2"
       ],
       "phase": 7,
       "epic": 1,
@@ -1680,7 +1680,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-7.1.3",
+      "id": "7.1.3",
       "title": "Add progress spinners",
       "intent": "Show activity during long-running operations",
       "acceptance": [
@@ -1691,7 +1691,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-7.1.2"
+        "7.1.2"
       ],
       "phase": 7,
       "epic": 1,
@@ -1704,7 +1704,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-7.2.1",
+      "id": "7.2.1",
       "title": "Write README with quick start guide",
       "intent": "Help users get started with Trinity",
       "acceptance": [
@@ -1715,7 +1715,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.3.1"
+        "6.3.1"
       ],
       "phase": 7,
       "epic": 2,
@@ -1723,7 +1723,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-7.2.2",
+      "id": "7.2.2",
       "title": "Add --help for all commands",
       "intent": "Provide inline help for all CLI commands",
       "acceptance": [
@@ -1734,7 +1734,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-6.3.1"
+        "6.3.1"
       ],
       "phase": 7,
       "epic": 2,
@@ -1742,7 +1742,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-7.3.1",
+      "id": "7.3.1",
       "title": "End-to-end test on sample project",
       "intent": "Verify complete workflow works",
       "acceptance": [
@@ -1754,7 +1754,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-7.1.1"
+        "7.1.1"
       ],
       "phase": 7,
       "epic": 3,
@@ -1767,7 +1767,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-7.3.2",
+      "id": "7.3.2",
       "title": "Test crash recovery",
       "intent": "Verify recovery from interrupted sessions",
       "acceptance": [
@@ -1778,7 +1778,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-7.3.1"
+        "7.3.1"
       ],
       "phase": 7,
       "epic": 3,
@@ -1791,7 +1791,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-7.3.3",
+      "id": "7.3.3",
       "title": "Test dependency resolution",
       "intent": "Verify dependency system works correctly",
       "acceptance": [
@@ -1802,7 +1802,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "STORY-7.3.1"
+        "7.3.1"
       ],
       "phase": 7,
       "epic": 3,
@@ -1815,7 +1815,7 @@
       "target_version": "v1.0"
     },
     {
-      "id": "STORY-8.1.1",
+      "id": "8.1.1",
       "title": "Final human testing and v1.0 sign-off",
       "intent": "Comprehensive manual validation before release - wraps all loose ends",
       "acceptance": [
@@ -1835,40 +1835,40 @@
       "passes": false,
       "depends_on": [
         "7",
-        "STORY-1.1.3",
-        "STORY-1.2.3",
-        "STORY-1.3.2",
-        "STORY-2.2.2",
-        "STORY-3.1.5",
-        "STORY-3.1.6",
-        "STORY-4.1.1",
-        "STORY-4.1.6",
-        "STORY-4.1.8",
-        "STORY-4.2.1",
-        "STORY-4.2.2",
-        "STORY-4.2.3",
-        "STORY-4.2.4",
-        "STORY-5.1.2",
-        "STORY-5.2.3",
-        "STORY-6.2.3",
-        "STORY-6.2.4",
-        "STORY-6.4.2",
-        "STORY-6.5.1",
-        "STORY-6.5.2",
-        "STORY-6.5.3",
-        "STORY-6.5.4",
-        "STORY-6.5.5",
-        "STORY-6.6.2",
-        "STORY-6.7.1",
-        "STORY-6.7.2",
-        "STORY-6.7.3",
-        "STORY-6.8.2",
-        "STORY-6.8.3",
-        "STORY-7.1.3",
-        "STORY-7.2.1",
-        "STORY-7.2.2",
-        "STORY-7.3.2",
-        "STORY-7.3.3"
+        "1.1.3",
+        "1.2.3",
+        "1.3.2",
+        "2.2.2",
+        "3.1.5",
+        "3.1.6",
+        "4.1.1",
+        "4.1.6",
+        "4.1.8",
+        "4.2.1",
+        "4.2.2",
+        "4.2.3",
+        "4.2.4",
+        "5.1.2",
+        "5.2.3",
+        "6.2.3",
+        "6.2.4",
+        "6.4.2",
+        "6.5.1",
+        "6.5.2",
+        "6.5.3",
+        "6.5.4",
+        "6.5.5",
+        "6.6.2",
+        "6.7.1",
+        "6.7.2",
+        "6.7.3",
+        "6.8.2",
+        "6.8.3",
+        "7.1.3",
+        "7.2.1",
+        "7.2.2",
+        "7.3.2",
+        "7.3.3"
       ],
       "phase": 8,
       "epic": 1,

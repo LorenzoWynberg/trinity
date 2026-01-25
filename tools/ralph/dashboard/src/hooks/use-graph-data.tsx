@@ -31,75 +31,100 @@ function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatu
 }
 
 // Resolve a dependency reference to story IDs
-// Supports: STORY-X.Y.Z, v2:STORY-X.Y.Z, X (phase), X:Y (phase:epic), vN.N:X (version-scoped phase)
-export function resolveDependency(dep: string, stories: Story[]): string[] {
-  // Extract version filter if present (e.g., "v2.0:1" -> version="v2.0", target="1")
-  let target = dep
-  let versionFilter: string | null = null
-
-  if (/^v[0-9]+\.[0-9]+:/.test(dep)) {
-    const parts = dep.split(':')
-    versionFilter = parts[0]
-    target = parts.slice(1).join(':')
-  } else if (/^v[0-9]+\.[0-9]+$/.test(dep)) {
-    // Entire version - return leaf stories in that version
+// Supports: 1.2.3 (story), v1.0:1.2.3 (cross-version story), v1.0 (whole version), 1 (phase), 1:2 (phase:epic)
+// Returns: array of { storyId, nodeId } where nodeId = version:storyId
+export function resolveDependency(dep: string, stories: Story[], currentVersion?: string): { storyId: string; nodeId: string; crossVersion: boolean }[] {
+  // Full version dependency (e.g., "v1.0") - return leaf stories
+  if (/^v[0-9]+\.[0-9]+$/.test(dep)) {
     const version = dep
     const versionStories = stories.filter(s => s.target_version === version)
     const versionIds = new Set(versionStories.map(s => s.id))
     const dependedOn = new Set<string>()
     versionStories.forEach(s => {
       s.depends_on?.forEach(d => {
-        // Check if dep resolves to a story in this version
         if (versionIds.has(d)) dependedOn.add(d)
       })
     })
-    return versionStories.filter(s => !dependedOn.has(s.id)).map(s => s.id)
+    return versionStories
+      .filter(s => !dependedOn.has(s.id))
+      .map(s => ({ storyId: s.id, nodeId: `${version}:${s.id}`, crossVersion: version !== currentVersion }))
   }
 
-  // Filter stories by version if specified
-  const filteredStories = versionFilter
-    ? stories.filter(s => s.target_version === versionFilter)
-    : stories
-
-  // Specific story (STORY-X.Y.Z or v2:STORY-X.Y.Z)
-  if (target.startsWith('STORY-') || target.includes(':STORY-')) {
-    // Handle prefixed IDs like "v2:STORY-1.1.1"
-    const storyId = target.includes(':STORY-') ? target : target
-    const fullId = versionFilter ? `${versionFilter.replace('.', '')}:${storyId}`.replace('v', 'v') : storyId
-    // Try both the target as-is and with common prefixes
-    const found = stories.find(s => s.id === target || s.id === dep)
-    return found ? [found.id] : []
+  // Cross-version specific story (e.g., "v1.0:1.2.3")
+  if (/^v[0-9]+\.[0-9]+:[0-9]+\.[0-9]+\.[0-9]+$/.test(dep)) {
+    const [version, storyId] = dep.split(':')
+    const found = stories.find(s => s.id === storyId && s.target_version === version)
+    if (found) {
+      return [{ storyId: found.id, nodeId: `${version}:${found.id}`, crossVersion: version !== currentVersion }]
+    }
+    return []
   }
 
-  // Phase:Epic (e.g., "1:2")
-  if (/^[0-9]+:[0-9]+$/.test(target)) {
-    const [phase, epic] = target.split(':').map(Number)
-    const epicStories = filteredStories.filter(s => s.phase === phase && s.epic === epic)
-    const epicIds = new Set(epicStories.map(s => s.id))
-    const dependedOn = new Set<string>()
-    epicStories.forEach(s => {
-      s.depends_on?.forEach(d => {
-        if (epicIds.has(d)) dependedOn.add(d)
-      })
-    })
-    return epicStories.filter(s => !dependedOn.has(s.id)).map(s => s.id)
+  // Specific story in same version (e.g., "1.2.3")
+  if (/^[0-9]+\.[0-9]+\.[0-9]+$/.test(dep)) {
+    // Find in same version first, then any version
+    const sameVersion = stories.find(s => s.id === dep && s.target_version === currentVersion)
+    if (sameVersion) {
+      return [{ storyId: sameVersion.id, nodeId: `${currentVersion}:${sameVersion.id}`, crossVersion: false }]
+    }
+    const anyVersion = stories.find(s => s.id === dep)
+    if (anyVersion) {
+      return [{ storyId: anyVersion.id, nodeId: `${anyVersion.target_version}:${anyVersion.id}`, crossVersion: anyVersion.target_version !== currentVersion }]
+    }
+    return []
   }
 
-  // Just phase (e.g., "1")
-  if (/^[0-9]+$/.test(target)) {
-    const phase = Number(target)
-    const phaseStories = filteredStories.filter(s => s.phase === phase)
-    const phaseIds = new Set(phaseStories.map(s => s.id))
-    const dependedOn = new Set<string>()
-    phaseStories.forEach(s => {
-      s.depends_on?.forEach(d => {
-        if (phaseIds.has(d)) dependedOn.add(d)
-      })
-    })
-    return phaseStories.filter(s => !dependedOn.has(s.id)).map(s => s.id)
+  // Version-scoped phase or epic (e.g., "v1.0:1" or "v1.0:1:2")
+  if (/^v[0-9]+\.[0-9]+:[0-9]+/.test(dep)) {
+    const parts = dep.split(':')
+    const version = parts[0]
+    const target = parts.slice(1).join(':')
+    const filteredStories = stories.filter(s => s.target_version === version)
+    return resolvePhaseEpic(target, filteredStories, version, currentVersion)
+  }
+
+  // Phase:Epic (e.g., "1:2") - scope to current version
+  if (/^[0-9]+:[0-9]+$/.test(dep)) {
+    const filteredStories = currentVersion
+      ? stories.filter(s => s.target_version === currentVersion)
+      : stories
+    return resolvePhaseEpic(dep, filteredStories, currentVersion || 'unknown', currentVersion)
+  }
+
+  // Just phase (e.g., "1") - scope to current version
+  if (/^[0-9]+$/.test(dep)) {
+    const filteredStories = currentVersion
+      ? stories.filter(s => s.target_version === currentVersion)
+      : stories
+    return resolvePhaseEpic(dep, filteredStories, currentVersion || 'unknown', currentVersion)
   }
 
   return []
+}
+
+// Helper to resolve phase or phase:epic to leaf stories
+function resolvePhaseEpic(target: string, filteredStories: Story[], version: string, currentVersion?: string): { storyId: string; nodeId: string; crossVersion: boolean }[] {
+  let matchingStories: Story[]
+
+  if (/^[0-9]+:[0-9]+$/.test(target)) {
+    const [phase, epic] = target.split(':').map(Number)
+    matchingStories = filteredStories.filter(s => s.phase === phase && s.epic === epic)
+  } else {
+    const phase = Number(target)
+    matchingStories = filteredStories.filter(s => s.phase === phase)
+  }
+
+  const matchingIds = new Set(matchingStories.map(s => s.id))
+  const dependedOn = new Set<string>()
+  matchingStories.forEach(s => {
+    s.depends_on?.forEach(d => {
+      if (matchingIds.has(d)) dependedOn.add(d)
+    })
+  })
+
+  return matchingStories
+    .filter(s => !dependedOn.has(s.id))
+    .map(s => ({ storyId: s.id, nodeId: `${version}:${s.id}`, crossVersion: version !== currentVersion }))
 }
 
 // Calculate depth of each node (longest path from root)
@@ -119,7 +144,9 @@ function calculateDepths(stories: Story[]): Map<string, number> {
     }
 
     // Resolve all dependencies (including phase/epic refs) to story IDs
-    const resolvedDeps = story.depends_on.flatMap(dep => resolveDependency(dep, stories))
+    const resolvedDeps = story.depends_on.flatMap(dep =>
+      resolveDependency(dep, stories, story.target_version).map(r => r.storyId)
+    )
     const validDeps = resolvedDeps.filter(dep => storyMap.has(dep))
 
     if (validDeps.length === 0) {
@@ -549,24 +576,28 @@ export function useGraphData(version: string = 'all'): GraphData {
           }
         }
 
+        // Build node ID helper (version:storyId)
+        const getNodeId = (story: Story) => `${story.target_version}:${story.id}`
+
         // Find dead-end nodes (stories that nothing depends on)
         const dependedOn = new Set<string>()
         storiesData.forEach(story => {
           if (story.depends_on) {
             story.depends_on.forEach(depRef => {
-              const resolvedIds = resolveDependency(depRef, storiesData)
-              resolvedIds.forEach(id => dependedOn.add(id))
+              const resolved = resolveDependency(depRef, storiesData, story.target_version)
+              resolved.forEach(r => dependedOn.add(r.nodeId))
             })
           }
         })
 
-        // Add story nodes
+        // Add story nodes with versioned IDs
         for (const story of storiesData) {
+          const nodeId = getNodeId(story)
           const status = getStoryStatus(story, currentStoryId)
           const pos = positions[story.id] || { x: 0, y: 0 }
-          const isDeadEnd = !dependedOn.has(story.id)
+          const isDeadEnd = !dependedOn.has(nodeId)
           nodeList.push({
-            id: story.id,
+            id: nodeId,
             type: 'story',
             position: pos,
             draggable: !isAutoLayout,
@@ -584,27 +615,25 @@ export function useGraphData(version: string = 'all'): GraphData {
 
         // Create edges
         const edgeList: Edge[] = []
-        const nodeIds = new Set(storiesData.map(s => s.id))
+        const nodeIdSet = new Set(storiesData.map(s => getNodeId(s)))
         const edgeIds = new Set<string>() // Track edge IDs to avoid duplicates
 
         // Add edges from version headers to root stories (no deps within SAME version)
         if (showVersionHeaders) {
           for (const story of storiesData) {
-            // A story is a "root" of its version if it has no deps on stories in the SAME version
-            const sameVersionStoryIds = new Set(
-              storiesData.filter(s => s.target_version === story.target_version).map(s => s.id)
-            )
+            const nodeId = getNodeId(story)
+            // A story is a "root" of its version if it has no same-version deps
             const hasSameVersionDeps = story.depends_on && story.depends_on.length > 0 &&
               story.depends_on.some(depRef => {
-                const resolved = resolveDependency(depRef, storiesData)
-                return resolved.some(id => sameVersionStoryIds.has(id))
+                const resolved = resolveDependency(depRef, storiesData, story.target_version)
+                return resolved.some(r => !r.crossVersion)
               })
 
             if (!hasSameVersionDeps && story.target_version) {
               edgeList.push({
-                id: `version:${story.target_version}->${story.id}`,
+                id: `version:${story.target_version}->${nodeId}`,
                 source: `version:${story.target_version}`,
-                target: story.id,
+                target: nodeId,
                 type: 'smoothstep',
                 markerEnd: {
                   type: MarkerType.ArrowClosed,
@@ -624,6 +653,7 @@ export function useGraphData(version: string = 'all'): GraphData {
         const versionEdgesCreated = new Set<string>()
 
         for (const story of storiesData) {
+          const storyNodeId = getNodeId(story)
           if (story.depends_on) {
             for (const depRef of story.depends_on) {
               // Check if this is a full version dependency (e.g., "v1.0")
@@ -653,26 +683,24 @@ export function useGraphData(version: string = 'all'): GraphData {
               }
 
               // Resolve dependency reference to actual story IDs
-              const resolvedIds = resolveDependency(depRef, storiesData)
+              const resolved = resolveDependency(depRef, storiesData, story.target_version)
 
-              for (const actualDepId of resolvedIds) {
-                if (nodeIds.has(actualDepId)) {
-                  const depStory = storiesData.find(s => s.id === actualDepId)
+              for (const { nodeId: depNodeId, storyId: depStoryId, crossVersion } of resolved) {
+                if (nodeIdSet.has(depNodeId)) {
+                  const depStory = storiesData.find(s => s.id === depStoryId)
                   const isDepMerged = depStory?.merged
-                  const isCrossVersion = depStory?.target_version !== story.target_version
 
-                  // Skip cross-version story-to-story edges when showing version headers
-                  // (version-to-version edges handle this more cleanly)
-                  if (isCrossVersion && showVersionHeaders) continue
-
-                  const edgeId = `${actualDepId}->${story.id}`
+                  const edgeId = `${depNodeId}->${storyNodeId}`
                   if (edgeIds.has(edgeId)) continue
                   edgeIds.add(edgeId)
 
+                  // Cross-version story-to-story edges are orange dotted (option B)
+                  const isCrossVersionStoryEdge = crossVersion && showVersionHeaders
+
                   edgeList.push({
                     id: edgeId,
-                    source: actualDepId,
-                    target: story.id,
+                    source: depNodeId,
+                    target: storyNodeId,
                     type: 'smoothstep',
                     markerEnd: {
                       type: MarkerType.ArrowClosed,
@@ -680,8 +708,9 @@ export function useGraphData(version: string = 'all'): GraphData {
                       height: 12,
                     },
                     style: {
-                      strokeWidth: 2,
-                      stroke: isDepMerged ? '#22c55e' : '#6b7280',
+                      strokeWidth: isCrossVersionStoryEdge ? 3 : 2,
+                      stroke: isCrossVersionStoryEdge ? '#f59e0b' : (isDepMerged ? '#22c55e' : '#6b7280'),
+                      strokeDasharray: isCrossVersionStoryEdge ? '5,5' : undefined,
                     },
                     animated: getStoryStatus(story, currentStoryId) === 'in_progress',
                   })
