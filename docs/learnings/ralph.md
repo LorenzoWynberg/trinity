@@ -131,6 +131,26 @@ When user chooses `[r]eport`:
 ### No "yes ready" option
 Unlike validation, there's no "proceed without report" option. If a story has external deps, Claude needs to know *how* they were implemented to integrate with them. You either provide the report or skip.
 
+### Report propagation to descendants
+When external deps report is provided:
+1. Report is saved to PRD (`external_deps_report` field)
+2. All descendant stories are found (recursive traversal of dependency tree)
+3. Claude analyzes which descendants need their acceptance criteria updated
+4. Only relevant stories are updated with concrete details from the report
+
+**Example:**
+```
+Story 7.2.1 (Auth) gets report: "OAuth with /auth/login, JWT tokens"
+  ↓
+Descendants found: 7.2.2, 7.2.3, 7.3.1, 8.1.1
+  ↓
+Claude analyzes: "7.2.2 and 7.3.1 need updating, others unrelated"
+  ↓
+PRD updated with OAuth-specific acceptance criteria
+```
+
+This keeps the PRD as source of truth with decisions baked in.
+
 ## PR Flow
 
 ### Prompts with defaults

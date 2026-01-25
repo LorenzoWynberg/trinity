@@ -401,7 +401,15 @@ while (< $current-iteration $config[max-iterations]) {
               state:write $current-state
               continue
             }
-            ui:success "External deps report received, proceeding..." > /dev/tty
+            ui:success "External deps report received" > /dev/tty
+
+            # Save report to PRD
+            prd:save-external-deps-report $story-id $pending-ext-deps-report
+
+            # Propagate to descendant stories
+            echo "" > /dev/tty
+            claude:propagate-external-deps $story-id $pending-ext-deps-report
+            echo "" > /dev/tty
           }
         } catch { }
       }

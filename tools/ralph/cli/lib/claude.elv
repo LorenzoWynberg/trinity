@@ -593,3 +593,135 @@ fn run-plan-mode {|story-id target-version|
   ui:divider-end
   ui:dim "Plan mode complete. No files were modified."
 }
+
+# Propagate external deps report to descendant stories
+# Analyzes which descendants need updating and updates their acceptance criteria
+fn propagate-external-deps {|story-id report|
+  ui:status "Analyzing descendant stories for updates..."
+
+  # Get all descendants
+  var descendants = [(prd:get-descendants $story-id)]
+
+  if (eq (count $descendants) 0) {
+    ui:dim "  No dependent stories found"
+    return
+  }
+
+  ui:dim "  Found "(count $descendants)" descendant(s): "(str:join ", " $descendants)
+
+  # Get summary of descendants for Claude
+  var summary = (prd:get-stories-summary $descendants)
+  var story-title = (prd:get-story-title $story-id)
+
+  var prompt = 'You are updating a PRD based on implementation decisions.
+
+Story '$story-id' ("'$story-title'") has external dependencies that were just implemented.
+
+## External Dependencies Report
+'$report'
+
+## Descendant Stories
+These stories depend on '$story-id' (directly or transitively):
+
+'$summary'
+
+## Task
+Analyze each descendant story. Determine which ones need their acceptance criteria updated based on the external deps report.
+
+For stories that need updates, provide specific, concrete acceptance criteria that reference the actual implementation details from the report.
+
+Output format (JSON):
+```json
+{
+  "updates": [
+    {
+      "id": "X.Y.Z",
+      "reason": "Brief reason why this needs updating",
+      "acceptance": ["New criterion 1", "New criterion 2", "..."]
+    }
+  ],
+  "skip": [
+    {
+      "id": "X.Y.Z",
+      "reason": "Brief reason why this can stay as-is"
+    }
+  ]
+}
+```
+
+Rules:
+- Only update stories where the external deps report is directly relevant
+- Keep acceptance criteria specific and testable
+- Preserve any existing criteria that are still valid
+- Reference concrete details from the report (endpoints, formats, etc.)
+- Skip stories that are unrelated to the external dependencies'
+
+  var result = ""
+  try {
+    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
+  } catch e {
+    ui:error "Failed to analyze descendants: "(to-string $e[reason])
+    return
+  }
+
+  # Extract JSON from response
+  var json-block = ""
+  try {
+    set json-block = (echo $result | sed -n '/```json/,/```/p' | sed '1d;$d' | slurp)
+  } catch _ {
+    ui:warn "Could not parse Claude response"
+    return
+  }
+
+  if (eq $json-block "") {
+    ui:dim "  No updates needed"
+    return
+  }
+
+  # Parse and apply updates
+  var updates = []
+  try {
+    set updates = [(echo $json-block | jq -r '.updates[]? | "\(.id)|\(.reason)"')]
+  } catch _ { }
+
+  var skips = []
+  try {
+    set skips = [(echo $json-block | jq -r '.skip[]? | "\(.id): \(.reason)"')]
+  } catch _ { }
+
+  # Show skips
+  if (> (count $skips) 0) {
+    ui:dim "  Skipping (unrelated):"
+    for skip $skips {
+      ui:dim "    - "$skip
+    }
+  }
+
+  # Apply updates
+  if (> (count $updates) 0) {
+    ui:status "Updating "(count $updates)" descendant(s):"
+    for update $updates {
+      var parts = [(str:split "|" $update)]
+      var sid = $parts[0]
+      var reason = ""
+      if (> (count $parts) 1) {
+        set reason = $parts[1]
+      }
+
+      # Get new acceptance criteria for this story
+      var new-acceptance = ""
+      try {
+        set new-acceptance = (echo $json-block | jq -c '.updates[] | select(.id == "'$sid'") | .acceptance')
+      } catch _ {
+        continue
+      }
+
+      if (and (not (eq $new-acceptance "")) (not (eq $new-acceptance "null"))) {
+        prd:update-story-acceptance $sid $new-acceptance
+        ui:success "  ✓ "$sid": "$reason
+      }
+    }
+  } else {
+    ui:dim "  No stories need updating"
+  }
+}

@@ -843,3 +843,65 @@ fn get-clarification {|story-id questions|
 
   put $content
 }
+
+# ═══════════════════════════════════════════════════════════════════════════
+# EXTERNAL DEPS PROPAGATION
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Save external deps report to a story in the PRD
+fn save-external-deps-report {|story-id report|
+  var tmp = (mktemp)
+  # Escape the report for JSON (handle newlines, quotes)
+  var escaped-report = (echo $report | jq -Rs '.')
+  jq '(.stories[] | select(.id == "'$story-id'")).external_deps_report = '$escaped-report $prd-file > $tmp
+  mv $tmp $prd-file
+}
+
+# Get all descendants of a story (stories that depend on it, recursively)
+# Returns list of story IDs
+fn get-descendants {|story-id|
+  var descendants = []
+  var to-check = [$story-id]
+  var checked = [&]
+
+  while (> (count $to-check) 0) {
+    var current = $to-check[0]
+    set to-check = $to-check[1..]
+
+    if (has-key $checked $current) {
+      continue
+    }
+    set checked[$current] = $true
+
+    # Find stories that depend on current (directly)
+    var dependents = [(jq -r '.stories[] | select(.depends_on != null) | select(.depends_on[] == "'$current'") | .id' $prd-file)]
+
+    for dep $dependents {
+      if (not (has-key $checked $dep)) {
+        set descendants = [$@descendants $dep]
+        set to-check = [$@to-check $dep]
+      }
+    }
+  }
+
+  put $@descendants
+}
+
+# Get summary of stories for Claude to analyze
+# Returns formatted string with id, title, acceptance for each story
+fn get-stories-summary {|story-ids|
+  var summary = ""
+  for sid $story-ids {
+    var title = (jq -r '.stories[] | select(.id == "'$sid'") | .title // ""' $prd-file)
+    var acceptance = (jq -r '.stories[] | select(.id == "'$sid'") | .acceptance // [] | join("; ")' $prd-file)
+    set summary = $summary"- "$sid": "$title"\n  Acceptance: "$acceptance"\n\n"
+  }
+  put $summary
+}
+
+# Update a story's acceptance criteria
+fn update-story-acceptance {|story-id new-acceptance-json|
+  var tmp = (mktemp)
+  jq '(.stories[] | select(.id == "'$story-id'")).acceptance = '$new-acceptance-json $prd-file > $tmp
+  mv $tmp $prd-file
+}
