@@ -629,19 +629,25 @@ export function useGraphData(version: string = 'all'): GraphData {
 
               for (const actualDepId of resolvedIds) {
                 if (nodeIds.has(actualDepId)) {
-                  const edgeId = `${actualDepId}->${story.id}`
-                  // Skip duplicate edges (can happen when phase ref and explicit story ref resolve to same story)
-                  if (edgeIds.has(edgeId)) continue
-                  edgeIds.add(edgeId)
-
                   const depStory = storiesData.find(s => s.id === actualDepId)
                   const isDepMerged = depStory?.merged
                   const isCrossVersion = depStory?.target_version !== story.target_version
 
+                  // Cross-version deps go to the VERSION NODE, not directly to the story
+                  // This creates: v1 story → v2 node (and v2 node → v2 story is already created above)
+                  const targetId = (isCrossVersion && showVersionHeaders && story.target_version)
+                    ? `version:${story.target_version}`
+                    : story.id
+
+                  const edgeId = `${actualDepId}->${targetId}`
+                  // Skip duplicate edges
+                  if (edgeIds.has(edgeId)) continue
+                  edgeIds.add(edgeId)
+
                   edgeList.push({
                     id: edgeId,
                     source: actualDepId,
-                    target: story.id,
+                    target: targetId,
                     type: 'smoothstep',
                     markerEnd: {
                       type: MarkerType.ArrowClosed,
