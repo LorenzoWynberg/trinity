@@ -26,7 +26,7 @@ export function StoryCard({ story, status }: StoryCardProps) {
       <Card className="hover:border-primary transition-colors cursor-pointer h-full">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
-            <CardTitle className="text-sm font-mono">{story.id}</CardTitle>
+            <CardTitle className="text-sm font-mono">Story {story.id}</CardTitle>
             <Badge className={cn('text-xs', config.className)}>{config.label}</Badge>
           </div>
           <p className="text-sm font-medium leading-snug">{story.title}</p>
