@@ -28,14 +28,18 @@ export default async function StoriesPage({ searchParams }: PageProps) {
 
   const currentStoryId = state?.current_story || null
   const phases = [...new Set(prd.stories.map(s => s.phase))].sort((a, b) => a - b)
+  const versionCount = [...new Set(prd.stories.map(s => s.target_version))].length
+
+  // Build description based on whether viewing all versions or single version
+  const description = currentVersion === 'all'
+    ? `${prd.stories.length} stories across ${versionCount} versions`
+    : `${prd.stories.length} stories across ${phases.length} phases`
 
   return (
     <div className="p-8 space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Stories</h1>
-        <p className="text-muted-foreground">
-          {prd.stories.length} stories across {phases.length} phases
-        </p>
+        <p className="text-muted-foreground">{description}</p>
       </div>
 
       <StoriesList stories={prd.stories} currentStoryId={currentStoryId} versions={versions} currentVersion={currentVersion} />
