@@ -4,9 +4,13 @@
 
 ## CLI Commands & Flags
 
+> **Note:** Ralph is written in [Elvish](https://elv.sh). See `docs/learnings/elvish.md` for language gotchas.
+
 ### Quick Reference
 
 ```bash
+elvish ./ralph.elv [OPTIONS]
+# or if executable:
 ./ralph.elv [OPTIONS]
 ```
 
@@ -289,10 +293,6 @@ claude --output-format stream-json < prompt.md 2>&1 | \
 ```
 
 Key flags: `--line-buffered` on grep, `--unbuffered` on jq, `-rj` for raw output.
-
-### Elvish
-
-Ralph is written in Elvish shell. See `docs/learnings/elvish.md` for language-specific patterns and gotchas (arity mismatches, value vs byte pipelines, map access, etc.).
 
 ---
 <!-- updatedAt: 2026-01-25 -->
