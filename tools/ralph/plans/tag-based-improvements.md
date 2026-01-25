@@ -301,34 +301,74 @@ Analyze all:
 
 ### Solution
 
-Optionally expand propagation scope using tag similarity:
+Two-phase analysis with tree proximity ordering:
 
 ```
-propagate-external-deps --include-related
-                          ↓
-1. Get descendants (existing): [7.1.3, 7.1.4, 7.1.5, 7.1.6]
-2. Get tag-related (new): stories with ≥1 overlapping tag
-   Source tags: [auth, api]
-   Matches: [3.1.6, 6.3.3, 2.1.5, ...]
-3. Dedupe and categorize:
-   - Descendants (high confidence)
-   - Related (lower confidence, needs review)
-                          ↓
-Analyze in two batches, show separately:
-
-  "Direct descendants (4 stories):"
-    ✓ 7.1.3 - updated (added JWT format details)
-    ✓ 7.1.4 - updated (added endpoint URL)
-    ○ 7.1.5 - unchanged (not relevant)
-    ○ 7.1.6 - unchanged (already complete)
-
-  "Related by tags (3 stories) - review recommended:"
-    ? 6.3.3 - might need auth header for API calls
-    ○ 3.1.6 - different API, skip
-    ○ 2.1.5 - database layer, skip
-
-  "[a]pply related updates / [r]eview individually / [s]kip related"
+External deps report provided for story 7.1.2 [auth, api]
+                    ↓
+┌─────────────────────────────────────────────────────────────┐
+│ PHASE A: Descendants (always, high confidence)              │
+├─────────────────────────────────────────────────────────────┤
+│ Get all descendants of 7.1.2                                │
+│ → [7.1.3, 7.1.4, 7.1.5, 7.1.6]                              │
+│ Order: already in dependency order                          │
+│ Batch (10 per) & analyze with context aggregation           │
+└─────────────────────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────────────────────┐
+│ PHASE B: Tag-related (only with --include-related flag)     │
+├─────────────────────────────────────────────────────────────┤
+│ 1. FILTER: ≥1 tag overlap with [auth, api]                  │
+│    → Candidates: [3.1.6, 6.3.3, 6.5.1, 2.1.5, ...]          │
+│                                                             │
+│ 2. EXCLUDE: descendants (already handled in Phase A)        │
+│    → Remaining: [3.1.6, 6.3.3, 6.5.1, 2.1.5]                │
+│                                                             │
+│ 3. SORT by tree proximity to source (7.1.2):                │
+│    ┌─────────────────────────────────────────────┐          │
+│    │ Same epic (7.1.x):      [none remaining]    │ ← first  │
+│    │ Same phase (7.x.x):     [none remaining]    │          │
+│    │ Adjacent phase (6.x.x): [6.3.3, 6.5.1]      │          │
+│    │ Distant phase:          [3.1.6, 2.1.5]      │ ← last   │
+│    └─────────────────────────────────────────────┘          │
+│                                                             │
+│ 4. Batch (10 per) & analyze with conservative prompt        │
+│    Context aggregation carries decisions between batches    │
+└─────────────────────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────────────────────┐
+│ UI Output                                                   │
+├─────────────────────────────────────────────────────────────┤
+│ Direct descendants (4 stories):                             │
+│   ✓ 7.1.3 - updated                                         │
+│   ✓ 7.1.4 - updated                                         │
+│   ○ 7.1.5 - unchanged                                       │
+│   ○ 7.1.6 - unchanged                                       │
+│                                                             │
+│ Related by tags (4 stories) - review recommended:           │
+│   ? 6.3.3 - might need auth header                          │
+│   ? 6.5.1 - might need token check                          │
+│   ○ 3.1.6 - unrelated (Claude API tokens)                   │
+│   ○ 2.1.5 - unrelated (database)                            │
+│                                                             │
+│ [a]pply all / [r]eview individually / [s]kip                │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+### Key Concepts
+
+**Tag overlap = qualification filter**
+- ≥1 tag overlap → qualifies for analysis
+- 0 tag overlap → excluded
+
+**Tree proximity = sort order (not relevance score)**
+- Closer stories analyzed first
+- If batching cuts off, distant stories get skipped first
+- Order: same epic → same phase → adjacent phase → distant phase
+
+**Two separate analysis phases**
+- Phase A (descendants) always runs, high confidence
+- Phase B (tag-related) only with `--include-related`, lower confidence
 
 ### Why Optional/Flagged
 
@@ -344,47 +384,84 @@ Making it opt-in (`--include-related`) lets users choose when they want deeper a
 
 **Files to modify:**
 - `tools/ralph/cli/lib/claude.elv` - Add `--include-related` handling
+- `tools/ralph/cli/lib/prd.elv` - Add `sort-by-proximity` function
 - `tools/ralph/cli/lib/cli.elv` - Add flag
+
+**New prd.elv function:**
+```elvish
+# Sort stories by tree proximity to a source story
+# Returns stories ordered: same epic → same phase → adjacent phase → distant
+fn sort-by-proximity {|source-id story-ids|
+  var source-info = (get-story-info $source-id)
+  var source-phase = $source-info[phase]
+  var source-epic = $source-info[epic]
+
+  var same-epic = []
+  var same-phase = []
+  var adjacent-phase = []
+  var distant = []
+
+  for sid $story-ids {
+    var info = (get-story-info $sid)
+    if (eq $info[epic] $source-epic) {
+      set same-epic = [$@same-epic $sid]
+    } elif (eq $info[phase] $source-phase) {
+      set same-phase = [$@same-phase $sid]
+    } elif (or (eq $info[phase] (- $source-phase 1)) (eq $info[phase] (+ $source-phase 1))) {
+      set adjacent-phase = [$@adjacent-phase $sid]
+    } else {
+      set distant = [$@distant $sid]
+    }
+  }
+
+  put [$@same-epic $@same-phase $@adjacent-phase $@distant]
+}
+```
 
 **Modified propagate-external-deps:**
 ```elvish
 fn propagate-external-deps {|story-id report &include-related=$false|
-  # Get source story tags
   var source-tags = (prd:get-story-tags $story-id)
+  var all-decisions = []
 
-  # Get descendants (existing)
+  # PHASE A: Descendants (always)
   var descendants = [(prd:get-descendants $story-id)]
+  if (> (count $descendants) 0) {
+    ui:status "Analyzing descendants..."
+    var decisions = (analyze-in-batches $descendants $report $all-decisions)
+    set all-decisions = [$@all-decisions $@decisions]
+  }
 
-  # Optionally get tag-related stories
-  var related = []
+  # PHASE B: Tag-related (only with flag)
   if $include-related {
     var all-related = [(prd:find-similar-by-tags $source-tags &min-overlap=(num 1))]
-    # Filter out descendants (already covered) and source
+
+    # Exclude source and descendants
+    var related = []
     for r $all-related {
       if (and (not (eq $r $story-id)) (not (has-value $descendants $r))) {
         set related = [$@related $r]
       }
     }
-  }
 
-  # Analyze descendants (high confidence)
-  if (> (count $descendants) 0) {
-    analyze-and-update $descendants $report "descendants"
-  }
+    # Sort by tree proximity
+    set related = [(prd:sort-by-proximity $story-id $related)]
 
-  # Analyze related (lower confidence, separate UI)
-  if (> (count $related) 0) {
-    analyze-and-update $related $report "related"
+    if (> (count $related) 0) {
+      ui:status "Analyzing related stories..."
+      var decisions = (analyze-in-batches $related $report $all-decisions &conservative=$true)
+      set all-decisions = [$@all-decisions $@decisions]
+    }
   }
 }
 ```
 
-**Modified Claude prompt:**
+**Claude prompts:**
 ```
 # For descendants (high confidence):
 "These stories DEPEND on the source story. Analyze for updates."
 
-# For related (lower confidence):
+# For related (conservative):
 "These stories share tags but don't depend on the source.
 They MIGHT be affected. Be conservative - only suggest updates
 if clearly necessary. When in doubt, skip."
@@ -394,6 +471,8 @@ if clearly necessary. When in doubt, skip."
 
 - [ ] Add `--include-related` flag to propagation
 - [ ] Find stories with ≥1 tag overlap (excluding descendants)
+- [ ] Sort related stories by tree proximity (same epic → distant phase)
+- [ ] Batch in groups of 10 with context aggregation
 - [ ] Analyze related stories separately from descendants
 - [ ] Show related results in separate UI section
 - [ ] User can apply/skip related updates independently
