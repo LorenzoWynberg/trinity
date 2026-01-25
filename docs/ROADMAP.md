@@ -228,4 +228,3 @@ All dashboard features from v2.0 (full CLI control), plus:
 
 1. **Subscription tiers?** - Different limits for different prices?
 2. **Template marketplace?** - User-contributed prompts/workflows?
-3. **Dashboard standalone?** - Ship dashboard as separate package for non-Trinity use?
