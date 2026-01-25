@@ -14,9 +14,9 @@ Read instructions as needed from `tools/ralph/cli/instructions/`:
 | Phase | File | When |
 |-------|------|------|
 | 1. Setup | `context.md` | Start here - load relevant docs |
-| 2. Logging | `activity-log.md` | When writing activity logs |
-| 3. Implement | `implementation.md` | During coding, testing, review |
-| 4. Learn | `learnings.md` | After implementation |
+| 2. Implement | `implementation.md` | During coding, testing, review |
+| 3. Logging | `activity-log.md` | Document what was done |
+| 4. Learn | `learnings.md` | Extract learnings |
 | 5. Complete | `completion.md` | On success or blocked |
 | Reference | `rules.md` | Important rules to follow |
 
