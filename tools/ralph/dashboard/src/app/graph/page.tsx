@@ -419,7 +419,7 @@ function GraphContent() {
         stroke: isHighlighted ? getDepthColor(depth) : (edge.style?.stroke || defaultEdgeColor),
         opacity: hasHighlighting && !isHighlighted ? 0 : 1,
       },
-      zIndex: isHighlighted ? 1000 - depth : 0, // closer edges on top
+      zIndex: isHighlighted ? 1000 + (maxHighlightDepth - depth) * 10 : 0, // shorter paths on top
     }
   })
 
