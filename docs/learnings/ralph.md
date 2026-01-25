@@ -335,6 +335,28 @@ Tags are assigned automatically based on:
 - Acceptance criteria patterns (`"core/"` → `core` tag)
 - Phase/epic location (Phase 7 → `auth` tag)
 
+### Duplicate detection
+
+Before creating a new story during propagation, Ralph checks for duplicates:
+
+1. Find stories with ≥1 tag overlap
+2. Ask Claude to check semantic similarity (60% threshold)
+3. If match found, prompt user:
+```
+Potential duplicate found:
+  Existing: 7.1.3: Implement offline validation [auth, validation]
+  Proposed: Token expiration handling
+  Reason:   Both handle token expiry...
+
+[u]pdate existing / [c]reate new anyway / [s]kip
+```
+
+**Flags:**
+- `--auto-duplicate` - Auto-update existing instead of prompting
+- Included in `--yolo` mode
+
+**Why this matters:** Prevents PRD bloat from near-duplicate stories created during propagation.
+
 ## Elvish
 
 Ralph is written in Elvish shell. See `docs/learnings/elvish.md` for language-specific patterns and gotchas (arity mismatches, value vs byte pipelines, map access, etc.).
