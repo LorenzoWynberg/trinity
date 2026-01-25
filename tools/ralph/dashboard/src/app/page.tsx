@@ -1,7 +1,8 @@
-import { getPRD, getState, getMetrics, getPhaseProgress, getTotalStats, getStoryById } from '@/lib/data'
+import { getPRD, getState, getMetrics, getPhaseProgress, getTotalStats, getStoryById, getVersions } from '@/lib/data'
 import { StatsCard } from '@/components/stats-card'
 import { ProgressBar } from '@/components/progress-bar'
 import { CurrentWork } from '@/components/current-work'
+import { VersionSelector } from '@/components/version-selector'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ListTodo, CheckCircle, Coins, Clock } from 'lucide-react'
 
@@ -26,11 +27,19 @@ function formatTokens(tokens: number): string {
   return tokens.toString()
 }
 
-export default async function DashboardPage() {
-  const [prd, state, metrics] = await Promise.all([
-    getPRD(),
+interface PageProps {
+  searchParams: Promise<{ version?: string }>
+}
+
+export default async function DashboardPage({ searchParams }: PageProps) {
+  const { version: selectedVersion } = await searchParams
+  const currentVersion = selectedVersion || 'all'
+
+  const [prd, state, metrics, versions] = await Promise.all([
+    getPRD(currentVersion),
     getState(),
-    getMetrics()
+    getMetrics(),
+    getVersions()
   ])
 
   if (!prd) {
@@ -50,9 +59,12 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-8 space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">{prd.project} v{prd.version}</p>
+      <div className="flex items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">{prd.project}</p>
+        </div>
+        <VersionSelector versions={versions} currentVersion={currentVersion} />
       </div>
 
       {/* Stats Cards */}
