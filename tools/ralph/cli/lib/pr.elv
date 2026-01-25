@@ -511,3 +511,41 @@ fn run-flow {|story-id branch-name story-title current-iteration &state-pr-url="
     put [&result="open" &pr_url=$pr-url &stage="merge"]
   }
 }
+
+# Handle unmerged passed stories (run PR flow for each)
+fn handle-unmerged {|unmerged-list|
+  if (== (count $unmerged-list) 0) {
+    return
+  }
+
+  ui:warn "Found "(count $unmerged-list)" story(s) passed but not merged:"
+  for sid $unmerged-list {
+    var story-title = (prd:get-story-title $sid)
+    var branch = (prd:get-story-branch $sid)
+    ui:dim "  "$sid": "$story-title" (branch: "$branch")"
+  }
+  echo ""
+
+  for sid $unmerged-list {
+    var story-title = (prd:get-story-title $sid)
+    var branch = (prd:get-story-branch $sid)
+
+    # Check if branch still exists
+    try {
+      git -C $project-root rev-parse --verify "refs/heads/"$branch > /dev/null 2>&1
+    } catch {
+      # Branch doesn't exist locally, try remote
+      try {
+        git -C $project-root rev-parse --verify "refs/remotes/origin/"$branch > /dev/null 2>&1
+      } catch {
+        ui:dim "Branch "$branch" not found, skipping "$sid
+        continue
+      }
+    }
+
+    # Run PR flow for this story
+    ui:status "Handling unmerged story: "$sid
+    var _ = (run-flow $sid $branch $story-title 0)
+    echo ""
+  }
+}

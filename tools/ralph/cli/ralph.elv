@@ -57,7 +57,7 @@ cli:check-files $prompt-file $prd-file $progress-file
 var prompt-template = (cat $prompt-file | slurp)
 
 # Initialize remaining modules
-state:init $state-file
+state:init $state-file &root=$project-root
 git:init $project-root $config[base-branch]
 claude:init $project-root $script-dir $prompt-template $config[claude-timeout] $config[quiet-mode] $config[max-iterations]
 pr:init $project-root $config[base-branch] $config[auto-pr] $config[auto-merge]
@@ -101,8 +101,6 @@ if $config[version-status-mode] {
 # Handle plan mode (generate plan and exit)
 if $config[plan-mode] {
   echo ""
-  ui:box "PLAN MODE - Read-Only" "info"
-  echo ""
 
   # Get next story (or current)
   var current-state = (state:read)
@@ -110,7 +108,6 @@ if $config[plan-mode] {
 
   if $current-state[current_story] {
     set story-id = $current-state[current_story]
-    ui:status "Planning for current story: "$story-id
   } else {
     if (not (eq $config[target-version] "")) {
       set story-id = (prd:get-next-story-for-version $config[target-version])
@@ -121,31 +118,9 @@ if $config[plan-mode] {
       ui:warn "No stories available to plan"
       exit 0
     }
-    ui:status "Planning for next story: "$story-id
   }
 
-  var story-title = (prd:get-story-title $story-id)
-  ui:dim "  Title: "$story-title
-  echo ""
-
-  # Generate plan prompt
-  var prompt-file = (claude:prepare-plan-prompt $story-id)
-
-  ui:divider "Implementation Plan"
-  echo ""
-
-  # Run Claude in print mode (no permissions needed for plan)
-  try {
-    claude --print < $prompt-file 2>/dev/null
-  } catch e {
-    ui:error "Plan generation failed: "(to-string $e[reason])
-  } finally {
-    rm -f $prompt-file
-  }
-
-  echo ""
-  ui:divider-end
-  ui:dim "Plan mode complete. No files were modified."
+  claude:run-plan-mode $story-id $config[target-version]
   exit 0
 }
 
@@ -201,70 +176,13 @@ if $config[reset-mode] {
 
 # Handle retry-clean mode
 if (not (eq $config[retry-clean-story] "")) {
-  var story-id = $config[retry-clean-story]
-  ui:status "Retry clean: "$story-id
-
-  # Get branch name for story
-  var branch-name = ""
-  try {
-    set branch-name = (prd:get-branch-name $story-id)
-  } catch _ { }
-
-  # Delete local branch if exists
-  if (not (eq $branch-name "")) {
-    ui:dim "  Deleting local branch: "$branch-name
-    try {
-      git -C $project-root branch -D $branch-name 2>/dev/null
-    } catch _ { }
-
-    # Delete remote branch if exists
-    ui:dim "  Deleting remote branch: "$branch-name
-    try {
-      git -C $project-root push origin --delete $branch-name 2>/dev/null
-    } catch _ { }
-  }
-
-  # Reset story in prd.json
-  ui:dim "  Resetting story state in PRD"
-  prd:reset-story $story-id
-
-  # Clear state.json
-  ui:dim "  Clearing Ralph state"
-  state:reset
-
-  ui:success "Story "$story-id" reset for fresh retry"
-  ui:dim "Run ./ralph.elv to start fresh"
+  state:handle-retry-clean $config[retry-clean-story]
   exit 0
 }
 
 # Handle skip mode
 if (not (eq $config[skip-story-id] "")) {
-  ui:status "Skipping story: "$config[skip-story-id]
-  ui:dim "  Reason: "$config[skip-reason]
-  prd:skip-story $config[skip-story-id] $config[skip-reason]
-
-  # Log to activity
-  var today = (date '+%Y-%m-%d')
-  var timestamp = (date '+%Y-%m-%d %H:%M')
-  var activity-file = (path:join $project-root "logs" "activity" "trinity" $today".md")
-  var story-title = (prd:get-story-title $config[skip-story-id])
-  var story-info = (prd:get-story-info $config[skip-story-id])
-  var info-parts = [(str:split "\t" $story-info)]
-  var phase = $info-parts[0]
-  var epic = $info-parts[1]
-
-  echo "" >> $activity-file
-  echo "## "$config[skip-story-id]": "$story-title >> $activity-file
-  echo "" >> $activity-file
-  echo "**Phase:** "$phase" | **Epic:** "$epic" | **Version:** "$active-version >> $activity-file
-  echo "**Skipped:** "$timestamp >> $activity-file
-  echo "" >> $activity-file
-  echo "### Reason" >> $activity-file
-  echo $config[skip-reason] >> $activity-file
-  echo "" >> $activity-file
-  echo "---" >> $activity-file
-
-  ui:success "Story skipped. Dependents can now proceed."
+  prd:handle-skip $config[skip-story-id] $config[skip-reason] $project-root
   exit 0
 }
 
@@ -293,38 +211,7 @@ if (prd:all-stories-complete) {
 
 # Check for passed-but-not-merged stories (need to merge before continuing)
 var unmerged = [(prd:get-unmerged-passed)]
-if (> (count $unmerged) 0) {
-  ui:warn "Found "(count $unmerged)" story(s) passed but not merged:"
-  for sid $unmerged {
-    var story-title = (prd:get-story-title $sid)
-    var branch = (prd:get-story-branch $sid)
-    ui:dim "  "$sid": "$story-title" (branch: "$branch")"
-  }
-  echo ""
-
-  for sid $unmerged {
-    var story-title = (prd:get-story-title $sid)
-    var branch = (prd:get-story-branch $sid)
-
-    # Check if branch still exists
-    try {
-      git -C $project-root rev-parse --verify "refs/heads/"$branch > /dev/null 2>&1
-    } catch {
-      # Branch doesn't exist locally, try remote
-      try {
-        git -C $project-root rev-parse --verify "refs/remotes/origin/"$branch > /dev/null 2>&1
-      } catch {
-        ui:dim "Branch "$branch" not found, skipping "$sid
-        continue
-      }
-    }
-
-    # Run PR flow for this story
-    ui:status "Handling unmerged story: "$sid
-    var _ = (pr:run-flow $sid $branch $story-title 0)
-    echo ""
-  }
-}
+pr:handle-unmerged $unmerged
 
 # Main loop
 var current-iteration = 0
@@ -536,20 +423,7 @@ while (< $current-iteration $config[max-iterations]) {
 
     # Format Go files
     echo ""
-    ui:status "Formatting Go files..."
-    try {
-      var go-files = [(git:get-modified-go-files)]
-      if (> (count $go-files) 0) {
-        for f $go-files {
-          try { gofmt -w (path:join $project-root $f) 2>/dev/null } catch _ { }
-        }
-        ui:success "  Go formatting complete"
-      } else {
-        ui:dim "  No Go files need formatting"
-      }
-    } catch {
-      ui:dim "  (no modified files)"
-    }
+    git:format-go-files
     echo ""
 
     # Verbose: show raw Claude output

@@ -670,3 +670,33 @@ fn show-blocked-state {
 
   ui:dim "Run ralph to pick up where you left off."
 }
+
+# Handle skip mode: skip story and log to activity
+fn handle-skip {|story-id reason project-root|
+  ui:status "Skipping story: "$story-id
+  ui:dim "  Reason: "$reason
+  skip-story $story-id $reason
+
+  # Log to activity
+  var today = (date '+%Y-%m-%d')
+  var timestamp = (date '+%Y-%m-%d %H:%M')
+  var activity-file = (path:join $project-root "logs" "activity" "trinity" $today".md")
+  var story-title = (get-story-title $story-id)
+  var story-info = (get-story-info $story-id)
+  var info-parts = [(str:split "\t" $story-info)]
+  var phase = $info-parts[0]
+  var epic = $info-parts[1]
+
+  echo "" >> $activity-file
+  echo "## "$story-id": "$story-title >> $activity-file
+  echo "" >> $activity-file
+  echo "**Phase:** "$phase" | **Epic:** "$epic" | **Version:** "$current-version >> $activity-file
+  echo "**Skipped:** "$timestamp >> $activity-file
+  echo "" >> $activity-file
+  echo "### Reason" >> $activity-file
+  echo $reason >> $activity-file
+  echo "" >> $activity-file
+  echo "---" >> $activity-file
+
+  ui:success "Story skipped. Dependents can now proceed."
+}

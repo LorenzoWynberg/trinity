@@ -1,13 +1,17 @@
 # State management for Ralph
 
 use path
+use ./ui
+use ./prd
 
 # State file path (set by init)
 var state-file = ""
+var project-root = ""
 
 # Initialize with state file path
-fn init {|path|
+fn init {|path &root=""|
   set state-file = $path
+  set project-root = $root
 
   # Create state file if missing
   if (not (path:is-regular $state-file)) {
@@ -42,4 +46,40 @@ fn reset {
     &checkpoints=[]
   ]
   write $state
+}
+
+# Handle retry-clean mode: delete branches and reset story for fresh retry
+fn handle-retry-clean {|story-id|
+  ui:status "Retry clean: "$story-id
+
+  # Get branch name for story
+  var branch-name = ""
+  try {
+    set branch-name = (prd:get-branch-name $story-id)
+  } catch _ { }
+
+  # Delete local branch if exists
+  if (not (eq $branch-name "")) {
+    ui:dim "  Deleting local branch: "$branch-name
+    try {
+      git -C $project-root branch -D $branch-name 2>/dev/null
+    } catch _ { }
+
+    # Delete remote branch if exists
+    ui:dim "  Deleting remote branch: "$branch-name
+    try {
+      git -C $project-root push origin --delete $branch-name 2>/dev/null
+    } catch _ { }
+  }
+
+  # Reset story in prd.json
+  ui:dim "  Resetting story state in PRD"
+  prd:reset-story $story-id
+
+  # Clear state.json
+  ui:dim "  Clearing Ralph state"
+  reset
+
+  ui:success "Story "$story-id" reset for fresh retry"
+  ui:dim "Run ./ralph.elv to start fresh"
 }

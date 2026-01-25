@@ -525,3 +525,33 @@ Be pragmatic - minor ambiguity is OK if the intent is clear. Only flag things th
   ui:dim "Validation returned unexpected response, proceeding"
   put $true
 }
+
+# Run plan mode for a story (read-only, no file changes)
+fn run-plan-mode {|story-id target-version|
+  ui:box "PLAN MODE - Read-Only" "info"
+  echo ""
+
+  var story-title = (prd:get-story-title $story-id)
+  ui:status "Planning for story: "$story-id
+  ui:dim "  Title: "$story-title
+  echo ""
+
+  # Generate plan prompt
+  var prompt-file = (prepare-plan-prompt $story-id)
+
+  ui:divider "Implementation Plan"
+  echo ""
+
+  # Run Claude in print mode (no permissions needed for plan)
+  try {
+    claude --print < $prompt-file 2>/dev/null
+  } catch e {
+    ui:error "Plan generation failed: "(to-string $e[reason])
+  } finally {
+    rm -f $prompt-file
+  }
+
+  echo ""
+  ui:divider-end
+  ui:dim "Plan mode complete. No files were modified."
+}

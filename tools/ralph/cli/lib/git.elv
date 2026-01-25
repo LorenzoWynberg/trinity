@@ -1,6 +1,7 @@
 # Git operations for Ralph
 
 use str
+use path
 use ./ui
 
 # Configuration (set by init)
@@ -93,5 +94,23 @@ fn get-modified-go-files {
     put $@files
   } catch {
     # No files or error
+  }
+}
+
+# Format modified Go files with gofmt
+fn format-go-files {
+  ui:status "Formatting Go files..."
+  try {
+    var go-files = [(get-modified-go-files)]
+    if (> (count $go-files) 0) {
+      for f $go-files {
+        try { gofmt -w (path:join $project-root $f) 2>/dev/null } catch _ { }
+      }
+      ui:success "  Go formatting complete"
+    } else {
+      ui:dim "  No Go files need formatting"
+    }
+  } catch {
+    ui:dim "  (no modified files)"
   }
 }
