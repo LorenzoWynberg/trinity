@@ -620,11 +620,39 @@ export function useGraphData(version: string = 'all'): GraphData {
           }
         }
 
+        // Track version-to-version edges we've already created
+        const versionEdgesCreated = new Set<string>()
+
         for (const story of storiesData) {
           if (story.depends_on) {
             for (const depRef of story.depends_on) {
+              // Check if this is a full version dependency (e.g., "v1.0")
+              if (/^v[0-9]+\.[0-9]+$/.test(depRef) && showVersionHeaders && story.target_version) {
+                // Create a single version-to-version edge
+                const versionEdgeId = `version:${depRef}->version:${story.target_version}`
+                if (!versionEdgesCreated.has(versionEdgeId)) {
+                  versionEdgesCreated.add(versionEdgeId)
+                  edgeList.push({
+                    id: versionEdgeId,
+                    source: `version:${depRef}`,
+                    target: `version:${story.target_version}`,
+                    type: 'smoothstep',
+                    markerEnd: {
+                      type: MarkerType.ArrowClosed,
+                      width: 12,
+                      height: 12,
+                    },
+                    style: {
+                      strokeWidth: 3,
+                      stroke: '#f59e0b',
+                      strokeDasharray: '5,5',
+                    },
+                  })
+                }
+                continue // Don't create individual story edges for version deps
+              }
+
               // Resolve dependency reference to actual story IDs
-              // Handles: STORY-X.Y.Z, phase (1), phase:epic (1:2), cross-version (v1.0:...)
               const resolvedIds = resolveDependency(depRef, storiesData)
 
               for (const actualDepId of resolvedIds) {
@@ -633,21 +661,18 @@ export function useGraphData(version: string = 'all'): GraphData {
                   const isDepMerged = depStory?.merged
                   const isCrossVersion = depStory?.target_version !== story.target_version
 
-                  // Cross-version deps go to the VERSION NODE, not directly to the story
-                  // This creates: v1 story → v2 node (and v2 node → v2 story is already created above)
-                  const targetId = (isCrossVersion && showVersionHeaders && story.target_version)
-                    ? `version:${story.target_version}`
-                    : story.id
+                  // Skip cross-version story-to-story edges when showing version headers
+                  // (version-to-version edges handle this more cleanly)
+                  if (isCrossVersion && showVersionHeaders) continue
 
-                  const edgeId = `${actualDepId}->${targetId}`
-                  // Skip duplicate edges
+                  const edgeId = `${actualDepId}->${story.id}`
                   if (edgeIds.has(edgeId)) continue
                   edgeIds.add(edgeId)
 
                   edgeList.push({
                     id: edgeId,
                     source: actualDepId,
-                    target: targetId,
+                    target: story.id,
                     type: 'smoothstep',
                     markerEnd: {
                       type: MarkerType.ArrowClosed,
@@ -655,9 +680,8 @@ export function useGraphData(version: string = 'all'): GraphData {
                       height: 12,
                     },
                     style: {
-                      strokeWidth: isCrossVersion ? 3 : 2,
-                      stroke: isDepMerged ? '#22c55e' : (isCrossVersion ? '#f59e0b' : '#6b7280'),
-                      strokeDasharray: isCrossVersion ? '5,5' : undefined,
+                      strokeWidth: 2,
+                      stroke: isDepMerged ? '#22c55e' : '#6b7280',
                     },
                     animated: getStoryStatus(story, currentStoryId) === 'in_progress',
                   })
