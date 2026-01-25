@@ -370,38 +370,9 @@ export function calculateAutoPositions(
       const verStories = byVersion.get(ver) || []
       if (verStories.length === 0) continue
 
-      // Calculate positions first to find centering info
-      const tempPositions = calculateSingleVersionPositions(verStories, direction, 0, 0)
-      const tempPosValues = Object.values(tempPositions)
-
-      // Find root stories (no dependencies within this version)
-      const storyIds = new Set(verStories.map(s => s.id))
-      const rootStories = verStories.filter(s => {
-        if (!s.depends_on || s.depends_on.length === 0) return true
-        // Check if any deps are within this version
-        return !s.depends_on.some(depId => {
-          const actualId = depId.includes(':') ? depId.split(':').pop()! : depId
-          return storyIds.has(actualId)
-        })
-      })
-
-      // Center version header above root stories, or all stories as fallback
-      let centerX = 0
-      const storiesToCenter = rootStories.length > 0 ? rootStories : verStories
-      if (storiesToCenter.length > 0) {
-        const xs = storiesToCenter.map(s => {
-          const pos = tempPositions[`${ver}:${s.id}`]
-          return pos ? pos.x : 0
-        }).filter(x => x !== undefined)
-        if (xs.length > 0) {
-          const minX = Math.min(...xs)
-          const maxX = Math.max(...xs)
-          centerX = (minX + maxX + NODE_WIDTH - VERSION_HEADER_WIDTH) / 2
-        }
-      }
-
       if (includeVersionHeaders) {
-        positions[`version:${ver}`] = { x: centerX, y: currentY }
+        // Left-align version header for vertical layouts
+        positions[`version:${ver}`] = { x: 0, y: currentY }
         currentY += VERSION_HEADER_HEIGHT + V_GAP
       }
 
