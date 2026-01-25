@@ -170,7 +170,8 @@ Output ONLY 'DESCRIPTION_COMPLETE' or the full updated description. No other tex
 fn check-exists {|branch-name|
   var result = ""
   try {
-    var existing-raw = [(gh pr view $branch-name --json url -q '.url' 2>/dev/null)]
+    # Only return URL if PR is open (not closed/merged)
+    var existing-raw = [(gh pr view $branch-name --json url,state -q 'select(.state == "OPEN") | .url' 2>/dev/null)]
     if (> (count $existing-raw) 0) {
       set result = (str:trim-space $existing-raw[0])
     }
