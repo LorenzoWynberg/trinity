@@ -395,8 +395,8 @@ fn prepare-plan-prompt {|story-id|
     set story-json = (jq -r '.stories[] | select(.id == "'$story-id'")' $prd-file 2>/dev/null | slurp)
   } catch _ { }
 
-  var title = (try { printf '%s' $story-json | jq -r '.title // ""' | slurp | str:trim-space } catch _ { put "" })
-  var acceptance = (try { printf '%s' $story-json | jq -r '.acceptance | join("\n- ") // ""' | slurp | str:trim-space } catch _ { put "" })
+  var title = (try { jq -r '.stories[] | select(.id == "'$story-id'") | .title // ""' $prd-file | slurp | str:trim-space } catch _ { put "" })
+  var acceptance = (try { jq -r '.stories[] | select(.id == "'$story-id'") | .acceptance | join("\n- ") // ""' $prd-file | slurp | str:trim-space } catch _ { put "" })
   var deps = (prd:get-story-deps $story-id | slurp)
 
   var version = (prd:get-current-version)
@@ -535,8 +535,8 @@ fn validate-story {|story-id|
     return
   }
 
-  var title = (try { printf '%s' $story-json | jq -r '.title // ""' | slurp | str:trim-space } catch _ { put "" })
-  var acceptance = (try { printf '%s' $story-json | jq -r '.acceptance | join("\n- ") // ""' | slurp | str:trim-space } catch _ { put "" })
+  var title = (try { jq -r '.stories[] | select(.id == "'$story-id'") | .title // ""' $prd-file | slurp | str:trim-space } catch _ { put "" })
+  var acceptance = (try { jq -r '.stories[] | select(.id == "'$story-id'") | .acceptance | join("\n- ") // ""' $prd-file | slurp | str:trim-space } catch _ { put "" })
 
   if (eq $acceptance "") {
     ui:warn "Story "$story-id" has no acceptance criteria"
