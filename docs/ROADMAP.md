@@ -1,10 +1,10 @@
 # Trinity Roadmap
 
-## v1.0 - CLI Core
+## v0.1 - CLI Core
 
-Command-line tool with autonomous development loop and authentication.
+Command-line tool with autonomous development loop. No authentication - free during development.
 
-**Status:** Planning complete, ready for implementation.
+**Status:** Planning complete, ready for implementation (91 stories).
 
 ### Tech Stack
 
@@ -30,7 +30,6 @@ trinity analyze           # Analyze codebase
 trinity plan add          # Add stories from description
 trinity run [ref]         # Execute stories
 trinity status            # Show progress
-trinity auth login        # Authenticate
 ```
 
 **Core Loop:**
@@ -50,13 +49,26 @@ trinity auth login        # Authenticate
 - `core/claude` - Claude Code integration
 - `core/loop` - Autonomous execution loop
 - `core/prd` - PRD parsing and queries
-- `core/auth` - Authentication and subscription
+
+---
+
+## v1.0 - Production Ready
+
+Authentication, polish, and release preparation (15 stories).
 
 ### Authentication
 
 - OAuth authentication (Google/GitHub)
 - Subscription validation
 - License key support (offline use)
+- `trinity auth login/logout/status` commands
+
+### Polish
+
+- Comprehensive error messages
+- Colored terminal output with progress spinners
+- README and --help documentation
+- End-to-end testing
 
 ---
 
@@ -203,7 +215,8 @@ All dashboard features from v2.0 (full CLI control), plus:
 
 | Version | Focus | Key Features |
 |---------|-------|--------------|
-| **v1.0** | Core | CLI + Auth (working loop) |
+| **v0.1** | Core | CLI (working loop, no auth) |
+| **v1.0** | Production | Auth + Polish + Release |
 | **v2.0** | Visualization | Local Dashboard (full control) |
 | **v3.0** | Collaboration | Team DB adapters + Hosted Dashboard (read-only) |
 | **v4.0** | Scale | Cross-project dependencies |
