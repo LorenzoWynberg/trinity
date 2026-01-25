@@ -180,6 +180,40 @@ Release flow: create PR (dev→main) → merge → checkout main → tag at merg
 ### Hotfix flow
 Feedback at release creates a hotfix branch from dev, runs Claude with the feedback, merges back to dev, then returns to release prompt.
 
+## Dashboard
+
+### Terminology
+- **Passed** = Claude finished the work (not "completed" - that's ambiguous)
+- **Merged** = PR merged to base branch
+- Use "passed" in UI to avoid confusion with "completed"
+
+### Blocked stories display
+Shows only "first generation" blocked - stories whose blocker is NOT itself blocked:
+- 1.1.2 waiting on 1.1.1 (shown - 1.1.1 has no unmet deps)
+- 1.1.3 waiting on 1.1.2 (hidden - 1.1.2 is itself blocked)
+
+This shows the immediate next row, not transitive chains.
+
+### Version filtering
+- URL param based: `?version=v1.0`
+- Server-side filtering via `getPRD(version)`
+- Phases are per-version, so "All versions" shows version count instead of phase count
+
+### Dependency format
+PRD uses short format `"1.1.1"` not `"STORY-1.1.1"`. Dashboard code handles both.
+
+### Hydration issues
+Radix Select + useSearchParams causes hydration mismatch. Wrap in Suspense:
+```tsx
+export function VersionSelector(props) {
+  return (
+    <Suspense fallback={<div className="w-[120px] h-8 bg-muted animate-pulse rounded-md" />}>
+      <VersionSelectorInner {...props} />
+    </Suspense>
+  )
+}
+```
+
 ## Elvish
 
 Ralph is written in Elvish shell. See `docs/learnings/elvish.md` for language-specific patterns and gotchas (arity mismatches, value vs byte pipelines, map access, etc.).
