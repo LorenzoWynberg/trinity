@@ -453,7 +453,7 @@ function GraphContent() {
         ...node.style,
         opacity: hasHighlighting && !isHighlighted ? 0.3 : 1,
       },
-      zIndex: isHighlighted ? 1001 : (hasHighlighting ? -1 : 0),
+      zIndex: isHighlighted ? 20000 : (hasHighlighting ? -1 : 0), // above all edges (max 10000)
     }
   })
 
