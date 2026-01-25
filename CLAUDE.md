@@ -394,3 +394,11 @@ When working on Ralph (`tools/ralph/`):
    - Group related changes under clear section headers
 
 Ralph is written in Elvish shell. The learnings file captures hard-won knowledge about its quirks and patterns.
+
+### resetProject shorthand
+
+When user says "resetProject", do all of:
+1. `git checkout dev`
+2. Delete any `feat/story-*` branches (local and remote)
+3. Reset `tools/ralph/cli/state.json` to idle state
+4. Reset `tools/ralph/cli/metrics.json` to zeros
