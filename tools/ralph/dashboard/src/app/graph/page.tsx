@@ -408,9 +408,24 @@ function GraphContent() {
   // Apply highlighting styles to edges
   const defaultEdgeColor = isDark ? '#6b7280' : '#9ca3af'
   const hasHighlighting = highlightedEdges.size > 0
+
+  // Build node position map for edge length calculation
+  const nodePositions = new Map(nodes.map(n => [n.id, n.position]))
+
+  // Calculate edge length (distance between source and target nodes)
+  const getEdgeLength = (edge: Edge): number => {
+    const sourcePos = nodePositions.get(edge.source)
+    const targetPos = nodePositions.get(edge.target)
+    if (!sourcePos || !targetPos) return 0
+    const dx = targetPos.x - sourcePos.x
+    const dy = targetPos.y - sourcePos.y
+    return Math.sqrt(dx * dx + dy * dy)
+  }
+
   const styledEdges: Edge[] = edges.map(edge => {
     const isHighlighted = highlightedEdges.has(edge.id)
     const depth = highlightedEdges.get(edge.id) ?? 0
+    const length = getEdgeLength(edge)
     return {
       ...edge,
       style: {
@@ -419,7 +434,8 @@ function GraphContent() {
         stroke: isHighlighted ? getDepthColor(depth) : (edge.style?.stroke || defaultEdgeColor),
         opacity: hasHighlighting && !isHighlighted ? 0 : 1,
       },
-      zIndex: isHighlighted ? 1000 + (maxHighlightDepth - depth) * 10 : 0, // shorter paths on top
+      // Shorter visual edges on top (higher z-index for shorter length)
+      zIndex: isHighlighted ? Math.round(10000 - length) : 0,
     }
   })
 
