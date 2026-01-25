@@ -1340,13 +1340,13 @@
       "title": "Implement external dependency validation before execution",
       "intent": "Ensure external dependencies (auth APIs, third-party services) are set up before Claude implements",
       "acceptance": [
-        "Before executing story with external_deps field, check if user has confirmed setup",
-        "Show external deps list and prompt: [Y]es ready / [n]o stop / [r]eport",
-        "[r]eport opens $EDITOR for user to document what they built (endpoints, schemas, API keys location)",
-        "Report is stored in story.external_deps_report field",
-        "Report is injected into Claude's prompt as '## External Dependencies Context' section",
-        "If already has report from previous attempt, show it and ask: [u]se existing / [r]evise / [s]kip",
-        "--skip-external-deps flag bypasses this check (for re-runs where deps unchanged)",
+        "Before executing story with external_deps field, check if deps are ready",
+        "Show external deps list with name and description",
+        "Prompt: [r]eport / [n]o skip (no 'yes ready' - report is required)",
+        "[r]eport opens $EDITOR with deps as comments, user documents implementation",
+        "Report stored in story.external_deps_report field in database",
+        "Report injected into Claude's prompt as '## External Dependencies Report'",
+        "If already has report from previous attempt: [u]se existing / [r]evise / [s]kip",
         "Stories without external_deps field skip this check entirely"
       ],
       "passes": false,
@@ -1359,6 +1359,28 @@
       "epic": 1,
       "story_number": 8,
       "target_version": "v1.0"
+    },
+    {
+      "id": "5.1.9",
+      "title": "Implement external deps report propagation to descendants",
+      "intent": "When external deps report is provided, update downstream stories with concrete implementation details",
+      "acceptance": [
+        "After report saved, find all descendant stories (recursive dependency traversal)",
+        "Get summary of descendants: id, title, current acceptance criteria",
+        "Claude analyzes which descendants need acceptance criteria updates based on report",
+        "Only update relevant stories (skip unrelated ones)",
+        "Updated acceptance criteria reference concrete details from report (endpoints, auth methods, schemas)",
+        "Show user which stories were updated vs skipped with reasons",
+        "PRD/database saved with updated acceptance criteria"
+      ],
+      "depends_on": [
+        "5.1.8"
+      ],
+      "phase": 5,
+      "epic": 1,
+      "story_number": 9,
+      "target_version": "v1.0",
+      "passes": false
     },
     {
       "id": "5.2.1",
