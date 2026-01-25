@@ -575,15 +575,113 @@ fn check-dependencies {|story-id|
 
 ---
 
-## Open Questions
+## Resolved Questions
 
-1. **Similarity threshold:** What % similarity triggers duplicate warning? 60%? 70%?
-2. **Tag overlap minimum:** ≥1 tag or ≥2 tags for related stories?
-3. **Phase ordering:** Should Phase 6 stories ever depend on Phase 7? Or is that always backwards?
-4. **Performance:** How many stories is too many to analyze at once?
-5. **Yolo + external deps:** Should there be a `--external-deps-file` flag to provide report from file for CI/CD scenarios?
+1. **Similarity threshold:** 60% triggers duplicate warning
+
+2. **Tag overlap minimum:** ≥1 tag overlap for finding related stories
+
+3. **Phase ordering:** Rejected - Phase N story cannot depend on Phase N+1 story (backwards dependency)
+
+4. **Performance:** No artificial limits - use batching with context aggregation (see below)
+
+5. **Yolo + external deps:** Deferred - would need to establish a file format first. Interactive prompt is fine for now.
+
+---
+
+## Batching Strategy
+
+When analyzing many stories, batch them to keep Claude calls manageable while still analyzing everything.
+
+### Batch Size
+- 10 stories per Claude call
+- Enough context without overwhelming the prompt
+
+### Ordering Priority
+Process in order of relevance:
+1. Descendants first (direct dependency, highest relevance)
+2. Tag-related by overlap count:
+   - 3+ tags overlap → high priority
+   - 2 tags overlap → medium priority
+   - 1 tag overlap → low priority
+
+### Context Aggregation
+
+Each batch receives context from previous batches to prevent conflicts:
+
+```
+Batch 1: Analyze stories 1-10
+  → Result: Create "Token refresh", Update 7.1.3, Skip 7.1.4
+
+Batch 2: Analyze stories 11-20
+  → Context passed:
+    "Previous decisions in this propagation:
+     - CREATED: 'Token refresh' [auth, api] as 7.1.7
+     - UPDATED: 7.1.3 (added JWT expiry details)
+     - SKIPPED: 7.1.4 (unrelated)
+
+     Avoid duplicating these decisions."
+  → Result: Update 6.3.3, Skip rest
+
+Batch 3: Analyze stories 21-30
+  → Context passed: All decisions from batch 1 + 2
+  → And so on...
+```
+
+### Progress Indicator
+
+```
+Analyzing descendants...  [2/3 batches]
+Analyzing tag-related...  [1/4 batches]
+```
+
+### Implementation
+
+```elvish
+fn analyze-in-batches {|stories report|
+  var batch-size = 10
+  var decisions = []
+  var batches = (chunk $stories $batch-size)
+
+  for i batch $batches {
+    ui:progress "Analyzing..." (+ $i 1) (count $batches)
+
+    # Build context from previous decisions
+    var context = (format-decisions $decisions)
+
+    # Analyze this batch with context
+    var batch-results = (analyze-batch $batch $report $context)
+
+    # Aggregate decisions for next batch
+    set decisions = [$@decisions $@batch-results]
+  }
+
+  put $decisions
+}
+
+fn format-decisions {|decisions|
+  if (eq (count $decisions) 0) {
+    put ""
+    return
+  }
+
+  var ctx = "Previous decisions in this propagation:\n"
+  for d $decisions {
+    if (eq $d[action] "create") {
+      set ctx = $ctx"- CREATED: '"$d[title]"' as "$d[id]"\n"
+    } elif (eq $d[action] "update") {
+      set ctx = $ctx"- UPDATED: "$d[id]" ("$d[reason]")\n"
+    } elif (eq $d[action] "skip") {
+      set ctx = $ctx"- SKIPPED: "$d[id]"\n"
+    }
+  }
+  set ctx = $ctx"\nAvoid duplicating these decisions.\n"
+  put $ctx
+}
+```
 
 ---
 
 *Created: 2026-01-25 ~16:30 CR*
 *Updated: 2026-01-25 ~16:45 CR - Added auto flags and yolo mode*
+*Updated: 2026-01-25 ~17:00 CR - Resolved open questions, added batching strategy*
