@@ -115,10 +115,44 @@ Release flow: create PR (dev→main) → merge → checkout main → tag at merg
 ### Hotfix flow
 Feedback at release creates a hotfix branch from dev, runs Claude with the feedback, merges back to dev, then returns to release prompt.
 
-## Gotchas
+## Elvish Gotchas
 
-### Elvish quirks
+### General quirks
 - **No `path:glob`** - use `ls | grep` pattern instead
-- **Arity mismatches** - functions returning multiple values need `| take 1` if you only want first
 - **Function naming** - it's `ui:warn` not `ui:warning`
 - **Variables in strings** - use `$var` not `{$var}` for interpolation
+
+### Arity mismatches
+
+Elvish functions don't "return" values - they "output" values via `put`. Multiple `put` calls accumulate. When calling a function that might output multiple values, capture into a list:
+
+```elvish
+# WRONG - causes "arity mismatch: arguments must be 1 value, but is N values"
+if (not (some-function $arg)) {
+
+# RIGHT - capture all outputs, use the one you want
+var results = [(some-function $arg)]
+if (and (> (count $results) 0) (not $results[-1])) {
+```
+
+Key concepts:
+- `echo` writes to byte pipe (stdout) - doesn't affect value output
+- `put` writes to value pipe - accumulates as function outputs
+- `[(command)]` captures all value outputs into a list
+- `$list[-1]` gets last element (typically the intended result)
+- External commands (jq, sed, grep) only produce bytes, not values
+
+### Map key access
+
+Always check `has-key` before accessing a map key that might not exist:
+
+```elvish
+# WRONG - throws "no such key: foo" if key missing
+var val = $some-map[foo]
+
+# RIGHT - check first
+var val = (if (has-key $some-map foo) { put $some-map[foo] } else { put "" })
+
+# For boolean checks, combine with and:
+if (and (has-key $state pr_url) $state[pr_url]) { ... }
+```

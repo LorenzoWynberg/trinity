@@ -386,7 +386,9 @@ When working on Ralph (`tools/ralph/`):
    - Release workflow
    - Elvish-specific gotchas
 
-2. **Always update the activity logs** after making changes:
+2. **Update learnings when fixing bugs**: When you fix an Elvish bug or discover a new pattern, add it to `docs/learnings/ralph.md`. This prevents the same issues from recurring.
+
+3. **Always update the activity logs** after making changes:
    - Location: `logs/activity/ralph/YYYY-MM-DD.md`
    - Document what was changed, why, and which files were modified
    - Group related changes under clear section headers
