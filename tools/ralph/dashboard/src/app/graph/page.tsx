@@ -276,6 +276,11 @@ function GraphContent() {
     const story = stories.find(s => s.id === storyId && (!version || s.target_version === version))
     if (story?.depends_on && story.depends_on.length > 0) {
       story.depends_on.forEach(depRef => {
+        // Whole version dep (e.g., "v1.0") - add version node, not individual stories
+        if (/^v[0-9]+\.[0-9]+$/.test(depRef)) {
+          visited.add(`version:${depRef}`)
+          return
+        }
         const resolved = resolveDependency(depRef, stories, story.target_version)
         resolved.forEach(r => getAncestors(r.nodeId, visited))
       })
@@ -298,11 +303,22 @@ function GraphContent() {
       if (nodeDepths.has(id)) continue
       nodeDepths.set(id, depth)
 
+      // Skip version nodes in BFS (they don't have deps)
+      if (id.startsWith('version:')) continue
+
       const storyId = extractStoryId(id)
       const version = extractVersion(id)
       const story = stories.find(s => s.id === storyId && (!version || s.target_version === version))
       if (story?.depends_on) {
         story.depends_on.forEach(depRef => {
+          // Whole version dep - add version node to queue
+          if (/^v[0-9]+\.[0-9]+$/.test(depRef)) {
+            const versionNodeId = `version:${depRef}`
+            if (ancestors.has(versionNodeId) && !nodeDepths.has(versionNodeId)) {
+              queue.push([versionNodeId, depth + 1])
+            }
+            return
+          }
           const resolved = resolveDependency(depRef, stories, story.target_version)
           resolved.forEach(r => {
             if (ancestors.has(r.nodeId) && !nodeDepths.has(r.nodeId)) {
@@ -326,6 +342,18 @@ function GraphContent() {
       const story = stories.find(s => s.id === storyId && (!version || s.target_version === version))
       if (story?.depends_on && story.depends_on.length > 0) {
         story.depends_on.forEach(depRef => {
+          // Whole version dep - create version-to-version edge
+          if (/^v[0-9]+\.[0-9]+$/.test(depRef)) {
+            const versionNodeId = `version:${depRef}`
+            if (ancestors.has(versionNodeId) && story.target_version) {
+              // Edge goes from source version to target version
+              const targetVersionNodeId = `version:${story.target_version}`
+              const edgeId = `${versionNodeId}->${targetVersionNodeId}`
+              const nodeDepth = nodeDepths.get(ancestorId) || 0
+              edgeDepths.set(edgeId, nodeDepth)
+            }
+            return
+          }
           const resolved = resolveDependency(depRef, stories, story.target_version)
           resolved.forEach(r => {
             if (ancestors.has(r.nodeId)) {
