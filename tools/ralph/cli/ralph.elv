@@ -460,7 +460,13 @@ while (< $current-iteration $config[max-iterations]) {
 
     # Validate story (unless --no-validate or feedback refinement)
     if (and (not $config[no-validate]) (eq $pending-feedback "")) {
-      if (not (claude:validate-story $story-id)) {
+      # Capture all outputs into list and use last value (handles arity issues)
+      var validate-results = [(claude:validate-story $story-id)]
+      var is-valid = $true
+      if (> (count $validate-results) 0) {
+        set is-valid = $validate-results[-1]
+      }
+      if (not $is-valid) {
         echo "" > /dev/tty
         ui:warn "Story "$story-id" needs clarification before implementation." > /dev/tty
         echo "\e[33mSkip this story and continue? [Y/n]\e[0m" > /dev/tty
