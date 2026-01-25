@@ -62,10 +62,12 @@
       "title": "Create config package structure",
       "intent": "Set up configuration management for Trinity settings",
       "acceptance": [
-        "core/config/config.go exists",
-        "Config struct with global settings (default timeout, etc.)",
-        "Uses ~/.trinity/config.json as storage path",
-        "Load and Save functions implemented"
+        "core/config/config.go exists with Config struct",
+        "Config fields: DefaultTimeout (int, default 1800s), BaseBranch (string, default 'dev'), AutoPR (bool, default false), AutoMerge (bool, default false), Model (string, default 'claude-sonnet-4-20250514')",
+        "Uses ~/.trinity/config.json as storage path (JSON format)",
+        "Load() returns Config with defaults if file doesn't exist",
+        "Save() writes Config to JSON, creates directory if needed",
+        "Validate() checks fields are within acceptable ranges"
       ],
       "passes": false,
       "depends_on": [
@@ -81,10 +83,13 @@
       "title": "Implement project config management",
       "intent": "Manage per-project configuration stored in ~/.trinity/projects/",
       "acceptance": [
-        "ProjectConfig struct with project-specific settings",
+        "ProjectConfig struct with fields: Name (string), Path (string, absolute path to project), Hash (string), CreatedAt (time.Time), BaseBranch (string), TargetVersion (string)",
         "Projects stored in ~/.trinity/projects/<hash>/config.json",
-        "Hash generated from slugify(name)-timestamp",
-        "GetProject, SaveProject functions work correctly"
+        "Hash generated as slugify(name)-unix_timestamp (e.g., 'my-project-1706123456')",
+        "GetProject(hash) returns ProjectConfig or error if not found",
+        "SaveProject(config) writes to disk, creates directories if needed",
+        "ListProjects() returns all projects sorted by CreatedAt descending",
+        "DeleteProject(hash) removes project directory entirely"
       ],
       "passes": false,
       "depends_on": [
@@ -183,10 +188,12 @@
       "title": "Create database schema migrations",
       "intent": "Manage database schema versioning and automatic migrations",
       "acceptance": [
-        "core/db/migrations/ contains SQL migration files",
-        "Migration runner applies pending migrations on startup",
-        "Schema version tracked in database",
-        "Migrations are idempotent (safe to re-run)"
+        "core/db/migrations/ contains embedded SQL files via go:embed",
+        "Migration files named NNN_description.sql (e.g., 001_initial_schema.sql)",
+        "schema_migrations table tracks applied migrations (version, applied_at)",
+        "Migrate() applies pending migrations in order, wrapped in transaction",
+        "If migration fails, transaction rolls back and returns error with migration name",
+        "Migrations use IF NOT EXISTS for tables/indexes to be idempotent"
       ],
       "passes": false,
       "depends_on": [
@@ -448,11 +455,13 @@
       "title": "Implement Claude invocation wrapper",
       "intent": "Provide clean interface for executing Claude with prompts",
       "acceptance": [
-        "core/claude/run.go exists",
-        "Run(prompt, opts) executes claude CLI with given prompt",
-        "Uses --dangerously-skip-permissions --print flags",
-        "Captures stdout and stderr",
-        "Returns output and any error"
+        "core/claude/run.go exists with Run function",
+        "Run(ctx, prompt, opts) executes 'claude --dangerously-skip-permissions --print'",
+        "Prompt passed via stdin pipe, not as argument",
+        "Working directory set to project path from opts",
+        "Returns (output string, err error) where output is combined stdout",
+        "Error types: ErrTimeout, ErrExitCode (with code), ErrNotFound (claude not in PATH)",
+        "On non-zero exit, returns partial output along with error"
       ],
       "passes": false,
       "depends_on": [
@@ -587,10 +596,12 @@
       "title": "Implement git sync operations",
       "intent": "Keep local repo in sync with remote",
       "acceptance": [
-        "Fetch(path) fetches from remote",
-        "Pull(path) pulls current branch",
-        "Push(path, branch) pushes to remote",
-        "SyncWithBase(path, base) fetches and resets to base"
+        "Fetch(path) runs 'git fetch origin', returns error if fails",
+        "Pull(path) runs 'git pull --ff-only', returns ErrDirty if uncommitted changes",
+        "Push(path, branch) runs 'git push origin <branch>', returns ErrUpstreamMissing if no tracking",
+        "PushForce(path, branch) runs 'git push --force-with-lease origin <branch>'",
+        "SyncWithBase(path, base) does: fetch, then 'git reset --hard origin/<base>' - WARNING: discards local changes",
+        "All functions return ErrNotRepo if path is not a git repository"
       ],
       "passes": false,
       "depends_on": [
@@ -1029,10 +1040,12 @@
       "title": "Implement iteration control",
       "intent": "Control loop iterations with max limit and pause points",
       "acceptance": [
-        "Pause between stories (configurable via config)",
-        "Option to stop after each story completion (--once flag)",
-        "Clean exit on all stories complete",
-        "On timeout: log partial output, mark story as pending with timeout note, continue to next story"
+        "StoryPause config option (default 5 seconds) - pause between story completions",
+        "--once flag stops loop after first story completes (exit code 0)",
+        "Exit code 0 when all stories complete, exit code 1 on error",
+        "On Claude timeout: log partial output to activity, set story status to 'timeout', continue to next story",
+        "SIGINT (Ctrl+C) during pause prompts '[c]ontinue / [s]top' with 10s timeout, default continue",
+        "SIGINT during Claude execution waits for current story to finish, then stops"
       ],
       "passes": false,
       "depends_on": [
@@ -1088,10 +1101,11 @@
       "title": "Implement crash detection",
       "intent": "Detect and recover from crashed agents",
       "acceptance": [
-        "Check for stale agents on startup",
-        "PID check to verify process actually running",
-        "Mark stale agents as crashed",
-        "Reset in-progress stories to pending"
+        "On startup, query agents with status='running' and last_heartbeat > 5 minutes ago",
+        "For each stale agent, check if PID exists via os.FindProcess + signal 0",
+        "If PID not running, set agent.status='crashed' and agent.crashed_at=now",
+        "Set story.status='pending' for any story with status='in_progress' owned by crashed agent",
+        "Log activity: 'Agent <id> crashed, story <story-id> reset to pending'"
       ],
       "passes": false,
       "depends_on": [
@@ -1363,10 +1377,11 @@
       "title": "Implement trinity internal complete command",
       "intent": "Allow Claude to signal story completion",
       "acceptance": [
-        "trinity internal complete <story> marks story done",
-        "Updates story status in database",
-        "Resolves dependent stories",
-        "Logs completion activity"
+        "trinity internal complete <story-id> sets story.passes=true in database",
+        "Does NOT set merged=true (that happens when PR is merged to base branch)",
+        "Returns error if story not found or already passes=true",
+        "Logs activity: 'Story <id> marked as passed'",
+        "Note: dependent stories remain blocked until story.merged=true"
       ],
       "passes": false,
       "depends_on": [
@@ -1515,11 +1530,13 @@
       "title": "Implement trinity hotfix command",
       "intent": "Enable quick fixes outside the normal PRD flow",
       "acceptance": [
-        "trinity hotfix 'description' creates fix branch",
-        "Runs Claude to implement fix",
-        "Creates PR to dev branch",
-        "--target main option for urgent fixes",
-        "--auto-merge merges when CI passes"
+        "trinity hotfix 'description' creates branch hotfix/<timestamp> from dev",
+        "Uses prompts/templates/hotfix.md template with description placeholder",
+        "Runs Claude with streaming output, same as story execution",
+        "On completion, creates PR to dev branch with title 'hotfix: <description>'",
+        "--target main creates branch from main and PR to main (for urgent production fixes)",
+        "--auto-merge polls 'gh pr checks' every 30s, merges when all checks pass (max 10 min wait)",
+        "Hotfixes are NOT tracked in PRD - they're ad-hoc fixes outside the story system"
       ],
       "passes": false,
       "depends_on": [
@@ -1640,10 +1657,12 @@
       "title": "Add comprehensive error messages",
       "intent": "Provide helpful error messages for common issues",
       "acceptance": [
-        "Claude CLI not found gives install instructions",
-        "Git not clean suggests stash/commit",
-        "Database errors give recovery steps",
-        "All errors include troubleshooting hints"
+        "ErrClaudeNotFound: 'Claude CLI not found. Install from: https://claude.ai/code'",
+        "ErrGitDirty: 'Uncommitted changes detected. Run: git stash or git commit'",
+        "ErrGitNotRepo: 'Not a git repository. Run: git init'",
+        "ErrDBCorrupt: 'Database corrupted. Backup at ~/.trinity/projects/<hash>/trinity.db.bak, then delete trinity.db and re-run'",
+        "ErrDBLocked: 'Database locked by another process. Check for running trinity instances'",
+        "All errors use consistent format: 'Error: <message>\\nHint: <recovery step>'"
       ],
       "passes": false,
       "depends_on": [
