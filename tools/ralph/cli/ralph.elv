@@ -65,7 +65,6 @@ pr:init $project-root $config[base-branch] $config[auto-pr] $config[auto-merge]
 metrics:init $metrics-file
 release:init $project-root $config[base-branch] "main" $config[claude-timeout]
 learnings:init $project-root &base=$config[base-branch]
-format:init $project-root
 
 # Check if learnings need compaction (monthly maintenance)
 learnings:check-and-compact
@@ -425,7 +424,7 @@ while (< $current-iteration $config[max-iterations]) {
 
     # Format code files
     echo ""
-    format:go-files
+    format:go-files $project-root
     echo ""
 
     # Verbose: show raw Claude output

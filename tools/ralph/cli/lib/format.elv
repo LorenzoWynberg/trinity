@@ -4,16 +4,8 @@
 use path
 use ./ui
 
-# Configuration
-var project-root = ""
-
-# Initialize module
-fn init {|root|
-  set project-root = $root
-}
-
 # Get modified files of a specific type from git
-fn get-modified-files {|extension|
+fn get-modified-files {|project-root extension|
   try {
     var files = [(git -C $project-root diff --name-only HEAD~1 2>/dev/null | grep '\.'$extension'$')]
     put $@files
@@ -23,10 +15,10 @@ fn get-modified-files {|extension|
 }
 
 # Format Go files with gofmt
-fn go-files {
+fn go-files {|project-root|
   ui:status "Formatting Go files..."
   try {
-    var go-files = [(get-modified-files "go")]
+    var go-files = [(get-modified-files $project-root "go")]
     if (> (count $go-files) 0) {
       for f $go-files {
         try { gofmt -w (path:join $project-root $f) 2>/dev/null } catch _ { }
@@ -38,13 +30,4 @@ fn go-files {
   } catch {
     ui:dim "  (no modified files)"
   }
-}
-
-# Format all supported file types
-fn all {
-  go-files
-  # Future: add more formatters here
-  # js-files   # prettier
-  # py-files   # black
-  # etc.
 }
