@@ -587,16 +587,20 @@ export function useGraphData(version: string = 'all'): GraphData {
         const nodeIds = new Set(storiesData.map(s => s.id))
         const edgeIds = new Set<string>() // Track edge IDs to avoid duplicates
 
-        // Add edges from version headers to root stories (stories with no deps)
+        // Add edges from version headers to root stories (no deps within SAME version)
         if (showVersionHeaders) {
           for (const story of storiesData) {
-            const hasDeps = story.depends_on && story.depends_on.length > 0 &&
-              story.depends_on.some(depId => {
-                const actualDepId = depId.includes(':') ? depId.split(':').pop()! : depId
-                return nodeIds.has(actualDepId)
+            // A story is a "root" of its version if it has no deps on stories in the SAME version
+            const sameVersionStoryIds = new Set(
+              storiesData.filter(s => s.target_version === story.target_version).map(s => s.id)
+            )
+            const hasSameVersionDeps = story.depends_on && story.depends_on.length > 0 &&
+              story.depends_on.some(depRef => {
+                const resolved = resolveDependency(depRef, storiesData)
+                return resolved.some(id => sameVersionStoryIds.has(id))
               })
 
-            if (!hasDeps && story.target_version) {
+            if (!hasSameVersionDeps && story.target_version) {
               edgeList.push({
                 id: `version:${story.target_version}->${story.id}`,
                 source: `version:${story.target_version}`,
