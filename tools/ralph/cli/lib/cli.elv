@@ -14,7 +14,7 @@ var resume-mode = $false
 var reset-mode = $false
 var no-validate = $false
 var auto-clarify = $false
-var notify-enabled = $false
+var notify-enabled = $true
 var skip-story-id = ""
 var skip-reason = ""
 var custom-timeout = 0
@@ -88,8 +88,8 @@ fn parse-args {|arguments|
     } elif (eq $arg "--auto-duplicate") {
       set auto-duplicate = $true
       set i = (+ $i 1)
-    } elif (eq $arg "--notify") {
-      set notify-enabled = $true
+    } elif (eq $arg "--no-notifs") {
+      set notify-enabled = $false
       set i = (+ $i 1)
     } elif (eq $arg "--skip") {
       # --skip STORY-X "reason"

@@ -357,6 +357,16 @@ Potential duplicate found:
 
 **Why this matters:** Prevents PRD bloat from near-duplicate stories created during propagation.
 
+## CLI Defaults
+
+### Notifications
+Desktop notifications are **enabled by default** (helpful for AFK mode). Use `--no-notifs` to disable.
+
+### Yolo mode
+`--yolo` enables: `--no-validate`, `--auto-pr`, `--auto-merge`, `--auto-clarify`, `--auto-duplicate`
+
+Still respects hard gates: unmet deps (exit), external deps (prompt for report), human testing.
+
 ## Elvish
 
 Ralph is written in Elvish shell. See `docs/learnings/elvish.md` for language-specific patterns and gotchas (arity mismatches, value vs byte pipelines, map access, etc.).
