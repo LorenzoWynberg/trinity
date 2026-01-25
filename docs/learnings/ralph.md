@@ -156,3 +156,19 @@ var val = (if (has-key $some-map foo) { put $some-map[foo] } else { put "" })
 # For boolean checks, combine with and:
 if (and (has-key $state pr_url) $state[pr_url]) { ... }
 ```
+
+### Avoid slurp for capturing command output
+
+`slurp` can return multiple values in edge cases, causing arity mismatches. Use the list capture pattern instead:
+
+```elvish
+# RISKY - slurp can return multiple values
+var result = (some-command | slurp)
+
+# SAFE - capture to list, take first element
+var result-raw = [(some-command)]
+var result = ""
+if (> (count $result-raw) 0) {
+  set result = $result-raw[0]
+}
+```

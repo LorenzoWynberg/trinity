@@ -31,5 +31,6 @@ Thumbs.db
 .env
 .env.local
 
-# Ralph state
+# Ralph state and metrics
 tools/ralph/cli/state.json
+tools/ralph/cli/metrics.json

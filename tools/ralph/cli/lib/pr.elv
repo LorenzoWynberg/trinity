@@ -168,14 +168,14 @@ Output ONLY 'DESCRIPTION_COMPLETE' or the full updated description. No other tex
 
 # Check if PR exists for branch
 fn check-exists {|branch-name|
+  var result = ""
   try {
-    var existing = (gh pr view $branch-name --json url -q '.url' 2>/dev/null | slurp)
-    if (not (eq (str:trim-space $existing) "")) {
-      put (str:trim-space $existing)
-      return
+    var existing-raw = [(gh pr view $branch-name --json url -q '.url' 2>/dev/null)]
+    if (> (count $existing-raw) 0) {
+      set result = (str:trim-space $existing-raw[0])
     }
   } catch _ { }
-  put ""
+  put $result
 }
 
 # Create a new PR with Claude-generated description
