@@ -31,33 +31,55 @@ function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatu
 }
 
 // Resolve a dependency reference to story IDs
-// Supports: STORY-X.Y.Z, X (phase), X:Y (phase:epic), vN.N:... (cross-version)
+// Supports: STORY-X.Y.Z, v2:STORY-X.Y.Z, X (phase), X:Y (phase:epic), vN.N:X (version-scoped phase)
 export function resolveDependency(dep: string, stories: Story[]): string[] {
-  // Strip version prefix if present (e.g., "v1.0:1" -> "1")
+  // Extract version filter if present (e.g., "v2.0:1" -> version="v2.0", target="1")
   let target = dep
+  let versionFilter: string | null = null
+
   if (/^v[0-9]+\.[0-9]+:/.test(dep)) {
-    target = dep.split(':').slice(1).join(':')
+    const parts = dep.split(':')
+    versionFilter = parts[0]
+    target = parts.slice(1).join(':')
   } else if (/^v[0-9]+\.[0-9]+$/.test(dep)) {
-    // Entire version - return all stories in that version
-    // For now, skip cross-version visualization
-    return []
+    // Entire version - return leaf stories in that version
+    const version = dep
+    const versionStories = stories.filter(s => s.target_version === version)
+    const versionIds = new Set(versionStories.map(s => s.id))
+    const dependedOn = new Set<string>()
+    versionStories.forEach(s => {
+      s.depends_on?.forEach(d => {
+        // Check if dep resolves to a story in this version
+        if (versionIds.has(d)) dependedOn.add(d)
+      })
+    })
+    return versionStories.filter(s => !dependedOn.has(s.id)).map(s => s.id)
   }
 
-  // Specific story (STORY-X.Y.Z)
-  if (target.startsWith('STORY-')) {
-    return stories.some(s => s.id === target) ? [target] : []
+  // Filter stories by version if specified
+  const filteredStories = versionFilter
+    ? stories.filter(s => s.target_version === versionFilter)
+    : stories
+
+  // Specific story (STORY-X.Y.Z or v2:STORY-X.Y.Z)
+  if (target.startsWith('STORY-') || target.includes(':STORY-')) {
+    // Handle prefixed IDs like "v2:STORY-1.1.1"
+    const storyId = target.includes(':STORY-') ? target : target
+    const fullId = versionFilter ? `${versionFilter.replace('.', '')}:${storyId}`.replace('v', 'v') : storyId
+    // Try both the target as-is and with common prefixes
+    const found = stories.find(s => s.id === target || s.id === dep)
+    return found ? [found.id] : []
   }
 
   // Phase:Epic (e.g., "1:2")
   if (/^[0-9]+:[0-9]+$/.test(target)) {
     const [phase, epic] = target.split(':').map(Number)
-    const epicStories = stories.filter(s => s.phase === phase && s.epic === epic)
-    // Return leaf stories in this epic (stories not depended on by other stories in the epic)
+    const epicStories = filteredStories.filter(s => s.phase === phase && s.epic === epic)
     const epicIds = new Set(epicStories.map(s => s.id))
     const dependedOn = new Set<string>()
     epicStories.forEach(s => {
       s.depends_on?.forEach(d => {
-        if (d.startsWith('STORY-') && epicIds.has(d)) dependedOn.add(d)
+        if (epicIds.has(d)) dependedOn.add(d)
       })
     })
     return epicStories.filter(s => !dependedOn.has(s.id)).map(s => s.id)
@@ -66,13 +88,12 @@ export function resolveDependency(dep: string, stories: Story[]): string[] {
   // Just phase (e.g., "1")
   if (/^[0-9]+$/.test(target)) {
     const phase = Number(target)
-    const phaseStories = stories.filter(s => s.phase === phase)
-    // Return leaf stories in this phase (stories not depended on by other stories in the phase)
+    const phaseStories = filteredStories.filter(s => s.phase === phase)
     const phaseIds = new Set(phaseStories.map(s => s.id))
     const dependedOn = new Set<string>()
     phaseStories.forEach(s => {
       s.depends_on?.forEach(d => {
-        if (d.startsWith('STORY-') && phaseIds.has(d)) dependedOn.add(d)
+        if (phaseIds.has(d)) dependedOn.add(d)
       })
     })
     return phaseStories.filter(s => !dependedOn.has(s.id)).map(s => s.id)

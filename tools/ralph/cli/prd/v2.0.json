@@ -11,7 +11,9 @@
         "Health check endpoint at GET /api/health returns 200"
       ],
       "passes": false,
-      "depends_on": ["v1.0"],
+      "depends_on": [
+        "v1.0"
+      ],
       "phase": 1,
       "epic": 1,
       "story_number": 1,
@@ -28,7 +30,9 @@
         "Returns 404 if version not found"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-1.1.1"],
+      "depends_on": [
+        "v2:STORY-1.1.1"
+      ],
       "phase": 1,
       "epic": 1,
       "story_number": 2,
@@ -45,7 +49,9 @@
         "Supports ?version=v1.0 query parameter"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-1.1.2"],
+      "depends_on": [
+        "v2:STORY-1.1.2"
+      ],
       "phase": 1,
       "epic": 1,
       "story_number": 3,
@@ -62,7 +68,9 @@
         "Supports pagination with ?limit=N&offset=N"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-1.1.3"],
+      "depends_on": [
+        "v2:STORY-1.1.3"
+      ],
       "phase": 1,
       "epic": 1,
       "story_number": 4,
@@ -79,7 +87,9 @@
         "Returns 404 if story not found"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-1.1.4"],
+      "depends_on": [
+        "v2:STORY-1.1.4"
+      ],
       "phase": 1,
       "epic": 1,
       "story_number": 5,
@@ -97,7 +107,9 @@
         "Returns most recent first"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-1.1.1"],
+      "depends_on": [
+        "v2:STORY-1.1.1"
+      ],
       "phase": 1,
       "epic": 1,
       "story_number": 6,
@@ -114,7 +126,9 @@
         "Each entry includes: id, title, content, tags array, created_at"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-1.1.1"],
+      "depends_on": [
+        "v2:STORY-1.1.1"
+      ],
       "phase": 1,
       "epic": 1,
       "story_number": 7,
@@ -132,7 +146,9 @@
         "Supports ?version=v1.0 filter"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-1.1.1"],
+      "depends_on": [
+        "v2:STORY-1.1.1"
+      ],
       "phase": 1,
       "epic": 1,
       "story_number": 8,
@@ -148,7 +164,9 @@
         "Includes: status (planning|in_progress|released), released_at, git_tag"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-1.1.1"],
+      "depends_on": [
+        "v2:STORY-1.1.1"
+      ],
       "phase": 1,
       "epic": 1,
       "story_number": 9,
@@ -164,7 +182,9 @@
         "Includes: started_at, attempts, error if any"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-1.1.1"],
+      "depends_on": [
+        "v2:STORY-1.1.1"
+      ],
       "phase": 1,
       "epic": 1,
       "story_number": 10,
@@ -181,7 +201,9 @@
         "Settings persisted to db.Settings table"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-1.1.1"],
+      "depends_on": [
+        "v2:STORY-1.1.1"
+      ],
       "phase": 1,
       "epic": 1,
       "story_number": 11,
@@ -198,7 +220,9 @@
         "Layout data includes: active, defaultLayout, customLayouts map"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-1.1.11"],
+      "depends_on": [
+        "v2:STORY-1.1.11"
+      ],
       "phase": 1,
       "epic": 1,
       "story_number": 12,
@@ -216,7 +240,9 @@
         "npm run build produces production build"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-1.1.1"],
+      "depends_on": [
+        "v2:STORY-1.1.1"
+      ],
       "phase": 1,
       "epic": 2,
       "story_number": 1,
@@ -233,7 +259,9 @@
         "lib/utils.ts with cn() helper"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-1.2.1"],
+      "depends_on": [
+        "v2:STORY-1.2.1"
+      ],
       "phase": 1,
       "epic": 2,
       "story_number": 2,
@@ -251,7 +279,9 @@
         "Responsive layout (sidebar collapses on mobile)"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-1.2.2"],
+      "depends_on": [
+        "v2:STORY-1.2.2"
+      ],
       "phase": 1,
       "epic": 2,
       "story_number": 3,
@@ -267,7 +297,9 @@
         "Custom node types can be registered"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-1.2.2"],
+      "depends_on": [
+        "v2:STORY-1.2.2"
+      ],
       "phase": 1,
       "epic": 2,
       "story_number": 4,
@@ -284,7 +316,9 @@
         "Used for: total stories, merged count, tokens used, time spent"
       ],
       "passes": false,
-      "depends_on": ["1"],
+      "depends_on": [
+        "v2.0:1"
+      ],
       "phase": 2,
       "epic": 1,
       "story_number": 1,
@@ -300,7 +334,9 @@
         "Color variants: default, success (complete), warning (stalled)"
       ],
       "passes": false,
-      "depends_on": ["1"],
+      "depends_on": [
+        "v2.0:1"
+      ],
       "phase": 2,
       "epic": 1,
       "story_number": 2,
@@ -318,7 +354,9 @@
         "Empty state when idle"
       ],
       "passes": false,
-      "depends_on": ["1"],
+      "depends_on": [
+        "v2.0:1"
+      ],
       "phase": 2,
       "epic": 1,
       "story_number": 3,
@@ -337,7 +375,11 @@
         "5-second auto-refresh"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.1.1", "v2:STORY-2.1.2", "v2:STORY-2.1.3"],
+      "depends_on": [
+        "v2:STORY-2.1.1",
+        "v2:STORY-2.1.2",
+        "v2:STORY-2.1.3"
+      ],
       "phase": 2,
       "epic": 1,
       "story_number": 4,
@@ -354,7 +396,9 @@
         "Status badge colors: pending (gray), passed (blue), merged (green), skipped (yellow)"
       ],
       "passes": false,
-      "depends_on": ["1"],
+      "depends_on": [
+        "v2.0:1"
+      ],
       "phase": 2,
       "epic": 2,
       "story_number": 1,
@@ -371,7 +415,9 @@
         "Searchable by title or id"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.2.1"],
+      "depends_on": [
+        "v2:STORY-2.2.1"
+      ],
       "phase": 2,
       "epic": 2,
       "story_number": 2,
@@ -389,7 +435,9 @@
         "Close button and click-outside-to-close"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.2.1"],
+      "depends_on": [
+        "v2:STORY-2.2.1"
+      ],
       "phase": 2,
       "epic": 2,
       "story_number": 3,
@@ -408,7 +456,10 @@
         "Stories grouped by phase"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.2.2", "v2:STORY-2.2.3"],
+      "depends_on": [
+        "v2:STORY-2.2.2",
+        "v2:STORY-2.2.3"
+      ],
       "phase": 2,
       "epic": 2,
       "story_number": 4,
@@ -426,7 +477,9 @@
         "Edit button (for future inline editing)"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.2.4"],
+      "depends_on": [
+        "v2:STORY-2.2.4"
+      ],
       "phase": 2,
       "epic": 2,
       "story_number": 5,
@@ -445,7 +498,9 @@
         "Handles for edge connections"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-1.2.4"],
+      "depends_on": [
+        "v2:STORY-1.2.4"
+      ],
       "phase": 2,
       "epic": 3,
       "story_number": 1,
@@ -463,7 +518,9 @@
         "Connects to root stories of that version"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.3.1"],
+      "depends_on": [
+        "v2:STORY-2.3.1"
+      ],
       "phase": 2,
       "epic": 3,
       "story_number": 2,
@@ -481,7 +538,9 @@
         "Version headers positioned appropriately"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.3.2"],
+      "depends_on": [
+        "v2:STORY-2.3.2"
+      ],
       "phase": 2,
       "epic": 3,
       "story_number": 3,
@@ -499,7 +558,9 @@
         "Nodes draggable only in custom layout mode"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.3.3"],
+      "depends_on": [
+        "v2:STORY-2.3.3"
+      ],
       "phase": 2,
       "epic": 3,
       "story_number": 4,
@@ -517,7 +578,9 @@
         "Delete button for custom layouts"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.3.4"],
+      "depends_on": [
+        "v2:STORY-2.3.4"
+      ],
       "phase": 2,
       "epic": 3,
       "story_number": 5,
@@ -534,7 +597,9 @@
         "Visual indicator for current default"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.3.5"],
+      "depends_on": [
+        "v2:STORY-2.3.5"
+      ],
       "phase": 2,
       "epic": 3,
       "story_number": 6,
@@ -552,7 +617,9 @@
         "Click same node or background to deselect"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.3.3"],
+      "depends_on": [
+        "v2:STORY-2.3.3"
+      ],
       "phase": 2,
       "epic": 3,
       "story_number": 7,
@@ -570,7 +637,9 @@
         "Shorter visual edges render on top (higher z-index)"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.3.7"],
+      "depends_on": [
+        "v2:STORY-2.3.7"
+      ],
       "phase": 2,
       "epic": 3,
       "story_number": 8,
@@ -586,7 +655,9 @@
         "Version edge color follows depth gradient"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.3.8"],
+      "depends_on": [
+        "v2:STORY-2.3.8"
+      ],
       "phase": 2,
       "epic": 3,
       "story_number": 9,
@@ -603,7 +674,10 @@
         "Close modal returns to graph"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.2.3", "v2:STORY-2.3.1"],
+      "depends_on": [
+        "v2:STORY-2.2.3",
+        "v2:STORY-2.3.1"
+      ],
       "phase": 2,
       "epic": 3,
       "story_number": 10,
@@ -620,7 +694,9 @@
         "Setting persisted via settings API"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.3.3"],
+      "depends_on": [
+        "v2:STORY-2.3.3"
+      ],
       "phase": 2,
       "epic": 3,
       "story_number": 11,
@@ -637,7 +713,9 @@
         "Button icon changes when in fullscreen"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.3.3"],
+      "depends_on": [
+        "v2:STORY-2.3.3"
+      ],
       "phase": 2,
       "epic": 3,
       "story_number": 12,
@@ -654,7 +732,9 @@
         "Clickable to navigate"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.3.3"],
+      "depends_on": [
+        "v2:STORY-2.3.3"
+      ],
       "phase": 2,
       "epic": 3,
       "story_number": 13,
@@ -674,7 +754,17 @@
         "5-second data refresh"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.3.5", "v2:STORY-2.3.6", "v2:STORY-2.3.7", "v2:STORY-2.3.8", "v2:STORY-2.3.9", "v2:STORY-2.3.10", "v2:STORY-2.3.11", "v2:STORY-2.3.12", "v2:STORY-2.3.13"],
+      "depends_on": [
+        "v2:STORY-2.3.5",
+        "v2:STORY-2.3.6",
+        "v2:STORY-2.3.7",
+        "v2:STORY-2.3.8",
+        "v2:STORY-2.3.9",
+        "v2:STORY-2.3.10",
+        "v2:STORY-2.3.11",
+        "v2:STORY-2.3.12",
+        "v2:STORY-2.3.13"
+      ],
       "phase": 2,
       "epic": 3,
       "story_number": 14,
@@ -691,7 +781,9 @@
         "Action type icons"
       ],
       "passes": false,
-      "depends_on": ["1"],
+      "depends_on": [
+        "v2.0:1"
+      ],
       "phase": 2,
       "epic": 4,
       "story_number": 1,
@@ -708,7 +800,9 @@
         "Empty state when no activity"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.4.1"],
+      "depends_on": [
+        "v2:STORY-2.4.1"
+      ],
       "phase": 2,
       "epic": 4,
       "story_number": 2,
@@ -726,7 +820,9 @@
         "Export button (future)"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.4.2"],
+      "depends_on": [
+        "v2:STORY-2.4.2"
+      ],
       "phase": 2,
       "epic": 4,
       "story_number": 3,
@@ -743,7 +839,9 @@
         "Preview truncated to 2-3 lines"
       ],
       "passes": false,
-      "depends_on": ["1"],
+      "depends_on": [
+        "v2.0:1"
+      ],
       "phase": 2,
       "epic": 5,
       "story_number": 1,
@@ -760,7 +858,9 @@
         "Dark/light mode aware styling"
       ],
       "passes": false,
-      "depends_on": ["1"],
+      "depends_on": [
+        "v2.0:1"
+      ],
       "phase": 2,
       "epic": 5,
       "story_number": 2,
@@ -778,7 +878,10 @@
         "Click card shows full content with MarkdownViewer"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.5.1", "v2:STORY-2.5.2"],
+      "depends_on": [
+        "v2:STORY-2.5.1",
+        "v2:STORY-2.5.2"
+      ],
       "phase": 2,
       "epic": 5,
       "story_number": 3,
@@ -796,7 +899,9 @@
         "Responsive sizing, dark/light mode"
       ],
       "passes": false,
-      "depends_on": ["1"],
+      "depends_on": [
+        "v2.0:1"
+      ],
       "phase": 2,
       "epic": 6,
       "story_number": 1,
@@ -814,7 +919,9 @@
         "Summary stats cards at top"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-2.6.1"],
+      "depends_on": [
+        "v2:STORY-2.6.1"
+      ],
       "phase": 2,
       "epic": 6,
       "story_number": 2,
@@ -832,7 +939,9 @@
         "Settings saved via settings API"
       ],
       "passes": false,
-      "depends_on": ["1"],
+      "depends_on": [
+        "v2.0:1"
+      ],
       "phase": 2,
       "epic": 7,
       "story_number": 1,
@@ -849,7 +958,9 @@
         "Client hook useWebSocket for subscription"
       ],
       "passes": false,
-      "depends_on": ["2"],
+      "depends_on": [
+        "v2.0:2"
+      ],
       "phase": 3,
       "epic": 1,
       "story_number": 1,
@@ -866,7 +977,9 @@
         "Home page stats update in real-time"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-3.1.1"],
+      "depends_on": [
+        "v2:STORY-3.1.1"
+      ],
       "phase": 3,
       "epic": 1,
       "story_number": 2,
@@ -883,7 +996,9 @@
         "Unread indicator when page not visible"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-3.1.1"],
+      "depends_on": [
+        "v2:STORY-3.1.1"
+      ],
       "phase": 3,
       "epic": 1,
       "story_number": 3,
@@ -900,7 +1015,9 @@
         "Status indicator: idle, running, blocked"
       ],
       "passes": false,
-      "depends_on": ["2"],
+      "depends_on": [
+        "v2.0:2"
+      ],
       "phase": 3,
       "epic": 2,
       "story_number": 1,
@@ -917,7 +1034,10 @@
         "Collapsible panel"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-3.2.1", "v2:STORY-3.1.1"],
+      "depends_on": [
+        "v2:STORY-3.2.1",
+        "v2:STORY-3.1.1"
+      ],
       "phase": 3,
       "epic": 2,
       "story_number": 2,
@@ -934,7 +1054,10 @@
         "Filter to show only one agent's work"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-3.2.2", "v2:STORY-2.3.14"],
+      "depends_on": [
+        "v2:STORY-3.2.2",
+        "v2:STORY-2.3.14"
+      ],
       "phase": 3,
       "epic": 2,
       "story_number": 3,
@@ -951,7 +1074,9 @@
         "Badge count in sidebar navigation"
       ],
       "passes": false,
-      "depends_on": ["2"],
+      "depends_on": [
+        "v2.0:2"
+      ],
       "phase": 3,
       "epic": 3,
       "story_number": 1,
@@ -968,7 +1093,9 @@
         "Confirmation dialog before action"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-3.3.1"],
+      "depends_on": [
+        "v2:STORY-3.3.1"
+      ],
       "phase": 3,
       "epic": 3,
       "story_number": 2,
@@ -985,7 +1112,9 @@
         "Copy URL button"
       ],
       "passes": false,
-      "depends_on": ["v2:STORY-3.3.1"],
+      "depends_on": [
+        "v2:STORY-3.3.1"
+      ],
       "phase": 3,
       "epic": 3,
       "story_number": 3,
