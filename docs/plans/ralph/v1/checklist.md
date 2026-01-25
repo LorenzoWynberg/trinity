@@ -88,7 +88,7 @@ Track implementation progress. Update status as features are completed.
 ### 10. Auto-archive Activity Logs
 - [x] Create `archive-old-logs` function
 - [x] Find logs older than 7 days
-- [x] Move to `docs/activity/archive/YYYY-MM/`
+- [x] Move to `logs/activity/archive/YYYY-MM/`
 - [x] Run on startup
 
 ### 11. Retry Clean Slate

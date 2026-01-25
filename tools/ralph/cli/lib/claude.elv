@@ -80,7 +80,7 @@ fn preflight-checks {
 
 # Archive old activity logs (>7 days) on startup
 fn archive-old-logs {
-  var activity-dir = (path:join $project-root "docs" "activity")
+  var activity-dir = (path:join $project-root "logs" "activity" "trinity")
   var archive-dir = (path:join $activity-dir "archive")
 
   if (not (path:is-dir $activity-dir)) {
@@ -127,7 +127,7 @@ fn archive-old-logs {
 
 # Get recent activity logs (up to 2 most recent)
 fn get-recent-activity-logs {
-  var activity-dir = (path:join $project-root "docs" "activity")
+  var activity-dir = (path:join $project-root "logs" "activity" "trinity")
 
   # Check if directory exists
   if (not (path:is-dir $activity-dir)) {
@@ -200,6 +200,7 @@ Stay focused on the feedback - don't refactor unrelated code.
   set prompt = (str:replace &max=-1 "{{BRANCH}}" $branch-name $prompt)
   set prompt = (str:replace &max=-1 "{{ATTEMPT}}" (to-string $attempt) $prompt)
   set prompt = (str:replace &max=-1 "{{FEEDBACK}}" $feedback-section $prompt)
+  set prompt = (str:replace &max=-1 "{{VERSION}}" (prd:get-current-version) $prompt)
 
   # Add dependency info
   var deps-info = (prd:get-story-deps $story-id | slurp)
@@ -263,7 +264,7 @@ fn extract-learnings {|story-id branch-name|
   # Get story activity (from today's log)
   var activity = ""
   var today = (date '+%Y-%m-%d')
-  var activity-file = (path:join $project-root "docs" "activity" $today".md")
+  var activity-file = (path:join $project-root "logs" "activity" "trinity" $today".md")
   if (path:is-regular $activity-file) {
     try {
       set activity = (cat $activity-file | slurp)
@@ -398,7 +399,11 @@ fn prepare-plan-prompt {|story-id|
   var acceptance = (echo $story-json | jq -r '.acceptance | join("\n- ")' | slurp | str:trim-space)
   var deps = (prd:get-story-deps $story-id | slurp)
 
-  var prompt = '# Plan Mode - Story '$story-id'
+  var version = (prd:get-current-version)
+  var prompt = '# Plan Mode - '$version' / '$story-id'
+
+## Context
+Version: '$version' | Story: '$story-id'
 
 ## Story
 **'$story-id'**: '$title'
@@ -419,7 +424,7 @@ Output a detailed plan that includes:
 4. **Potential challenges** - gotchas or edge cases to watch for
 
 Read the following for context:
-- `tools/ralph/cli/prd.json` - full story details
+- `tools/ralph/cli/prd/'$version'.json` - full story details
 - `docs/ARCHITECTURE.md` - system design
 - `docs/learnings/` - existing learnings
 
@@ -440,9 +445,9 @@ fn generate-commit-message {|story-id branch-name|
   var story-title = (prd:get-story-title $story-id)
 
   # Get diff for this story
+  var base = "dev"  # TODO: get from config
   var diff = ""
   try {
-    var base = "dev"  # TODO: get from config
     set diff = (git -C $project-root diff --stat $base"..."$branch-name 2>/dev/null | slurp)
   } catch _ { }
 

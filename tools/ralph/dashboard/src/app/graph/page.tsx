@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useState, useRef, useMemo } from 'react'
+import { useDebouncer } from '@tanstack/react-pacer'
 import {
   ReactFlow,
   Node,
@@ -14,43 +15,69 @@ import {
   BackgroundVariant,
   ReactFlowProvider,
   useReactFlow,
+  NodeChange,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useTheme } from 'next-themes'
-import { ArrowRight, ArrowDown } from 'lucide-react'
+import { ArrowRight, ArrowDown, Save, Trash2, Loader2, Star, Maximize, Minimize } from 'lucide-react'
 import { StoryNode } from '@/components/story-node'
+import { VersionNode } from '@/components/version-node'
 import { StoryModal } from '@/components/story-modal'
-import { useGraphData } from '@/hooks/use-graph-data'
+import { useGraphData, calculateAutoPositions, GraphLayoutData } from '@/hooks/use-graph-data'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import type { Story, StoryStatus } from '@/lib/types'
 
 const nodeTypes = {
   story: StoryNode,
+  version: VersionNode,
 }
 
 function GraphContent() {
   const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === 'dark'
-  const [direction, setDirection] = useState<'horizontal' | 'vertical'>('horizontal')
-  const { nodes: initialNodes, edges: initialEdges, loading, stories } = useGraphData(direction)
-  const { fitView } = useReactFlow()
-  const shouldFitViewRef = useRef(true) // Fit on initial render
-  const prevDirectionRef = useRef(direction)
+  const [mounted, setMounted] = useState(false)
+  const [selectedVersion, setSelectedVersion] = useState<string>('all')
+  const [isVersionLoading, setIsVersionLoading] = useState(false)
+  const [isLayoutLoading, setIsLayoutLoading] = useState(false)
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([])
-  const [edges, setEdges, onEdgesChange] = useEdgesState([])
-
-  // Load saved direction on mount
   useEffect(() => {
-    fetch('/api/settings')
-      .then(res => res.json())
-      .then(data => {
-        if (data.graphDirection) {
-          setDirection(data.graphDirection)
-        }
-      })
-      .catch(console.error)
+    setMounted(true)
   }, [])
+
+  const isDark = mounted ? resolvedTheme === 'dark' : true
+  const {
+    nodes: initialNodes,
+    edges: initialEdges,
+    loading,
+    stories,
+    versions,
+    layoutData,
+    saveLayoutData,
+    deleteCustomLayout,
+  } = useGraphData(selectedVersion)
+  const { fitView } = useReactFlow()
+  const shouldFitViewRef = useRef(true)
+  const prevVersionRef = useRef(selectedVersion)
+  const prevActiveRef = useRef(layoutData.active)
+
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
+
+  // Debounced layout save - waits 500ms after last change before saving
+  const layoutSaveDebouncer = useDebouncer(saveLayoutData, { wait: 500 })
 
   const [highlightedNodes, setHighlightedNodes] = useState<Set<string>>(new Set())
   const [highlightedEdges, setHighlightedEdges] = useState<Set<string>>(new Set())
@@ -59,29 +86,146 @@ function GraphContent() {
   const [selectedStatus, setSelectedStatus] = useState<StoryStatus>('pending')
   const [modalOpen, setModalOpen] = useState(false)
 
-  // Track direction changes to trigger fitView
-  useEffect(() => {
-    if (prevDirectionRef.current !== direction) {
-      shouldFitViewRef.current = true
-      prevDirectionRef.current = direction
-    }
-  }, [direction])
+  // Save dialog state
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false)
+  const [newLayoutName, setNewLayoutName] = useState('')
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
-  // Update nodes when data loads, only fit view on initial render or direction change
+  // Track fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
+
+  // Track version/layout changes to trigger fitView
+  useEffect(() => {
+    if (prevVersionRef.current !== selectedVersion || prevActiveRef.current !== layoutData.active) {
+      shouldFitViewRef.current = true
+      prevVersionRef.current = selectedVersion
+      prevActiveRef.current = layoutData.active
+    }
+  }, [selectedVersion, layoutData.active])
+
+  // Update nodes when data loads
   useEffect(() => {
     if (initialNodes.length > 0) {
       setNodes(initialNodes)
       setEdges(initialEdges)
 
-      // Only fit view on initial render or direction change
       if (shouldFitViewRef.current) {
         setTimeout(() => {
           fitView({ padding: 0.1, duration: 200 })
+          setIsVersionLoading(false)
+          setIsLayoutLoading(false)
         }, 50)
         shouldFitViewRef.current = false
+      } else {
+        setIsVersionLoading(false)
+        setIsLayoutLoading(false)
       }
     }
   }, [initialNodes, initialEdges, setNodes, setEdges, fitView])
+
+  // Handle layout selection change
+  const handleLayoutChange = useCallback(async (value: string) => {
+    if (value === '__create__') {
+      setSaveDialogOpen(true)
+      return
+    }
+
+    setIsLayoutLoading(true)
+
+    const newData: GraphLayoutData = {
+      ...layoutData,
+      active: value,
+    }
+    await saveLayoutData(newData)
+  }, [layoutData, saveLayoutData])
+
+  // Save current positions as a new custom layout
+  const handleSaveNewLayout = useCallback(async () => {
+    if (!newLayoutName.trim()) return
+
+    const positions: Record<string, { x: number; y: number }> = {}
+    nodes.forEach(node => {
+      positions[node.id] = { x: node.position.x, y: node.position.y }
+    })
+
+    const newData: GraphLayoutData = {
+      active: newLayoutName.trim(),
+      defaultLayout: layoutData.defaultLayout,
+      customLayouts: {
+        ...layoutData.customLayouts,
+        [newLayoutName.trim()]: { positions },
+      },
+    }
+
+    await saveLayoutData(newData)
+    setSaveDialogOpen(false)
+    setNewLayoutName('')
+  }, [nodes, layoutData, saveLayoutData, newLayoutName])
+
+  // Handle node drag end - update custom layout if active (debounced)
+  const handleNodesChange = useCallback((changes: NodeChange<Node>[]) => {
+    onNodesChange(changes)
+
+    const hasDrag = changes.some(change =>
+      change.type === 'position' && change.dragging === false && change.position
+    )
+
+    if (hasDrag) {
+      const activeLayout = layoutData.active
+
+      // If currently on a custom layout, update its positions (debounced)
+      if (activeLayout !== 'horizontal' && activeLayout !== 'vertical') {
+        const positions: Record<string, { x: number; y: number }> = {}
+        nodes.forEach(node => {
+          const change = changes.find(c => c.type === 'position' && c.id === node.id)
+          if (change && change.type === 'position' && change.position) {
+            positions[node.id] = { x: change.position.x, y: change.position.y }
+          } else {
+            positions[node.id] = { x: node.position.x, y: node.position.y }
+          }
+        })
+
+        const newData: GraphLayoutData = {
+          ...layoutData,
+          customLayouts: {
+            ...layoutData.customLayouts,
+            [activeLayout]: { positions },
+          },
+        }
+        // Use debounced save to avoid rapid API calls while dragging
+        layoutSaveDebouncer.maybeExecute(newData)
+      }
+    }
+  }, [onNodesChange, layoutData, nodes, layoutSaveDebouncer])
+
+  // Delete a custom layout
+  const handleDeleteLayout = useCallback(async (name: string) => {
+    await deleteCustomLayout(name)
+  }, [deleteCustomLayout])
+
+  // Set current layout as default for this version
+  const handleSetDefault = useCallback(async () => {
+    const newData: GraphLayoutData = {
+      ...layoutData,
+      defaultLayout: layoutData.active,
+    }
+    await saveLayoutData(newData)
+  }, [layoutData, saveLayoutData])
+
+  // Toggle fullscreen mode
+  const handleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen()
+    } else {
+      document.exitFullscreen()
+    }
+  }, [])
 
   // Get all ancestors (dependencies) recursively
   const getAncestors = useCallback((nodeId: string, visited: Set<string> = new Set()): Set<string> => {
@@ -117,12 +261,10 @@ function GraphContent() {
   }, [stories, getAncestors])
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
-    // Toggle highlighting - if already highlighted, clear it
     if (highlightedNodes.has(node.id) && highlightedNodes.size === getAncestors(node.id).size) {
       setHighlightedNodes(new Set())
       setHighlightedEdges(new Set())
     } else {
-      // Highlight the dependency path
       const ancestors = getAncestors(node.id)
       const pathEdges = getPathEdges(node.id)
       setHighlightedNodes(ancestors)
@@ -140,7 +282,6 @@ function GraphContent() {
   }, [stories])
 
   const onNodeDoubleClick = useCallback((_: React.MouseEvent, node: Node) => {
-    // Open modal on double-click
     openStoryModal(node.id, node.data?.status as StoryStatus || 'pending')
   }, [openStoryModal])
 
@@ -176,64 +317,168 @@ function GraphContent() {
         ...node.style,
         opacity: hasHighlighting && !isHighlighted ? 0.3 : 1,
       },
-      // Highlighted nodes on top, non-highlighted nodes below highlighted edges
       zIndex: isHighlighted ? 1001 : (hasHighlighting ? -1 : 0),
     }
   })
 
-  const toggleDirection = async () => {
-    const newDirection = direction === 'horizontal' ? 'vertical' : 'horizontal'
-    setDirection(newDirection)
+  // Get list of custom layout names (filter out any empty/undefined keys)
+  const customLayoutNames = Object.keys(layoutData.customLayouts || {}).filter(name => name && name !== 'undefined')
 
-    // Save to settings
-    try {
-      const res = await fetch('/api/settings')
-      const settings = await res.json()
-      await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...settings, graphDirection: newDirection }),
-      })
-    } catch (error) {
-      console.error('Failed to save direction setting:', error)
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <p className="text-muted-foreground">Loading graph...</p>
-      </div>
-    )
-  }
+  // Determine if we're in auto-layout mode (no manual positioning allowed)
+  const isAutoLayout = layoutData.active === 'horizontal' || layoutData.active === 'vertical' || layoutData.active === 'horizontal-compact' || layoutData.active === 'vertical-compact'
 
   return (
     <>
       <div className="h-[calc(100vh-2rem)] w-full relative">
-        <div className="absolute top-4 right-4 z-10">
+        {/* Initial loading overlay */}
+        {(!mounted || loading) && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Loading graph...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Version Selector - Left */}
+        {versions.length >= 1 && (
+          <div className="absolute top-4 left-4 z-10">
+            <Select
+              value={selectedVersion}
+              onValueChange={(v) => {
+                setIsVersionLoading(true)
+                setSelectedVersion(v)
+              }}
+              disabled={isVersionLoading || isLayoutLoading}
+            >
+              <SelectTrigger className="w-[140px] h-9 bg-background">
+                {isVersionLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Loading...</span>
+                  </div>
+                ) : (
+                  <SelectValue placeholder="All versions" />
+                )}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All versions</SelectItem>
+                {versions.map(version => (
+                  <SelectItem key={version} value={version}>
+                    {version}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Layout Selector - Right */}
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+          <Select
+            value={layoutData.active}
+            onValueChange={handleLayoutChange}
+            disabled={isVersionLoading || isLayoutLoading}
+          >
+            <SelectTrigger className="w-[160px] h-9 bg-background">
+              {isLayoutLoading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Loading...</span>
+                </div>
+              ) : (
+                <SelectValue />
+              )}
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="horizontal">
+                <div className="flex items-center gap-2">
+                  <ArrowRight className="h-4 w-4" />
+                  Horizontal
+                </div>
+              </SelectItem>
+              <SelectItem value="horizontal-compact">
+                <div className="flex items-center gap-2">
+                  <ArrowRight className="h-4 w-4" />
+                  Horizontal Compact
+                </div>
+              </SelectItem>
+              <SelectItem value="vertical">
+                <div className="flex items-center gap-2">
+                  <ArrowDown className="h-4 w-4" />
+                  Vertical
+                </div>
+              </SelectItem>
+              <SelectItem value="vertical-compact">
+                <div className="flex items-center gap-2">
+                  <ArrowDown className="h-4 w-4" />
+                  Vertical Compact
+                </div>
+              </SelectItem>
+              {customLayoutNames.length > 0 && (
+                <div className="border-t my-1" />
+              )}
+              {customLayoutNames.map(name => (
+                <SelectItem key={name} value={name}>
+                  <div className="flex items-center justify-between w-full gap-2">
+                    <span className="truncate">{name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+              <div className="border-t my-1" />
+              <SelectItem value="__create__">
+                <div className="flex items-center gap-2 text-primary">
+                  <Save className="h-4 w-4" />
+                  Create view...
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Fullscreen button */}
           <Button
             variant="outline"
-            size="sm"
-            onClick={toggleDirection}
-            className="gap-2"
+            size="icon"
+            className="h-9 w-9"
+            onClick={handleFullscreen}
+            title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
           >
-            {direction === 'horizontal' ? (
-              <>
-                <ArrowRight className="h-4 w-4" />
-                Horizontal
-              </>
-            ) : (
-              <>
-                <ArrowDown className="h-4 w-4" />
-                Vertical
-              </>
-            )}
+            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
           </Button>
+
+          {/* Set as default button */}
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9"
+            onClick={handleSetDefault}
+            title={layoutData.active === layoutData.defaultLayout ? "Current default" : "Set as default"}
+            disabled={isVersionLoading || isLayoutLoading || layoutData.active === layoutData.defaultLayout}
+          >
+            <Star
+              className={`h-4 w-4 ${layoutData.active === layoutData.defaultLayout ? 'fill-yellow-500 text-yellow-500' : 'text-muted-foreground'}`}
+            />
+          </Button>
+
+          {/* Delete button for custom layouts */}
+          {!isAutoLayout && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => handleDeleteLayout(layoutData.active)}
+              title="Delete this layout"
+              disabled={isVersionLoading || isLayoutLoading}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          )}
         </div>
+
         <ReactFlow
           nodes={styledNodes}
           edges={styledEdges}
-          onNodesChange={onNodesChange}
+          onNodesChange={handleNodesChange}
           onEdgesChange={onEdgesChange}
           onNodeClick={onNodeClick}
           onNodeDoubleClick={onNodeDoubleClick}
@@ -252,9 +497,10 @@ function GraphContent() {
             size={1}
             color={isDark ? '#333' : '#ccc'}
           />
-          <Controls />
+          <Controls showInteractive={!isAutoLayout} />
           <MiniMap
             nodeColor={(node) => {
+              if (node.type === 'version') return isDark ? '#a855f7' : '#9333ea'
               const status = node.data?.status as string
               switch (status) {
                 case 'merged': return '#22c55e'
@@ -283,6 +529,36 @@ function GraphContent() {
           }
         }}
       />
+
+      {/* Create View Dialog */}
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create View</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <label className="text-sm font-medium mb-2 block">View Name</label>
+            <input
+              type="text"
+              value={newLayoutName}
+              onChange={(e) => setNewLayoutName(e.target.value)}
+              placeholder="e.g., By Phase, Compact, My Layout"
+              className="w-full px-3 py-2 border rounded-md bg-background"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSaveNewLayout()
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveNewLayout} disabled={!newLayoutName.trim()}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

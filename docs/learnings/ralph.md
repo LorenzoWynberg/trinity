@@ -1,6 +1,6 @@
 # Ralph Learnings
 
-> **TL;DR:** Two-stage completion (passes→merged), activity logs via `{{RECENT_ACTIVITY_LOGS}}`, PR defaults (yes create, no merge), Claude-generated PR descriptions from git history.
+> **TL;DR:** Two-stage completion (passes→merged), activity logs split by project (trinity/ for Ralph's work, ralph/ for human docs), release workflow with human gate and hotfix loop, PR defaults (yes create, no merge).
 
 ## Streaming Claude Output
 
@@ -44,7 +44,7 @@ Two-stage completion tracking:
 ## Activity Logging
 
 ### Daily log format
-`docs/activity/YYYY-MM-DD.md` with timestamped entries documenting what was done.
+`logs/activity/YYYY-MM-DD.md` with timestamped entries documenting what was done.
 
 ### Including in prompts
 Read 2 most recent logs and include via `{{RECENT_ACTIVITY_LOGS}}` placeholder. Gives Claude context about recent work.
@@ -82,3 +82,43 @@ PR body includes ALL commits and files from base branch to feature branch:
 
 ### Merging existing descriptions
 When updating a PR, existing body is fetched and passed to Claude with instruction to merge/extend content rather than replace.
+
+## Activity Log Organization
+
+### Separate by project
+```
+logs/activity/
+├── trinity/        # Ralph writes here (Trinity CLI development)
+│   ├── YYYY-MM-DD.md
+│   └── archive/YYYY-MM/
+└── ralph/          # Humans write here (Ralph's own development)
+    └── YYYY-MM-DD.md
+```
+
+**Key distinction:** Ralph works ON Trinity, so Ralph writes to `trinity/` logs. The `ralph/` folder is for human documentation about Ralph itself.
+
+### Archive structure
+Old logs go to `archive/YYYY-MM/filename.md` subdirectories, not flat in archive folder.
+
+## Release Workflow
+
+### Human gate at completion
+When all stories complete, prompt for release approval:
+- `[Y]es` - proceed with release
+- `[n]o` - cancel
+- `[e]dit tag` - change version tag
+- `[f]eedback` - run hotfix, then return to prompt
+
+### Tag on main, not dev
+Release flow: create PR (dev→main) → merge → checkout main → tag at merge commit → push tag. The tag must be on main, not on dev.
+
+### Hotfix flow
+Feedback at release creates a hotfix branch from dev, runs Claude with the feedback, merges back to dev, then returns to release prompt.
+
+## Gotchas
+
+### Elvish quirks
+- **No `path:glob`** - use `ls | grep` pattern instead
+- **Arity mismatches** - functions returning multiple values need `| take 1` if you only want first
+- **Function naming** - it's `ui:warn` not `ui:warning`
+- **Variables in strings** - use `$var` not `{$var}` for interpolation

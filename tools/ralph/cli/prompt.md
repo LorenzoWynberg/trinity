@@ -1,7 +1,7 @@
 # Ralph Agent - Story {{CURRENT_STORY}}
 
 ## Context
-Story: {{CURRENT_STORY}} | Branch: {{BRANCH}} | Attempt: {{ATTEMPT}} | Iteration: {{ITERATION}}/{{MAX_ITERATIONS}}
+Version: {{VERSION}} | Story: {{CURRENT_STORY}} | Branch: {{BRANCH}} | Attempt: {{ATTEMPT}} | Iteration: {{ITERATION}}/{{MAX_ITERATIONS}}
 
 Dependencies (completed): {{DEPENDENCIES}}
 
@@ -9,7 +9,7 @@ Dependencies (completed): {{DEPENDENCIES}}
 
 ## 1. Load Context
 Read these files first:
-- `tools/ralph/cli/prd.json` - acceptance criteria for {{CURRENT_STORY}}
+- `tools/ralph/cli/prd/{{VERSION}}.json` - acceptance criteria for {{CURRENT_STORY}}
 - `docs/ARCHITECTURE.md` - system design and patterns
 - `docs/COMMANDS.md` - CLI command specifications
 - `docs/PROMPTS.md` - prompt system design
@@ -21,7 +21,33 @@ Read these files first:
 
 If attempt > 1 or refinement: check `git log` and `git diff` for previous work. Focus on the feedback if provided.
 
-**Activity Log:** Create or update `docs/activity/YYYY-MM-DD.md` (today's date). Add entry for starting work on {{CURRENT_STORY}}. Before archiving old logs: extract learnings to `docs/learnings/`. Archive logs older than 7 days to `docs/activity/archive/YYYY-MM/`.
+**Activity Log:** Create or update `logs/activity/trinity/YYYY-MM-DD.md` (today's date) using this template:
+
+```markdown
+## {{CURRENT_STORY}}: [Story Title from PRD]
+
+**Phase:** [phase number] | **Epic:** [epic number] | **Version:** {{VERSION}}
+**Started:** [current timestamp, e.g., 2026-01-24 17:30]
+**Branch:** {{BRANCH}}
+
+### What was done
+- [Change 1]
+- [Change 2]
+
+### Files modified
+- `path/to/file.go` - Description of changes
+
+### Acceptance criteria met
+- [x] Criterion 1
+- [x] Criterion 2
+
+### Learnings
+- [Any gotchas, patterns, or insights discovered]
+
+---
+```
+
+Before archiving old logs: extract learnings to `docs/learnings/`. Archive logs older than 7 days to `logs/activity/trinity/archive/YYYY-MM/`.
 
 ### Recent Activity Logs (Detailed Context)
 Review these recent activity logs for detailed context on recent work:
@@ -67,7 +93,7 @@ Update these files:
 - `tools/ralph/cli/progress.txt`: APPEND entry with date, changes, learnings
 - `tools/ralph/cli/prd.json`: Set `"passes": true` for {{CURRENT_STORY}}
   - NOTE: Do NOT set `merged` - Ralph handles that after PR is merged
-- `docs/activity/YYYY-MM-DD.md`: Update with completed work, files modified, decisions made
+- `logs/activity/trinity/YYYY-MM-DD.md`: Update with completed work, files modified, decisions made
 
 Then commit and push (no Co-Authored-By lines):
 ```bash
@@ -96,7 +122,7 @@ Don't commit. Don't update prd.json.
 **Still capture learnings from failure:**
 - `docs/learnings/*.md`: Add what you learned to the appropriate file's **Gotchas** section
 - `tools/ralph/cli/progress.txt`: APPEND what was tried and why blocked
-- `docs/activity/YYYY-MM-DD.md`: Detailed blocker info and what was attempted
+- `logs/activity/trinity/YYYY-MM-DD.md`: Detailed blocker info and what was attempted
 
 Failures are valuable learning opportunities - don't lose them!
 

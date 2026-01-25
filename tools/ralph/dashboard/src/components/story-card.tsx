@@ -33,8 +33,13 @@ export function StoryCard({ story, status }: StoryCardProps) {
         </CardHeader>
         <CardContent className="pt-0">
           <div className="text-xs text-muted-foreground space-y-1">
-            <div>
-              Phase {story.phase} • Epic {story.epic}
+            <div className="flex items-center gap-2">
+              <span>Phase {story.phase} • Epic {story.epic}</span>
+              {story.target_version && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                  {story.target_version}
+                </Badge>
+              )}
             </div>
             {story.depends_on && story.depends_on.length > 0 && (
               <div>

@@ -93,10 +93,17 @@ OPTIONS:
   --reset                 Reset state and start fresh
   --status                Show PRD status (phases, epics, stories) and exit
   --stats                 Show metrics (tokens, durations, costs) and exit
+  --version-status        Show version progress and exit
+  --target-version <ver>  Only work on stories for specific version (e.g., v1.0)
   --plan                  Plan mode - output implementation plan without making changes
   -q, --quiet             Quiet mode - hide Claude output, show only Ralph status
   -v, --verbose           Verbose mode - show full prompts, responses, state transitions
   -h, --help              Show this help message
+
+RELEASE OPTIONS:
+  --skip-release          Skip release workflow when all stories complete
+  --auto-release          Auto-release without human approval gate
+  --release-tag <tag>     Custom tag name (default: version from PRD, e.g., v1.0)
 
 WORKFLOW:
   1. Pick next story (respecting dependencies)
@@ -109,10 +116,11 @@ WORKFLOW:
   8. Move to next story
 
 FILES:
-  - prompt.md     : Agent instructions template
-  - prd.json      : Task definitions with dependencies
-  - progress.txt  : Progress tracking and learnings
-  - state.json    : Persistent state between invocations
+  - prompt.md       : Agent instructions template
+  - prd/v1.0.json   : v1.0 task definitions with dependencies
+  - prd/v2.0.json   : v2.0 task definitions (when ready)
+  - progress.txt    : Progress tracking and learnings
+  - state.json      : Persistent state between invocations
 
 EXAMPLES:
   ./ralph.elv                          # Start fresh or continue

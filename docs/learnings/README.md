@@ -16,17 +16,17 @@ Each file has:
 ## How This Works
 
 ```
-┌─────────────────────────────────────────┐
-│  Start task                             │
-│    ↓                                    │
-│  Read relevant learnings/*.md files     │
-│    ↓                                    │
-│  Do work, discover patterns             │
-│    ↓                                    │
-│  Write new learnings to appropriate file│
-│    ↓                                    │
-│  Next task benefits from knowledge      │
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│  Start task                              │
+│    ↓                                     │
+│  Read relevant learnings/*.md files      │
+│    ↓                                     │
+│  Do work, discover patterns              │
+│    ↓                                     │
+│  Write new learnings to appropriate file │
+│    ↓                                     │
+│  Next task benefits from knowledge       │
+└──────────────────────────────────────────┘
 ```
 
 ## Updating Learnings

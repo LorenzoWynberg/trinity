@@ -122,6 +122,11 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Ensure code blocks have no borders */
+  pre, code {
+    border: none !important;
+    outline: none !important;
+  }
 }
 
 /* React Flow Controls - Dark Mode */
