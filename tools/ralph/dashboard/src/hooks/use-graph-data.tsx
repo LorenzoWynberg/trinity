@@ -562,13 +562,19 @@ export function useGraphData(version: string = 'all'): GraphData {
         // Build node ID helper (version:storyId)
         const getNodeId = (story: Story) => `${story.target_version}:${story.id}`
 
-        // Find dead-end nodes (stories that nothing depends on)
+        // Find dead-end nodes (stories that nothing in the SAME VERSION depends on)
+        // Cross-version deps don't count - a story is a leaf if it's the end of its version's chain
         const dependedOn = new Set<string>()
         storiesData.forEach(story => {
           if (story.depends_on) {
             story.depends_on.forEach(depRef => {
               const resolved = resolveDependency(depRef, storiesData, story.target_version)
-              resolved.forEach(r => dependedOn.add(r.nodeId))
+              resolved.forEach(r => {
+                // Only count same-version dependencies for leaf detection
+                if (!r.crossVersion) {
+                  dependedOn.add(r.nodeId)
+                }
+              })
             })
           }
         })
