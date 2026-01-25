@@ -445,7 +445,7 @@ while (< $current-iteration $config[max-iterations]) {
     set current-state[branch] = $branch-name
     set current-state[status] = "in_progress"
     set current-state[attempts] = (+ $current-state[attempts] 1)
-    if (not $current-state[started_at]) {
+    if (or (not (has-key $current-state started_at)) (not $current-state[started_at])) {
       set current-state[started_at] = (date -u '+%Y-%m-%dT%H:%M:%SZ')
     }
     state:write $current-state
