@@ -316,7 +316,7 @@ External deps report provided for story 7.1.2 [auth, api]
 └─────────────────────────────────────────────────────────────┘
                     ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ PHASE B: Tag-related (only with --include-related flag)     │
+│ PHASE B: Tag-related (always runs now)                      │
 ├─────────────────────────────────────────────────────────────┤
 │ 1. FILTER: ≥1 tag overlap with [auth, api]                  │
 │    → Candidates: [3.1.6, 6.3.3, 6.5.1, 2.1.5, ...]          │
@@ -368,24 +368,22 @@ External deps report provided for story 7.1.2 [auth, api]
 
 **Two separate analysis phases**
 - Phase A (descendants) always runs, high confidence
-- Phase B (tag-related) only with `--include-related`, lower confidence
+- Phase B (tag-related) always runs now, conservative analysis
 
-### Why Optional/Flagged
+### Why Always-On
 
-Tag expansion can cause:
-1. **Scope creep:** Analyzing 50 stories instead of 5
-2. **False positives:** Updating stories that don't need it
-3. **Cost:** More Claude API calls for analysis
-4. **Noise:** User has to review more suggestions
-
-Making it opt-in (`--include-related`) lets users choose when they want deeper analysis.
+Phase B now always runs because:
+1. It uses conservative prompts ("when in doubt, skip")
+2. User still gets prompted: `[a]pply / [r]eview / [s]kip`
+3. Removes flag complexity
+4. `--auto-update-related` controls whether to auto-apply
 
 ### Implementation
 
-**Files to modify:**
-- `tools/ralph/cli/lib/claude.elv` - Add `--include-related` handling
-- `tools/ralph/cli/lib/prd.elv` - Add `sort-by-proximity` function
-- `tools/ralph/cli/lib/cli.elv` - Add flag
+**Files modified:**
+- `tools/ralph/cli/lib/claude.elv` - Phase B always runs, `--auto-update-related` handling
+- `tools/ralph/cli/lib/prd.elv` - Added `sort-by-proximity`, `get-story-tags`, `get-story-epic`
+- `tools/ralph/cli/lib/cli.elv` - Added `--auto-update-related` flag
 
 **New prd.elv function:**
 ```elvish
@@ -420,38 +418,31 @@ fn sort-by-proximity {|source-id story-ids|
 
 **Modified propagate-external-deps:**
 ```elvish
-fn propagate-external-deps {|story-id report &include-related=$false|
+fn propagate-external-deps {|story-id report|
   var source-tags = (prd:get-story-tags $story-id)
-  var all-decisions = []
 
   # PHASE A: Descendants (always)
   var descendants = [(prd:get-descendants $story-id)]
-  if (> (count $descendants) 0) {
-    ui:status "Analyzing descendants..."
-    var decisions = (analyze-in-batches $descendants $report $all-decisions)
-    set all-decisions = [$@all-decisions $@decisions]
+  # ... analyze descendants ...
+
+  # PHASE B: Tag-related (always runs now)
+  var all-related = [(prd:find-similar-by-tags $source-tags &min-overlap=(num 1))]
+
+  # Exclude source and descendants
+  var related = []
+  for r $all-related {
+    if (and (not (eq $r $story-id)) (not (has-value $descendants $r))) {
+      set related = [$@related $r]
+    }
   }
 
-  # PHASE B: Tag-related (only with flag)
-  if $include-related {
-    var all-related = [(prd:find-similar-by-tags $source-tags &min-overlap=(num 1))]
+  # Sort by tree proximity
+  set related = (prd:sort-by-proximity $story-id $related)
 
-    # Exclude source and descendants
-    var related = []
-    for r $all-related {
-      if (and (not (eq $r $story-id)) (not (has-value $descendants $r))) {
-        set related = [$@related $r]
-      }
-    }
-
-    # Sort by tree proximity
-    set related = [(prd:sort-by-proximity $story-id $related)]
-
-    if (> (count $related) 0) {
-      ui:status "Analyzing related stories..."
-      var decisions = (analyze-in-batches $related $report $all-decisions &conservative=$true)
-      set all-decisions = [$@all-decisions $@decisions]
-    }
+  if (> (count $related) 0) {
+    # Analyze with conservative prompt
+    # User prompted: [a]pply / [r]eview / [s]kip
+    # Or auto-apply if $auto-update-related is set
   }
 }
 ```
@@ -469,15 +460,14 @@ if clearly necessary. When in doubt, skip."
 
 ### Acceptance Criteria
 
-- [ ] Add `--include-related` flag to propagation
-- [ ] Find stories with ≥1 tag overlap (excluding descendants)
-- [ ] Sort related stories by tree proximity (same epic → distant phase)
-- [ ] Batch in groups of 10 with context aggregation
-- [ ] Analyze related stories separately from descendants
-- [ ] Show related results in separate UI section
-- [ ] User can apply/skip related updates independently
-- [ ] Conservative Claude prompt for related (fewer false positives)
-- [ ] Default is OFF (existing behavior unchanged)
+- [x] Phase B always runs (no flag needed)
+- [x] Find stories with ≥1 tag overlap (excluding descendants)
+- [x] Sort related stories by tree proximity (same epic → distant phase)
+- [x] Analyze related stories separately from descendants
+- [x] Show related results in separate UI section
+- [x] User can apply/skip related updates: `[a]pply / [r]eview / [s]kip`
+- [x] Conservative Claude prompt for related (fewer false positives)
+- [x] `--auto-update-related` flag for unattended operation
 
 ---
 
@@ -511,11 +501,11 @@ if clearly necessary. When in doubt, skip."
 4. Verify PRD updated correctly
 
 ### Tag Expansion
-1. Run propagation without flag (existing behavior)
-2. Run with `--include-related`
-3. Verify related stories found
-4. Verify separate UI sections
-5. Test conservative analysis (fewer false positives)
+1. Run propagation - Phase B runs automatically
+2. Verify related stories found and sorted by proximity
+3. Verify separate UI sections (Phase A vs Phase B)
+4. Test `[a]pply / [r]eview / [s]kip` prompt
+5. Test `--auto-update-related` flag
 
 ---
 
@@ -527,13 +517,13 @@ Each feature gets an `--auto-*` flag for unattended operation:
 
 | Flag | Behavior |
 |------|----------|
-| `--auto-duplicate` | Auto-update existing story when duplicate detected (don't prompt) |
-| `--auto-reverse-deps` | Auto-accept all reverse dependency suggestions |
-| `--auto-related` | Auto-apply related story updates (implies `--include-related`) |
+| `--auto-handle-duplicates` | Auto-update existing story when duplicate detected |
+| `--auto-add-reverse-deps` | Auto-accept all reverse dependency suggestions |
+| `--auto-update-related` | Auto-apply related story updates |
 
 **Example:**
 ```bash
-./ralph.elv --auto-duplicate --auto-reverse-deps
+./ralph.elv --auto-handle-duplicates --auto-add-reverse-deps
 ```
 
 ### Yolo Mode
@@ -544,7 +534,7 @@ Each feature gets an `--auto-*` flag for unattended operation:
 ./ralph.elv --yolo
 # Equivalent to:
 ./ralph.elv --auto-pr --auto-merge --auto-clarify \
-            --auto-duplicate --auto-reverse-deps --auto-related
+            --auto-handle-duplicates --auto-add-reverse-deps --auto-update-related
 ```
 
 ### Hard Gates (Even Yolo Respects These)
@@ -580,23 +570,21 @@ Story 7.1.2 has external dependencies:
 
 **cli.elv additions:**
 ```elvish
-var auto-duplicate = $false
-var auto-reverse-deps = $false
-var auto-related = $false
-var yolo = $false
+var auto-handle-duplicates = $false
+var auto-add-reverse-deps = $false
+var auto-update-related = $false
 
 # In flag parsing:
---auto-duplicate { set auto-duplicate = $true }
---auto-reverse-deps { set auto-reverse-deps = $true }
---auto-related { set auto-related = $true }
+--auto-handle-duplicates { set auto-handle-duplicates = $true }
+--auto-add-reverse-deps { set auto-add-reverse-deps = $true }
+--auto-update-related { set auto-update-related = $true }
 --yolo {
-  set yolo = $true
   set auto-pr = $true
   set auto-merge = $true
   set auto-clarify = $true
-  set auto-duplicate = $true
-  set auto-reverse-deps = $true
-  set auto-related = $true
+  set auto-handle-duplicates = $true
+  set auto-add-reverse-deps = $true
+  set auto-update-related = $true
 }
 ```
 
@@ -604,7 +592,7 @@ var yolo = $false
 ```elvish
 # Duplicate detection
 if $duplicate-found {
-  if $cli:auto-duplicate {
+  if $auto-handle-duplicates {
     # Auto-update existing
     update-existing-story $duplicate-id
   } else {
@@ -615,7 +603,7 @@ if $duplicate-found {
 
 # Reverse deps
 if (> (count $suggestions) 0) {
-  if $cli:auto-reverse-deps {
+  if $auto-add-reverse-deps {
     # Auto-accept all
     apply-all-reverse-deps $suggestions
   } else {
@@ -764,3 +752,4 @@ fn format-decisions {|decisions|
 *Created: 2026-01-25 ~16:30 CR*
 *Updated: 2026-01-25 ~16:45 CR - Added auto flags and yolo mode*
 *Updated: 2026-01-25 ~17:00 CR - Resolved open questions, added batching strategy*
+*Updated: 2026-01-25 ~19:00 CR - Final implementation: renamed flags, Phase B always-on, removed --no-validate*
