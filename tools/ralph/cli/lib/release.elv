@@ -407,3 +407,79 @@ fn run {|version tag|
 
   put [&success=$true &tag=$tag &error=""]
 }
+
+# Run full release flow with prompts and hotfix loop
+# Returns: [&released=bool &tag=string]
+fn run-full-flow {|version &skip-release=$false &auto-release=$false &notify-enabled=$false|
+  # Skip release flow if requested
+  if $skip-release {
+    ui:dim "Release skipped (--skip-release)"
+    put [&released=$false &tag=""]
+    return
+  }
+
+  # Check if already released
+  if (prd:is-version-released $version) {
+    ui:success $version" already released!"
+    put [&released=$true &tag=$version]
+    return
+  }
+
+  # Determine release tag
+  var release-tag = $version
+
+  while $true {
+    # Show summary
+    show-summary $version
+
+    # Human gate (unless --auto-release)
+    if $auto-release {
+      ui:dim "Auto-release enabled, proceeding..."
+    } else {
+      var approval = (prompt-approval $release-tag)
+
+      if (eq $approval[action] "cancel") {
+        ui:dim "Release cancelled. Run again when ready."
+        put [&released=$false &tag=""]
+        return
+      }
+
+      if (eq $approval[action] "feedback") {
+        # Run hotfix directly (not a PRD story)
+        ui:status "Running hotfix for release feedback..."
+        var hotfix-result = (run-hotfix $version $approval[feedback])
+        if $hotfix-result[success] {
+          ui:success "Hotfix merged to dev"
+          echo ""
+          ui:box "RELEASE GATE - Try Again" "info"
+          # Loop back to release prompt
+          continue
+        } else {
+          ui:error "Hotfix failed: "$hotfix-result[error]
+          put [&released=$false &tag="" &error=$hotfix-result[error]]
+          return
+        }
+      }
+
+      # Update tag if edited
+      set release-tag = $approval[tag]
+    }
+
+    # Execute release
+    var result = (run $version $release-tag)
+
+    if $result[success] {
+      echo ""
+      ui:box "RELEASED: "$version" ("$result[tag]")" "success"
+      if $notify-enabled {
+        ui:notify "Ralph" "Released "$version" as "$result[tag]
+      }
+      put [&released=$true &tag=$result[tag]]
+      return
+    } else {
+      ui:error "Release failed: "$result[error]
+      put [&released=$false &tag="" &error=$result[error]]
+      return
+    }
+  }
+}

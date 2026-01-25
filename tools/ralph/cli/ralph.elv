@@ -277,79 +277,12 @@ if (prd:all-stories-complete) {
   echo ""
   ui:box "ALL STORIES COMPLETE - READY FOR RELEASE" "success"
 
-  # Skip release flow if requested
-  if $config[skip-release] {
-    ui:dim "Release skipped (--skip-release)"
-    echo "<promise>COMPLETE</promise>"
-    exit 0
-  }
-
-  # Check if already released
-  if (prd:is-version-released $active-version) {
-    ui:success $active-version" already released!"
-    echo "<promise>COMPLETE</promise>"
-    exit 0
-  }
-
-  # Run release flow
-  var release-tag = $config[release-tag]
-  if (eq $release-tag "") {
-    set release-tag = $active-version
-  }
-
-  while $true {
-    # Show summary
-    release:show-summary $active-version
-
-    # Human gate (unless --auto-release)
-    if $config[auto-release] {
-      ui:dim "Auto-release enabled, proceeding..."
-    } else {
-      var approval = (release:prompt-approval $release-tag)
-
-      if (eq $approval[action] "cancel") {
-        ui:dim "Release cancelled. Run again when ready."
-        exit 0
-      }
-
-      if (eq $approval[action] "feedback") {
-        # Run hotfix directly (not a PRD story)
-        ui:status "Running hotfix for release feedback..."
-        var hotfix-result = (release:run-hotfix $active-version $approval[feedback])
-        if $hotfix-result[success] {
-          ui:success "Hotfix merged to dev"
-          echo ""
-          ui:box "RELEASE GATE - Try Again" "info"
-          # Loop back to release prompt
-          continue
-        } else {
-          ui:error "Hotfix failed: "$hotfix-result[error]
-          exit 1
-        }
-      }
-
-      # Update tag if edited
-      set release-tag = $approval[tag]
-    }
-
-    # Execute release
-    var result = (release:run $active-version $release-tag)
-
-    if $result[success] {
-      echo ""
-      ui:box "RELEASED: "$active-version" ("$result[tag]")" "success"
-      if $config[notify-enabled] {
-        ui:notify "Ralph" "Released "$active-version" as "$result[tag]
-      }
-    } else {
-      ui:error "Release failed: "$result[error]
-      exit 1
-    }
-
-    break
-  }
+  var release-result = (release:run-full-flow $active-version &skip-release=$config[skip-release] &auto-release=$config[auto-release] &notify-enabled=$config[notify-enabled])
 
   echo "<promise>COMPLETE</promise>"
+  if (and (has-key $release-result error) $release-result[error]) {
+    exit 1
+  }
   exit 0
 }
 
@@ -432,39 +365,7 @@ while (< $current-iteration $config[max-iterations]) {
           exit 0
         } else {
           # Stories exist but are blocked
-          echo ""
-          ui:box "BLOCKED - WAITING ON DEPENDENCIES" "warn"
-          echo ""
-
-          # Show unmerged PRs
-          var unmerged = [(prd:get-unmerged-passed)]
-          if (> (count $unmerged) 0) {
-            echo "Unmerged PRs:"
-            for sid $unmerged {
-              var pr-url = (prd:get-pr-url $sid)
-              var title = (prd:get-story-title $sid)
-              if (not (eq $pr-url "")) {
-                ui:dim "  • "$sid" ("$title"): "$pr-url
-              } else {
-                var branch = (prd:get-story-branch $sid)
-                ui:dim "  • "$sid" ("$title") - no PR yet (branch: "$branch")"
-              }
-            }
-            echo ""
-          }
-
-          # Show blocked stories
-          var blocked = [(prd:get-blocked-stories)]
-          if (> (count $blocked) 0) {
-            echo "Pending stories blocked by unmerged work:"
-            for info $blocked {
-              var title = (prd:get-story-title $info[story])
-              ui:dim "  • "$info[story]" ("$title") → waiting on "$info[blocked_by]
-            }
-            echo ""
-          }
-
-          ui:dim "Run ralph to pick up where you left off."
+          prd:show-blocked-state
           exit 0
         }
       }
@@ -807,76 +708,11 @@ while (< $current-iteration $config[max-iterations]) {
       }
       ui:dim "Total iterations: "$current-iteration
 
-      # Skip release flow if requested
-      if $config[skip-release] {
-        ui:dim "Release skipped (--skip-release)"
-        exit 0
+      var release-result = (release:run-full-flow $active-version &skip-release=$config[skip-release] &auto-release=$config[auto-release] &notify-enabled=$config[notify-enabled])
+
+      if (and (has-key $release-result error) $release-result[error]) {
+        exit 1
       }
-
-      # Check if already released
-      if (prd:is-version-released $active-version) {
-        ui:success $active-version" already released!"
-        exit 0
-      }
-
-      # Run release flow
-      var release-tag = $config[release-tag]
-      if (eq $release-tag "") {
-        set release-tag = $active-version
-      }
-
-      while $true {
-        # Show summary
-        release:show-summary $active-version
-
-        # Human gate (unless --auto-release)
-        if $config[auto-release] {
-          ui:dim "Auto-release enabled, proceeding..."
-        } else {
-          var approval = (release:prompt-approval $release-tag)
-
-          if (eq $approval[action] "cancel") {
-            ui:dim "Release cancelled. Run again when ready."
-            exit 0
-          }
-
-          if (eq $approval[action] "feedback") {
-            # Run hotfix directly (not a PRD story)
-            ui:status "Running hotfix for release feedback..."
-            var hotfix-result = (release:run-hotfix $active-version $approval[feedback])
-            if $hotfix-result[success] {
-              ui:success "Hotfix merged to dev"
-              echo ""
-              ui:box "RELEASE GATE - Try Again" "info"
-              # Loop back to release prompt
-              continue
-            } else {
-              ui:error "Hotfix failed: "$hotfix-result[error]
-              exit 1
-            }
-          }
-
-          # Update tag if edited
-          set release-tag = $approval[tag]
-        }
-
-        # Execute release
-        var result = (release:run $active-version $release-tag)
-
-        if $result[success] {
-          echo ""
-          ui:box "RELEASED: "$active-version" ("$result[tag]")" "success"
-          if $config[notify-enabled] {
-            ui:notify "Ralph" "Released "$active-version" as "$result[tag]
-          }
-        } else {
-          ui:error "Release failed: "$result[error]
-          exit 1
-        }
-
-        break
-      }
-
       exit 0
     }
 

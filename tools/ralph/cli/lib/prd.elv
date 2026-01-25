@@ -3,6 +3,7 @@
 use str
 use path
 use re
+use ./ui
 
 # PRD directory and current file path
 var prd-dir = ""
@@ -631,4 +632,41 @@ fn is-version-released {|version|
   }
   var released = (jq -r '.released // false' $file)
   eq $released "true"
+}
+
+# Show blocked state with details about what's waiting on what
+fn show-blocked-state {
+  echo ""
+  ui:box "BLOCKED - WAITING ON DEPENDENCIES" "warn"
+  echo ""
+
+  # Show unmerged PRs
+  var unmerged = [(get-unmerged-passed)]
+  if (> (count $unmerged) 0) {
+    echo "Unmerged PRs:"
+    for sid $unmerged {
+      var pr-url = (get-pr-url $sid)
+      var title = (get-story-title $sid)
+      if (not (eq $pr-url "")) {
+        ui:dim "  • "$sid" ("$title"): "$pr-url
+      } else {
+        var branch = (get-story-branch $sid)
+        ui:dim "  • "$sid" ("$title") - no PR yet (branch: "$branch")"
+      }
+    }
+    echo ""
+  }
+
+  # Show blocked stories
+  var blocked = [(get-blocked-stories)]
+  if (> (count $blocked) 0) {
+    echo "Pending stories blocked by unmerged work:"
+    for info $blocked {
+      var title = (get-story-title $info[story])
+      ui:dim "  • "$info[story]" ("$title") → waiting on "$info[blocked_by]
+    }
+    echo ""
+  }
+
+  ui:dim "Run ralph to pick up where you left off."
 }
