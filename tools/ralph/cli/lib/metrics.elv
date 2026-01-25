@@ -137,14 +137,21 @@ fn show-stats {
   echo "  RECENT STORIES"
   echo "───────────────────────────────────────────────────────"
 
-  var recent = (echo $metrics | jq -r '.stories | .[-5:] | reverse | .[] | "\(.story_id)|\(.duration_seconds)|\(.total_tokens)"')
-  for line [(str:split "\n" $recent)] {
-    if (not (eq $line "")) {
-      var parts = [(str:split "|" $line)]
-      var sid = $parts[0]
-      var dur = $parts[1]
-      var tok = $parts[2]
-      echo "  "$sid": "$dur"s, "$tok" tokens"
+  var recent = ""
+  try {
+    set recent = (echo $metrics | jq -r '.stories | .[-5:] | reverse | .[] | "\(.story_id)|\(.duration_seconds)|\(.total_tokens)"' | slurp)
+  } catch _ { }
+  if (eq $recent "") {
+    echo "  (no stories completed yet)"
+  } else {
+    for line [(str:split "\n" $recent)] {
+      if (not (eq $line "")) {
+        var parts = [(str:split "|" $line)]
+        var sid = $parts[0]
+        var dur = $parts[1]
+        var tok = $parts[2]
+        echo "  "$sid": "$dur"s, "$tok" tokens"
+      }
     }
   }
   echo ""

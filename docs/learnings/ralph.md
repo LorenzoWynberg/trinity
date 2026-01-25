@@ -1,6 +1,6 @@
 # Ralph Learnings
 
-> **TL;DR:** Two-stage completion (passes→merged), blocked state detection with dependency info, activity logs split by project (trinity/ for Ralph's work, ralph/ for human docs), release workflow with human gate and hotfix loop, PR defaults (yes create, no merge), validation flow with clarify/auto-proceed options, external deps flow with report requirement.
+> **TL;DR:** Two-stage completion (passes→merged), blocked state detection with dependency info, activity logs split by project (trinity/ for Ralph's work, ralph/ for human docs), release workflow with human gate and hotfix loop, PR defaults (yes create, no merge), validation flow with clarify/auto-proceed options, external deps flow with report requirement + two-phase propagation (descendants then tag-related), duplicate detection before story creation, reverse dependency suggestions after creation.
 
 ## Streaming Claude Output
 
