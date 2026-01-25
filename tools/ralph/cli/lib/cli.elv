@@ -12,7 +12,6 @@ var auto-pr = $false
 var auto-merge = $false
 var resume-mode = $false
 var reset-mode = $false
-var no-validate = $false
 var auto-clarify = $false
 var notify-enabled = $true
 var skip-story-id = ""
@@ -28,10 +27,9 @@ var target-version = ""
 var skip-release = $false
 var auto-release = $false
 var release-tag = ""
-var auto-duplicate = $false
-var auto-reverse-deps = $false
-var include-related = $false
-var auto-related = $false
+var auto-handle-duplicates = $false
+var auto-add-reverse-deps = $false
+var auto-update-related = $false
 
 # Parse command line arguments
 fn parse-args {|arguments|
@@ -74,35 +72,26 @@ fn parse-args {|arguments|
     } elif (eq $arg "--auto-merge") {
       set auto-merge = $true
       set i = (+ $i 1)
-    } elif (eq $arg "--no-validate") {
-      set no-validate = $true
-      set i = (+ $i 1)
     } elif (eq $arg "--auto-clarify") {
       set auto-clarify = $true
       set i = (+ $i 1)
     } elif (eq $arg "--yolo") {
       # YOLO mode: all auto flags enabled
-      set no-validate = $true
       set auto-pr = $true
       set auto-merge = $true
       set auto-clarify = $true
-      set auto-duplicate = $true
-      set auto-reverse-deps = $true
-      set include-related = $true
-      set auto-related = $true
+      set auto-handle-duplicates = $true
+      set auto-add-reverse-deps = $true
+      set auto-update-related = $true
       set i = (+ $i 1)
-    } elif (eq $arg "--auto-duplicate") {
-      set auto-duplicate = $true
+    } elif (eq $arg "--auto-handle-duplicates") {
+      set auto-handle-duplicates = $true
       set i = (+ $i 1)
-    } elif (eq $arg "--auto-reverse-deps") {
-      set auto-reverse-deps = $true
+    } elif (eq $arg "--auto-add-reverse-deps") {
+      set auto-add-reverse-deps = $true
       set i = (+ $i 1)
-    } elif (eq $arg "--include-related") {
-      set include-related = $true
-      set i = (+ $i 1)
-    } elif (eq $arg "--auto-related") {
-      set include-related = $true
-      set auto-related = $true
+    } elif (eq $arg "--auto-update-related") {
+      set auto-update-related = $true
       set i = (+ $i 1)
     } elif (eq $arg "--no-notifs") {
       set notify-enabled = $false
@@ -212,7 +201,6 @@ fn get-config {
     &auto-merge=$auto-merge
     &resume-mode=$resume-mode
     &reset-mode=$reset-mode
-    &no-validate=$no-validate
     &auto-clarify=$auto-clarify
     &notify-enabled=$notify-enabled
     &skip-story-id=$skip-story-id
@@ -227,9 +215,8 @@ fn get-config {
     &skip-release=$skip-release
     &auto-release=$auto-release
     &release-tag=$release-tag
-    &auto-duplicate=$auto-duplicate
-    &auto-reverse-deps=$auto-reverse-deps
-    &include-related=$include-related
-    &auto-related=$auto-related
+    &auto-handle-duplicates=$auto-handle-duplicates
+    &auto-add-reverse-deps=$auto-add-reverse-deps
+    &auto-update-related=$auto-update-related
   ]
 }

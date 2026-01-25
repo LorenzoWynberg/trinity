@@ -16,23 +16,21 @@ var workflow-partial = ""
 var claude-timeout = 1800
 var quiet-mode = $false
 var max-iterations = 100
-var auto-duplicate = $false
-var auto-reverse-deps = $false
-var include-related = $false
-var auto-related = $false
+var auto-handle-duplicates = $false
+var auto-add-reverse-deps = $false
+var auto-update-related = $false
 
 # Initialize with configuration
-fn init {|root sdir template timeout quiet max-iter &auto-dup=$false &auto-rev-deps=$false &inc-related=$false &auto-rel=$false|
+fn init {|root sdir template timeout quiet max-iter &auto-handle-dup=$false &auto-add-rev-deps=$false &auto-upd-related=$false|
   set project-root = $root
   set script-dir = $sdir
   set prompt-template = $template
   set claude-timeout = $timeout
   set quiet-mode = $quiet
   set max-iterations = $max-iter
-  set auto-duplicate = $auto-dup
-  set auto-reverse-deps = $auto-rev-deps
-  set include-related = $inc-related
-  set auto-related = $auto-rel
+  set auto-handle-duplicates = $auto-handle-dup
+  set auto-add-reverse-deps = $auto-add-rev-deps
+  set auto-update-related = $auto-upd-related
 
   # Load feedback template and workflow partial (relative to script directory)
   var prompts-dir = (path:join $sdir "prompts")
@@ -1270,7 +1268,7 @@ Rules:
 
         if (not (eq $dup-check[duplicate] $nil)) {
           var action = ""
-          if $auto-duplicate {
+          if $auto-handle-duplicates {
             # Auto mode: update existing
             set action = "update"
             ui:dim "  Auto-updating existing "$dup-check[duplicate]" instead of creating new" > /dev/tty
@@ -1323,7 +1321,7 @@ Rules:
       # Check for reverse dependencies
       var rev-suggestions = (check-reverse-deps $new-id $title $intent $cr-tags)
       if (> (count $rev-suggestions) 0) {
-        if $auto-reverse-deps {
+        if $auto-add-reverse-deps {
           # Auto mode: add all suggested deps
           ui:dim "  Auto-adding reverse dependencies..." > /dev/tty
           var all-ids = [(each {|s| put $s[id]} $rev-suggestions)]
@@ -1351,12 +1349,9 @@ Rules:
   ui:success "Phase A: Descendants updated successfully" > /dev/tty
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # PHASE B: Tag-Related Analysis (only with --include-related flag)
   # ═══════════════════════════════════════════════════════════════════════════
-
-  if (not $include-related) {
-    return
-  }
+  # PHASE B: Tag-Related Analysis (always runs, finds stories beyond dep tree)
+  # ═══════════════════════════════════════════════════════════════════════════
 
   echo "" > /dev/tty
   ui:divider "Phase B: Analyzing Related Stories" > /dev/tty
@@ -1519,7 +1514,7 @@ Rules:
   # User confirmation (or auto-related mode)
   echo "" > /dev/tty
   var related-action = ""
-  if $auto-related {
+  if $auto-update-related {
     set related-action = "apply"
     ui:dim "Auto-applying related updates..." > /dev/tty
   } else {

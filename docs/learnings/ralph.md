@@ -351,9 +351,7 @@ Potential duplicate found:
 [u]pdate existing / [c]reate new anyway / [s]kip
 ```
 
-**Flags:**
-- `--auto-duplicate` - Auto-update existing instead of prompting
-- Included in `--yolo` mode
+**Flag:** `--auto-handle-duplicates` - Auto-update existing instead of prompting
 
 **Why this matters:** Prevents PRD bloat from near-duplicate stories created during propagation.
 
@@ -375,17 +373,15 @@ After creating a new story, Ralph checks if existing stories should depend on it
 - Backwards phase deps rejected (Phase 6 can't depend on Phase 7)
 - Cycle check before each add
 
-**Flags:**
-- `--auto-reverse-deps` - Auto-add all suggestions
-- Included in `--yolo` mode
+**Flag:** `--auto-add-reverse-deps` - Auto-add all suggestions
 
 ### Tag-based propagation (smarter expansion)
 
-By default, `propagate-external-deps` only analyzes descendants (stories in dependency tree). With `--include-related`, also analyzes tag-related stories:
+External deps propagation always runs two phases:
 
 **Two-phase analysis:**
-- **Phase A (always):** Descendants - direct dependency tree, high confidence
-- **Phase B (with flag):** Related by tags - not in tree, conservative analysis
+- **Phase A:** Descendants - direct dependency tree, high confidence
+- **Phase B:** Related by tags - not in tree, conservative analysis
 
 **Phase B flow:**
 1. Find stories with ≥1 tag overlap with source
@@ -394,15 +390,10 @@ By default, `propagate-external-deps` only analyzes descendants (stories in depe
 4. Analyze with conservative prompt ("might be affected, when in doubt skip")
 5. Show separate UI section: `[a]pply all / [r]eview individually / [s]kip`
 
-**Flags:**
-- `--include-related` - Enable Phase B analysis
-- `--auto-related` - Auto-apply related updates (implies --include-related)
-- Both included in `--yolo` mode
-
-**Why optional:** Tag expansion can cause scope creep, false positives, and more Claude API calls. Making it opt-in lets users choose when they want deeper analysis.
+**Flag:** `--auto-update-related` - Auto-apply related updates without prompting
 
 ### Yolo mode
-`--yolo` enables all `--auto-*` flags: `--no-validate`, `--auto-pr`, `--auto-merge`, `--auto-clarify`, `--auto-duplicate`, `--auto-reverse-deps`, `--include-related`, `--auto-related`
+`--yolo` enables all `--auto-*` flags: `--auto-pr`, `--auto-merge`, `--auto-clarify`, `--auto-handle-duplicates`, `--auto-add-reverse-deps`, `--auto-update-related`
 
 Still respects hard gates: unmet deps (exit), external deps (prompt for report), human testing.
 

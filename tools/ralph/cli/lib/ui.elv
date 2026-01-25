@@ -83,12 +83,10 @@ OPTIONS:
   --base-branch <name>    Base branch to create story branches from (default: dev)
   --auto-pr               Auto-create PR without prompting (default: prompt)
   --auto-merge            Auto-merge PR without prompting (default: prompt)
-  --no-validate           Skip story validation before execution
   --auto-clarify          Auto-proceed on validation questions (make reasonable assumptions)
-  --auto-duplicate        Auto-update existing story when duplicate detected (default: prompt)
-  --auto-reverse-deps     Auto-add reverse dependencies when suggested (default: prompt)
-  --include-related       Analyze tag-related stories beyond dependency tree
-  --auto-related          Auto-apply related story updates (implies --include-related)
+  --auto-handle-duplicates    Auto-update existing story when duplicate detected
+  --auto-add-reverse-deps     Auto-add reverse dependencies when suggested
+  --auto-update-related       Auto-apply related story updates (tag-based)
   --yolo                  Full auto: all --auto-* flags enabled
   --no-notifs             Disable desktop notifications (default: enabled)
   --skip ID "reason"      Skip a story, allowing dependents to proceed

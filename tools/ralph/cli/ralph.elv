@@ -60,7 +60,7 @@ var prompt-template = (cat $prompt-file | slurp)
 # Initialize remaining modules
 state:init $state-file &root=$project-root
 git:init $project-root $config[base-branch]
-claude:init $project-root $script-dir $prompt-template $config[claude-timeout] $config[quiet-mode] $config[max-iterations] &auto-dup=$config[auto-duplicate] &auto-rev-deps=$config[auto-reverse-deps] &inc-related=$config[include-related] &auto-rel=$config[auto-related]
+claude:init $project-root $script-dir $prompt-template $config[claude-timeout] $config[quiet-mode] $config[max-iterations] &auto-handle-dup=$config[auto-handle-duplicates] &auto-add-rev-deps=$config[auto-add-reverse-deps] &auto-upd-related=$config[auto-update-related]
 pr:init $project-root $config[base-branch] $config[auto-pr] $config[auto-merge]
 metrics:init $metrics-file
 release:init $project-root $config[base-branch] "main" $config[claude-timeout]
@@ -162,8 +162,8 @@ ui:dim "Max iterations: "$config[max-iterations]
 if $config[quiet-mode] {
   ui:dim "Mode:           quiet (Claude output hidden)"
 }
-if (and $config[no-validate] $config[auto-pr] $config[auto-merge]) {
-  ui:warn "YOLO mode: No validation, auto-PR, auto-merge"
+if (and $config[auto-pr] $config[auto-merge] $config[auto-clarify]) {
+  ui:warn "YOLO mode: auto-clarify, auto-PR, auto-merge"
 }
 echo ""
 
@@ -294,8 +294,8 @@ while (< $current-iteration $config[max-iterations]) {
 
     git:ensure-on-branch $branch-name
 
-    # Validate story (unless --no-validate or feedback refinement or already have clarification)
-    if (and (not $config[no-validate]) (eq $pending-feedback "") (eq $pending-clarification "")) {
+    # Validate story (unless feedback refinement or already have clarification)
+    if (and (eq $pending-feedback "") (eq $pending-clarification "")) {
       # Capture all outputs into list and use last value (handles arity issues)
       var validate-results = [(claude:validate-story $story-id)]
       var validation = [&valid=$true &questions=""]
