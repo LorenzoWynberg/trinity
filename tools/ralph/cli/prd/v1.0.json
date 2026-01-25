@@ -1646,6 +1646,93 @@
       ]
     },
     {
+      "id": "5.1.10",
+      "title": "Implement duplicate detection for story creation",
+      "intent": "Prevent creating duplicate stories during propagation by checking semantic similarity",
+      "acceptance": [
+        "Before creating a story during propagation, find existing stories with ≥1 tag overlap",
+        "Claude analyzes candidates for semantic similarity (60% threshold)",
+        "If match found, prompt: [u]pdate existing / [c]reate new / [s]kip",
+        "[u]pdate merges acceptance criteria into existing story",
+        "[c]reate proceeds with new story creation",
+        "[s]kip abandons the story creation",
+        "--auto-handle-duplicates flag auto-selects [u]pdate without prompting",
+        "Activity logged: 'Duplicate detected: <new> matches <existing>'"
+      ],
+      "depends_on": [
+        "5.1.9"
+      ],
+      "phase": 5,
+      "epic": 1,
+      "story_number": 10,
+      "target_version": "v1.0",
+      "passes": false,
+      "tags": [
+        "claude",
+        "loop",
+        "prd",
+        "validation"
+      ]
+    },
+    {
+      "id": "5.1.11",
+      "title": "Implement reverse dependency suggestions after story creation",
+      "intent": "After creating a story, suggest which existing stories might need to depend on it",
+      "acceptance": [
+        "After creating a new story, find candidates with ≥1 tag overlap",
+        "Filter out: stories that already depend on it, earlier phases (would create backward deps), cycles",
+        "Claude analyzes which candidates logically need the new story as a dependency",
+        "Prompt: [y]es add all / [n]o skip / [r]eview individually",
+        "[r]eview shows each candidate with Claude's reasoning, [y/n] per candidate",
+        "Cycle detection before each add (reject if would create cycle)",
+        "--auto-add-reverse-deps flag auto-selects [y]es without prompting",
+        "Activity logged for each dependency added"
+      ],
+      "depends_on": [
+        "5.1.10"
+      ],
+      "phase": 5,
+      "epic": 1,
+      "story_number": 11,
+      "target_version": "v1.0",
+      "passes": false,
+      "tags": [
+        "claude",
+        "loop",
+        "prd",
+        "validation"
+      ]
+    },
+    {
+      "id": "5.1.12",
+      "title": "Implement tag-based expansion for propagation",
+      "intent": "Extend propagation beyond dependency tree to tag-related stories",
+      "acceptance": [
+        "After Phase A (descendant propagation), run Phase B automatically",
+        "Phase B: find stories with ≥1 tag overlap with source, excluding descendants",
+        "Sort by tree proximity: same epic > same phase > adjacent phase > distant",
+        "Claude analyzes with conservative prompt ('might be affected, when in doubt skip')",
+        "Prompt: [a]pply all / [r]eview individually / [s]kip",
+        "[r]eview shows each candidate with reasoning, [y/n] per story",
+        "--auto-update-related flag auto-selects [a]pply without prompting",
+        "Activity logged: 'Phase B: updated X tag-related stories'"
+      ],
+      "depends_on": [
+        "5.1.11"
+      ],
+      "phase": 5,
+      "epic": 1,
+      "story_number": 12,
+      "target_version": "v1.0",
+      "passes": false,
+      "tags": [
+        "claude",
+        "loop",
+        "prd",
+        "validation"
+      ]
+    },
+    {
       "id": "5.2.1",
       "title": "Implement state persistence",
       "intent": "Save loop state for crash recovery",
