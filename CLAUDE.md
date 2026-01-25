@@ -399,7 +399,12 @@ When working on Ralph (`tools/ralph/`):
    - Ralph-specific gotchas → `ralph.md`
    - No separate gotchas file - keep them organized by topic.
 
-3. **Always update the activity logs** after making changes:
+3. **Keep the CLI flags table up to date**: When adding, removing, or renaming flags:
+   - Update the "CLI Commands & Flags" section in `docs/learnings/ralph.md`
+   - Update the help text in `tools/ralph/cli/lib/ui.elv`
+   - If it's an auto flag, update the yolo mode description in both places
+
+4. **Always update the activity logs** after making changes:
    - Location: `logs/activity/ralph/YYYY-MM-DD.md`
    - Document what was changed, why, and which files were modified
    - Group related changes under clear section headers
