@@ -213,7 +213,7 @@ function StoriesListInner({ prd, currentStoryId, versions, currentVersion }: Sto
                       <div className="flex items-center gap-4 mb-4">
                         <button
                           onClick={toggleCollapse}
-                          className="flex items-center gap-2 hover:text-primary transition-colors"
+                          className="flex items-center gap-2 hover:text-primary transition-colors cursor-pointer"
                         >
                           {isCollapsed ? (
                             <ChevronRight className="h-5 w-5" />
