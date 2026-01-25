@@ -13,6 +13,7 @@ var auto-merge = $false
 var resume-mode = $false
 var reset-mode = $false
 var no-validate = $false
+var auto-clarify = $false
 var notify-enabled = $false
 var skip-story-id = ""
 var skip-reason = ""
@@ -71,6 +72,9 @@ fn parse-args {|arguments|
       set i = (+ $i 1)
     } elif (eq $arg "--no-validate") {
       set no-validate = $true
+      set i = (+ $i 1)
+    } elif (eq $arg "--auto-clarify") {
+      set auto-clarify = $true
       set i = (+ $i 1)
     } elif (eq $arg "--yolo") {
       # YOLO mode: no validation, auto PR, auto merge
@@ -187,6 +191,7 @@ fn get-config {
     &resume-mode=$resume-mode
     &reset-mode=$reset-mode
     &no-validate=$no-validate
+    &auto-clarify=$auto-clarify
     &notify-enabled=$notify-enabled
     &skip-story-id=$skip-story-id
     &skip-reason=$skip-reason

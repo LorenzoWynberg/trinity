@@ -218,6 +218,7 @@ pr:handle-unmerged $unmerged
 var current-iteration = 0
 var resume-mode = $config[resume-mode]
 var pending-feedback = ""  # Feedback from PR review to pass to next Claude run
+var pending-clarification = ""  # Clarification from validation questions to pass to Claude
 
 while (< $current-iteration $config[max-iterations]) {
     set current-iteration = (+ $current-iteration 1)
@@ -292,45 +293,72 @@ while (< $current-iteration $config[max-iterations]) {
 
     git:ensure-on-branch $branch-name
 
-    # Validate story (unless --no-validate or feedback refinement)
-    if (and (not $config[no-validate]) (eq $pending-feedback "")) {
+    # Validate story (unless --no-validate or feedback refinement or already have clarification)
+    if (and (not $config[no-validate]) (eq $pending-feedback "") (eq $pending-clarification "")) {
       # Capture all outputs into list and use last value (handles arity issues)
       var validate-results = [(claude:validate-story $story-id)]
-      var is-valid = $true
+      var validation = [&valid=$true &questions=""]
       if (> (count $validate-results) 0) {
-        set is-valid = $validate-results[-1]
+        set validation = $validate-results[-1]
       }
-      if (not $is-valid) {
+      if (not $validation[valid]) {
         echo "" > /dev/tty
-        ui:warn "Story "$story-id" needs clarification before implementation." > /dev/tty
-        echo "\e[33mSkip this story and continue? [Y/n]\e[0m" > /dev/tty
-        try {
-          var answer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
-          if (re:match '^[nN]' $answer) {
-            echo ""
-            ui:status "Stopping. Clarify the story and run again."
-            exit 0
-          }
-        } catch { }
-        echo ""
-        ui:dim "Skipping story, will try next..."
-        # Reset state so next iteration picks a new story
-        set current-state[current_story] = $nil
-        set current-state[branch] = $nil
-        set current-state[status] = "idle"
-        set current-state[attempts] = (num 0)
-        state:write $current-state
 
-        # Verbose: show state transition
-        if $config[verbose-mode] {
-          ui:dim "VERBOSE: State transition -> idle (validation skip)"
+        # Handle auto-clarify flag - automatically proceed with assumptions
+        if $config[auto-clarify] {
+          ui:dim "Auto-clarify enabled, proceeding with reasonable assumptions..." > /dev/tty
+          set pending-clarification = "Auto-clarify mode: Make reasonable assumptions based on the codebase context and existing patterns. If unsure, choose the simpler implementation."
+        } else {
+          ui:warn "Story "$story-id" needs clarification before implementation." > /dev/tty
+          echo "\e[33m[Y]es skip / [n]o stop / [c]larify / [a]uto-proceed\e[0m" > /dev/tty
+          try {
+            var answer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
+            echo "" > /dev/tty
+            if (re:match '^[nN]' $answer) {
+              echo ""
+              ui:status "Stopping. Clarify the story and run again."
+              exit 0
+            } elif (re:match '^[cC]' $answer) {
+              # Open editor for clarification
+              set pending-clarification = (prd:get-clarification $story-id $validation[questions])
+              if (eq $pending-clarification "") {
+                ui:dim "No clarification provided, skipping story..." > /dev/tty
+                # Reset state so next iteration picks a new story
+                set current-state[current_story] = $nil
+                set current-state[branch] = $nil
+                set current-state[status] = "idle"
+                set current-state[attempts] = (num 0)
+                state:write $current-state
+                continue
+              }
+              ui:success "Clarification received, proceeding with implementation..." > /dev/tty
+            } elif (re:match '^[aA]' $answer) {
+              # Auto-proceed with reasonable assumptions
+              ui:dim "Proceeding with reasonable assumptions..." > /dev/tty
+              set pending-clarification = "Auto-proceed mode: Make reasonable assumptions based on the codebase context and existing patterns. If unsure, choose the simpler implementation."
+            } else {
+              # Default Y - skip story
+              ui:dim "Skipping story, will try next..." > /dev/tty
+              # Reset state so next iteration picks a new story
+              set current-state[current_story] = $nil
+              set current-state[branch] = $nil
+              set current-state[status] = "idle"
+              set current-state[attempts] = (num 0)
+              state:write $current-state
+
+              # Verbose: show state transition
+              if $config[verbose-mode] {
+                ui:dim "VERBOSE: State transition -> idle (validation skip)"
+              }
+              continue
+            }
+          } catch { }
         }
-        continue
       }
     }
 
-    # Prepare Claude prompt (with any pending feedback)
-    var prep = (claude:prepare $story-id $branch-name $current-state[attempts] $current-iteration $pending-feedback)
+    # Prepare Claude prompt (with any pending feedback or clarification)
+    var prep = (claude:prepare $story-id $branch-name $current-state[attempts] $current-iteration $pending-feedback &clarification=$pending-clarification)
     var prompt-file = $prep[prompt-file]
     var output-file = $prep[output-file]
     var story-title = $prep[story-title]
@@ -344,13 +372,16 @@ while (< $current-iteration $config[max-iterations]) {
       echo ""
     }
 
-    # Clear feedback after using it, track if this was a feedback refinement
+    # Clear feedback/clarification after using it, track mode for display
     var mode-label = "attempt "$current-state[attempts]
     var was-feedback-refinement = $false
     if (not (eq $pending-feedback "")) {
       set mode-label = "feedback refinement"
       set was-feedback-refinement = $true
       set pending-feedback = ""  # Clear after use
+    } elif (not (eq $pending-clarification "")) {
+      set mode-label = "with clarification"
+      set pending-clarification = ""  # Clear after use
     }
     ui:status "Running Claude ("$mode-label")..."
     ui:dim "  Story:  "$story-id

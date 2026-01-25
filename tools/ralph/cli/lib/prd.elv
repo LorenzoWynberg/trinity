@@ -700,3 +700,65 @@ fn handle-skip {|story-id reason project-root|
 
   ui:success "Story skipped. Dependents can now proceed."
 }
+
+# Get user clarification for a story via editor
+# Opens editor with validation questions, returns user's clarification text
+fn get-clarification {|story-id questions|
+  echo "" > /dev/tty
+
+  # Create temp file with story context and questions
+  var tmp = (mktemp --suffix=.md)
+  var story-title = (get-story-title $story-id)
+
+  echo "# Clarify Story "$story-id > $tmp
+  echo "# "$story-title >> $tmp
+  echo "#" >> $tmp
+  echo "# Claude identified these questions:" >> $tmp
+  echo "#" >> $tmp
+  # Add questions as comments
+  for line [(str:split "\n" $questions)] {
+    if (not (eq (str:trim-space $line) "")) {
+      echo "# "$line >> $tmp
+    }
+  }
+  echo "#" >> $tmp
+  echo "# Add your clarifications below." >> $tmp
+  echo "# Lines starting with # are ignored." >> $tmp
+  echo "# Save and close to submit, empty file to cancel." >> $tmp
+  echo "" >> $tmp
+
+  # Determine editor (fallback chain)
+  var editor = "vim"
+  if (has-env EDITOR) {
+    set editor = $E:EDITOR
+  } elif (has-env VISUAL) {
+    set editor = $E:VISUAL
+  }
+
+  ui:status "Opening editor for clarification..." > /dev/tty
+  ui:dim "  Using: "$editor > /dev/tty
+
+  # Open editor
+  try {
+    (external $editor) $tmp </dev/tty >/dev/tty 2>/dev/tty
+  } catch e {
+    ui:error "Failed to open editor: "(to-string $e[reason]) > /dev/tty
+    rm -f $tmp
+    put ""
+    return
+  }
+
+  # Parse result, ignoring comment lines
+  var content = ""
+  try {
+    set content = (cat $tmp | grep -v '^#' | str:trim-space (slurp))
+  } catch _ { }
+
+  rm -f $tmp
+
+  if (eq $content "") {
+    ui:dim "No clarification provided (empty or cancelled)" > /dev/tty
+  }
+
+  put $content
+}

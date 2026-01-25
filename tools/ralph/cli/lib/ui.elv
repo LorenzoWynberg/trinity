@@ -84,6 +84,7 @@ OPTIONS:
   --auto-pr               Auto-create PR without prompting (default: prompt)
   --auto-merge            Auto-merge PR without prompting (default: prompt)
   --no-validate           Skip story validation before execution
+  --auto-clarify          Auto-proceed on validation questions (make reasonable assumptions)
   --yolo                  Full auto: --no-validate + --auto-pr + --auto-merge
   --notify                Send desktop notifications on story complete/blocked
   --skip ID "reason"      Skip a story, allowing dependents to proceed

@@ -5,11 +5,11 @@
       "title": "Create Go workspace structure",
       "intent": "Establish the Go monorepo workspace with proper module boundaries",
       "acceptance": [
-        "go.work file at root with use directives for core, cli",
-        "core/go.mod with module github.com/trinity-ai-labs/trinity/core",
-        "cli/go.mod with module github.com/trinity-ai-labs/trinity/cli",
-        "cli imports core module",
-        "go work sync succeeds"
+        "go.work file at root with use directives for core and cli directories only",
+        "core/go.mod with module github.com/trinity-ai-labs/trinity/core, requires go 1.21+",
+        "cli/go.mod with module github.com/trinity-ai-labs/trinity/cli, requires go 1.21+",
+        "cli/go.mod imports core module via replace directive for local development",
+        "go work sync succeeds with no errors"
       ],
       "passes": false,
       "depends_on": [],
@@ -23,11 +23,11 @@
       "title": "Create CLI entrypoint with Cobra",
       "intent": "Set up the main CLI application structure using Cobra command framework",
       "acceptance": [
-        "cli/cmd/trinity/main.go exists",
-        "Uses github.com/spf13/cobra for CLI",
-        "Root command with basic help text",
-        "go build ./cli/cmd/trinity produces binary",
-        "./trinity --help shows usage"
+        "cli/cmd/trinity/main.go exists as the entrypoint",
+        "Uses github.com/spf13/cobra v1.8+ for CLI framework",
+        "Root command named 'trinity' with short and long descriptions",
+        "go build ./cli/cmd/trinity produces a binary named 'trinity'",
+        "./trinity --help shows usage with command name and description"
       ],
       "passes": false,
       "depends_on": [
@@ -43,9 +43,10 @@
       "title": "Add version command",
       "intent": "Provide version information for troubleshooting and releases",
       "acceptance": [
-        "trinity version outputs version number",
-        "Version set via ldflags at build time",
-        "Includes build date and git commit when available"
+        "trinity version outputs version in semver format (e.g., v0.1.0)",
+        "Version constants defined in cli/cmd/trinity/version.go",
+        "Version set via ldflags at build time: -ldflags \"-X main.Version=v0.1.0\"",
+        "Includes build date and git commit short SHA when available via ldflags"
       ],
       "passes": false,
       "depends_on": [

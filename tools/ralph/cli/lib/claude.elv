@@ -190,7 +190,8 @@ fn get-recent-activity-logs {
 
 # Prepare prompt and return paths needed for streaming
 # Returns: [&prompt-file=<path> &output-file=<path> &story-title=<title>]
-fn prepare {|story-id branch-name attempt iteration feedback|
+# Optional &clarification param for validation clarifications
+fn prepare {|story-id branch-name attempt iteration feedback &clarification=""|
   var prompt = ""
 
   # If feedback is provided and we have a feedback template, use it
@@ -259,6 +260,21 @@ Stay focused on the feedback - don't refactor unrelated code.
   # Add recent activity logs for context
   var activity-logs = (get-recent-activity-logs | slurp)
   set prompt = (str:replace &max=-1 "{{RECENT_ACTIVITY_LOGS}}" $activity-logs $prompt)
+
+  # Add clarification if provided (from validation questions)
+  if (not (eq $clarification "")) {
+    var clarification-section = "## User Clarification
+
+The user provided this clarification to resolve ambiguities in the story:
+
+> "$clarification"
+
+Use this to guide your implementation decisions.
+
+"
+    # Insert before the Quick Reference section
+    set prompt = (str:replace &max=-1 "## Quick Reference" $clarification-section"## Quick Reference" $prompt)
+  }
 
   var output-file = (mktemp)
   var prompt-file = (mktemp)
@@ -439,7 +455,7 @@ type(scope): brief description
 }
 
 # Validate story acceptance criteria before execution
-# Returns: true if valid, false if needs clarification
+# Returns: map with &valid (bool) and &questions (string, empty if valid)
 fn validate-story {|story-id|
   ui:status "Validating story acceptance criteria..."
 
@@ -460,7 +476,7 @@ fn validate-story {|story-id|
 
   if (eq $acceptance "") {
     ui:warn "Story "$story-id" has no acceptance criteria, skipping validation"
-    put $true
+    put [&valid=$true &questions=""]
     return
   }
 
@@ -498,32 +514,38 @@ Be pragmatic - minor ambiguity is OK if the intent is clear. Only flag things th
 
   if (eq $result "") {
     ui:warn "Validation check failed, proceeding anyway"
-    put $true
+    put [&valid=$true &questions=""]
     return
   }
 
   if (str:contains $result "<valid/>") {
     ui:success "Story validation passed"
-    put $true
+    put [&valid=$true &questions=""]
     return
   }
 
   if (str:contains $result "<needs-clarification>") {
+    # Extract questions from the response
+    var questions = ""
+    try {
+      set questions = (echo $result | sed -n '/<needs-clarification>/,/<\/needs-clarification>/p' | grep '^\s*-' | slurp)
+    } catch _ {
+      set questions = $result
+    }
+
+    # Display to user
     ui:warn "Story needs clarification:" > /dev/tty
     echo "" > /dev/tty
-    try {
-      echo $result | sed -n '/<needs-clarification>/,/<\/needs-clarification>/p' | grep '^\s*-' > /dev/tty
-    } catch _ {
-      echo $result > /dev/tty
-    }
+    echo $questions > /dev/tty
     echo "" > /dev/tty
-    put $false
+
+    put [&valid=$false &questions=$questions]
     return
   }
 
   # Unexpected response, proceed anyway
   ui:dim "Validation returned unexpected response, proceeding"
-  put $true
+  put [&valid=$true &questions=""]
 }
 
 # Run plan mode for a story (read-only, no file changes)
