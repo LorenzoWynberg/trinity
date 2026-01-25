@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import type { PRD, Story, StoryStatus } from '@/lib/types'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 
 type StoriesListProps = {
   prd: PRD
@@ -42,6 +43,7 @@ function StoriesListInner({ prd, currentStoryId, versions, currentVersion }: Sto
   const searchParams = useSearchParams()
   const [selectedPhase, setSelectedPhase] = useState<string>('all')
   const [selectedEpics, setSelectedEpics] = useState<Record<number, string>>({})
+  const [collapsedPhases, setCollapsedPhases] = useState<Set<number>>(new Set())
 
   const stories = prd.stories
 
@@ -193,13 +195,39 @@ function StoriesListInner({ prd, currentStoryId, versions, currentVersion }: Sto
                   const epics = epicsByPhase[phase] || []
                   const currentEpicFilter = selectedEpics[phase] || 'all'
 
+                  const isCollapsed = collapsedPhases.has(phase)
+                  const toggleCollapse = () => {
+                    setCollapsedPhases(prev => {
+                      const next = new Set(prev)
+                      if (next.has(phase)) {
+                        next.delete(phase)
+                      } else {
+                        next.add(phase)
+                      }
+                      return next
+                    })
+                  }
+
                   return (
                     <div key={phase}>
                       <div className="flex items-center gap-4 mb-4">
-                        <h2 className="text-lg font-semibold">
-                          {phaseNames.get(phase) ? `Phase ${phase}: ${phaseNames.get(phase)}` : `Phase ${phase}`}
-                        </h2>
-                        {epics.length > 1 && (
+                        <button
+                          onClick={toggleCollapse}
+                          className="flex items-center gap-2 hover:text-primary transition-colors"
+                        >
+                          {isCollapsed ? (
+                            <ChevronRight className="h-5 w-5" />
+                          ) : (
+                            <ChevronDown className="h-5 w-5" />
+                          )}
+                          <h2 className="text-lg font-semibold">
+                            {phaseNames.get(phase) ? `Phase ${phase}: ${phaseNames.get(phase)}` : `Phase ${phase}`}
+                          </h2>
+                          <span className="text-sm text-muted-foreground">
+                            ({phaseStories.length})
+                          </span>
+                        </button>
+                        {!isCollapsed && epics.length > 1 && (
                           <Select
                             value={currentEpicFilter}
                             onValueChange={(value) =>
@@ -223,15 +251,17 @@ function StoriesListInner({ prd, currentStoryId, versions, currentVersion }: Sto
                           </Select>
                         )}
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {phaseStories.map(story => (
-                          <StoryCard
-                            key={`${story.target_version}-${story.id}`}
-                            story={story}
-                            status={getStoryStatus(story, currentStoryId)}
-                          />
-                        ))}
-                      </div>
+                      {!isCollapsed && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {phaseStories.map(story => (
+                            <StoryCard
+                              key={`${story.target_version}-${story.id}`}
+                              story={story}
+                              status={getStoryStatus(story, currentStoryId)}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )
                 })}
