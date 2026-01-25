@@ -11,7 +11,14 @@ interface MarkdownProps {
 
 export function Markdown({ content, className }: MarkdownProps) {
   return (
-    <div className={cn('prose prose-sm dark:prose-invert max-w-none', className)}>
+    <div className={cn(
+      'prose prose-sm dark:prose-invert max-w-none',
+      // Override all prose code/pre styles to prevent conflicts
+      'prose-pre:bg-transparent prose-pre:p-0 prose-pre:m-0 prose-pre:border-0',
+      'prose-code:bg-transparent prose-code:p-0 prose-code:font-normal',
+      'prose-code:before:content-none prose-code:after:content-none',
+      className
+    )}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -42,10 +49,14 @@ export function Markdown({ content, className }: MarkdownProps) {
           li: ({ children }) => (
             <li className="leading-relaxed">{children}</li>
           ),
-          // Style code - inline only, pre handles blocks
+          // Style code - detect code blocks by checking for language- class
           code: ({ children, className, ...props }) => {
-            // If inside a pre (has className from language), don't add extra styling
-            if (className) {
+            // Code blocks have language-* class OR are direct children of pre (no inline context)
+            const isCodeBlock = className?.startsWith('language-') ||
+              (props.node?.position?.start?.line === props.node?.position?.end?.line === false)
+
+            if (isCodeBlock || className) {
+              // Code block - minimal styling, pre handles the container
               return <code className="text-sm" {...props}>{children}</code>
             }
             // Inline code
@@ -55,11 +66,13 @@ export function Markdown({ content, className }: MarkdownProps) {
               </code>
             )
           },
-          // Style pre blocks (code blocks)
+          // Style pre blocks (code blocks) - clean look, no border
           pre: ({ children }) => (
-            <pre className="bg-muted p-4 rounded-lg overflow-x-auto mb-4 text-sm font-mono whitespace-pre">
-              {children}
-            </pre>
+            <div className="not-prose mb-4">
+              <pre className="bg-muted/50 p-4 rounded-lg overflow-x-auto text-sm font-mono !border-none !outline-none" style={{ border: 'none' }}>
+                {children}
+              </pre>
+            </div>
           ),
           // Style blockquotes
           blockquote: ({ children }) => (

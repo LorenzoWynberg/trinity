@@ -11,14 +11,11 @@
         "cli imports core module",
         "go work sync succeeds"
       ],
-      "passes": true,
+      "passes": false,
       "depends_on": [],
       "phase": 1,
       "epic": 1,
       "story_number": 1,
-      "merged": true,
-      "merge_commit": "24cdf06",
-      "pr_url": "https://github.com/trinity-ai-labs/trinity/pull/16",
       "target_version": "v1.0"
     },
     {
@@ -32,7 +29,7 @@
         "go build ./cli/cmd/trinity produces binary",
         "./trinity --help shows usage"
       ],
-      "passes": true,
+      "passes": false,
       "depends_on": [
         "STORY-1.1.1"
       ],

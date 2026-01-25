@@ -327,3 +327,15 @@ See `examples/jetbrains-elvish/` for patterns Trinity will port to Go:
 - `ralph.elv` - Full loop implementation
 - `prd.json` - 60+ stories with dependencies
 - `prompt.md` - Story execution template
+
+## Working on Ralph
+
+When working on Ralph (`tools/ralph/`), **always read `docs/learnings/ralph.md` first**. It contains:
+- Streaming patterns for Claude output
+- State management (passes vs merged)
+- PR flow and prompts
+- Activity log organization
+- Release workflow
+- Elvish-specific gotchas
+
+Ralph is written in Elvish shell. The learnings file captures hard-won knowledge about its quirks and patterns.
