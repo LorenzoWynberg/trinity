@@ -1362,16 +1362,19 @@
     },
     {
       "id": "5.1.9",
-      "title": "Implement external deps report propagation to descendants",
-      "intent": "When external deps report is provided, update downstream stories with concrete implementation details",
+      "title": "Implement external deps report propagation and PRD refinement",
+      "intent": "When external deps report is provided, update downstream stories and create new stories as needed",
       "acceptance": [
         "After report saved, find all descendant stories (recursive dependency traversal)",
-        "Get summary of descendants: id, title, current acceptance criteria",
-        "Claude analyzes which descendants need acceptance criteria updates based on report",
-        "Only update relevant stories (skip unrelated ones)",
-        "Updated acceptance criteria reference concrete details from report (endpoints, auth methods, schemas)",
-        "Show user which stories were updated vs skipped with reasons",
-        "PRD/database saved with updated acceptance criteria"
+        "Claude analyzes descendants: which need updates, which are fine as-is",
+        "Claude identifies GAPS: new stories needed based on report details",
+        "For updates: modify acceptance criteria with concrete details (endpoints, auth, schemas)",
+        "For new stories: create in appropriate phase/epic with proper dependencies",
+        "Validate dependency chain: no cycles, correct ordering, deps exist",
+        "Show user summary: X updated, Y created, Z skipped (with reasons)",
+        "User confirms before saving changes to PRD",
+        "[y]es save / [n]o discard / [e]dit allows manual adjustments",
+        "PRD/database saved only after user confirmation"
       ],
       "depends_on": [
         "5.1.8"
