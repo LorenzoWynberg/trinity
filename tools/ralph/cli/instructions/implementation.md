@@ -20,7 +20,7 @@ go test ./... 2>&1 || true
 
 Build must pass. Tests should pass (create them if they don't exist).
 
-## Self-Review (Max 3 cycles)
+## Self-Review (Max 3 cycles) **IMPORTANT**
 After build passes, ask: "What's missing or could improve?"
 - Edge cases, API design, code organization, error handling
 - Only implement if: in scope, meaningful, aligns with acceptance criteria
