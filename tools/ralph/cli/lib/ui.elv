@@ -86,7 +86,8 @@ OPTIONS:
   --no-validate           Skip story validation before execution
   --auto-clarify          Auto-proceed on validation questions (make reasonable assumptions)
   --auto-duplicate        Auto-update existing story when duplicate detected (default: prompt)
-  --yolo                  Full auto: --no-validate + --auto-pr + --auto-merge + --auto-clarify + --auto-duplicate
+  --auto-reverse-deps     Auto-add reverse dependencies when suggested (default: prompt)
+  --yolo                  Full auto: all --auto-* flags enabled
   --no-notifs             Disable desktop notifications (default: enabled)
   --skip ID "reason"      Skip a story, allowing dependents to proceed
   --retry-clean ID        Reset story for fresh retry (deletes branch, clears state)

@@ -362,8 +362,25 @@ Potential duplicate found:
 ### Notifications
 Desktop notifications are **enabled by default** (helpful for AFK mode). Use `--no-notifs` to disable.
 
+### Reverse dependency check
+
+After creating a new story, Ralph checks if existing stories should depend on it:
+
+1. Find stories with ≥1 tag overlap (excluding earlier phases)
+2. Filter out: own deps, already dependents, would-create-cycle
+3. Ask Claude which candidates logically need the new story
+4. Prompt: `[y]es add all / [n]o skip / [r]eview individually`
+
+**Safety rules:**
+- Backwards phase deps rejected (Phase 6 can't depend on Phase 7)
+- Cycle check before each add
+
+**Flags:**
+- `--auto-reverse-deps` - Auto-add all suggestions
+- Included in `--yolo` mode
+
 ### Yolo mode
-`--yolo` enables: `--no-validate`, `--auto-pr`, `--auto-merge`, `--auto-clarify`, `--auto-duplicate`
+`--yolo` enables all `--auto-*` flags: `--no-validate`, `--auto-pr`, `--auto-merge`, `--auto-clarify`, `--auto-duplicate`, `--auto-reverse-deps`
 
 Still respects hard gates: unmet deps (exit), external deps (prompt for report), human testing.
 

@@ -980,3 +980,41 @@ fn validate-dependencies {|story-id depends-on|
 
   put [&valid=(eq (count $errors) 0) &errors=$errors]
 }
+
+# Add a dependency to a story
+fn add-dependency {|story-id new-dep|
+  var tmp = (mktemp)
+  jq '(.stories[] | select(.id == "'$story-id'")).depends_on += ["'$new-dep'"]' $prd-file > $tmp
+  mv $tmp $prd-file
+}
+
+# Check if adding a dependency would create a cycle
+# Returns true if cycle would be created
+fn would-create-cycle {|story-id potential-dep|
+  # If story-id is in potential-dep's descendant tree, adding the dep would create a cycle
+  var descendants = [(get-descendants $potential-dep)]
+  has-value $descendants $story-id
+}
+
+# Get stories that already depend on a given story
+fn get-dependents {|story-id|
+  var result = []
+  try {
+    set result = [(jq -r '.stories[] | select(.depends_on != null) | select(.depends_on[] == "'$story-id'") | .id' $prd-file)]
+  } catch _ { }
+  put $@result
+}
+
+# Get story's current dependencies
+fn get-story-deps {|story-id|
+  var result = []
+  try {
+    set result = [(jq -r '.stories[] | select(.id == "'$story-id'") | .depends_on[]?' $prd-file)]
+  } catch _ { }
+  put $@result
+}
+
+# Get story phase number
+fn get-story-phase {|story-id|
+  jq -r '.stories[] | select(.id == "'$story-id'") | .phase' $prd-file
+}

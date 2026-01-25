@@ -29,6 +29,7 @@ var skip-release = $false
 var auto-release = $false
 var release-tag = ""
 var auto-duplicate = $false
+var auto-reverse-deps = $false
 
 # Parse command line arguments
 fn parse-args {|arguments|
@@ -78,15 +79,19 @@ fn parse-args {|arguments|
       set auto-clarify = $true
       set i = (+ $i 1)
     } elif (eq $arg "--yolo") {
-      # YOLO mode: no validation, auto PR, auto merge, auto duplicate
+      # YOLO mode: no validation, auto PR, auto merge, auto duplicate, auto reverse deps
       set no-validate = $true
       set auto-pr = $true
       set auto-merge = $true
       set auto-clarify = $true
       set auto-duplicate = $true
+      set auto-reverse-deps = $true
       set i = (+ $i 1)
     } elif (eq $arg "--auto-duplicate") {
       set auto-duplicate = $true
+      set i = (+ $i 1)
+    } elif (eq $arg "--auto-reverse-deps") {
+      set auto-reverse-deps = $true
       set i = (+ $i 1)
     } elif (eq $arg "--no-notifs") {
       set notify-enabled = $false
@@ -212,5 +217,6 @@ fn get-config {
     &auto-release=$auto-release
     &release-tag=$release-tag
     &auto-duplicate=$auto-duplicate
+    &auto-reverse-deps=$auto-reverse-deps
   ]
 }

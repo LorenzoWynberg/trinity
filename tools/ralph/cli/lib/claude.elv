@@ -17,9 +17,10 @@ var claude-timeout = 1800
 var quiet-mode = $false
 var max-iterations = 100
 var auto-duplicate = $false
+var auto-reverse-deps = $false
 
 # Initialize with configuration
-fn init {|root sdir template timeout quiet max-iter &auto-dup=$false|
+fn init {|root sdir template timeout quiet max-iter &auto-dup=$false &auto-rev-deps=$false|
   set project-root = $root
   set script-dir = $sdir
   set prompt-template = $template
@@ -27,6 +28,7 @@ fn init {|root sdir template timeout quiet max-iter &auto-dup=$false|
   set quiet-mode = $quiet
   set max-iterations = $max-iter
   set auto-duplicate = $auto-dup
+  set auto-reverse-deps = $auto-rev-deps
 
   # Load feedback template and workflow partial (relative to script directory)
   var prompts-dir = (path:join $sdir "prompts")
@@ -698,6 +700,190 @@ fn prompt-duplicate-choice {|proposed-title dup-id dup-reason|
   }
 }
 
+# Check for reverse dependencies - existing stories that should depend on a new story
+# Returns list of suggestions: [{id, should_depend, reason}, ...]
+fn check-reverse-deps {|new-id new-title new-intent new-tags-json|
+  # Find stories with overlapping tags
+  var similar-ids = [(prd:find-similar-by-tags $new-tags-json &min-overlap=(num 1))]
+
+  if (eq (count $similar-ids) 0) {
+    put []
+    return
+  }
+
+  # Get new story's phase for backwards dep check
+  var new-phase = (num (prd:get-story-phase $new-id))
+
+  # Filter candidates
+  var candidates = []
+  var own-deps = [(prd:get-story-deps $new-id)]
+  var already-dependents = [(prd:get-dependents $new-id)]
+
+  for sid $similar-ids {
+    # Skip self
+    if (eq $sid $new-id) { continue }
+
+    # Skip stories that new story depends on (avoid cycles)
+    if (has-value $own-deps $sid) { continue }
+
+    # Skip stories that already depend on new story
+    if (has-value $already-dependents $sid) { continue }
+
+    # Skip if would create cycle
+    if (prd:would-create-cycle $sid $new-id) { continue }
+
+    # Skip stories in earlier phases (backwards dependency - rejected per plan)
+    var sid-phase = (num (prd:get-story-phase $sid))
+    if (< $sid-phase $new-phase) { continue }
+
+    set candidates = [$@candidates $sid]
+  }
+
+  if (eq (count $candidates) 0) {
+    put []
+    return
+  }
+
+  # Build context about candidate stories
+  var stories-context = ""
+  for sid $candidates {
+    var s-title = (prd:get-story-title $sid)
+    var s-deps = (jq -r '.stories[] | select(.id == "'$sid'") | .depends_on // [] | join(", ")' (prd:get-prd-file))
+    var s-acceptance = (jq -r '.stories[] | select(.id == "'$sid'") | .acceptance // [] | join("; ")' (prd:get-prd-file))
+    var s-tags = (jq -r '.stories[] | select(.id == "'$sid'") | .tags // [] | join(", ")' (prd:get-prd-file))
+    set stories-context = $stories-context"- "$sid": \""$s-title"\" ["$s-tags"]\n  Current deps: ["$s-deps"]\n  Acceptance: "$s-acceptance"\n\n"
+  }
+
+  var prompt = 'Analyze if existing stories should depend on a newly created story.
+
+## New Story Created
+ID: '$new-id'
+Title: "'$new-title'"
+Intent: "'$new-intent'"
+Tags: '$new-tags-json'
+
+## Candidate Stories (share tags, might need to depend on new story)
+'$stories-context'
+
+## Task
+For each candidate, determine if it LOGICALLY needs '$new-id' to function correctly.
+A story should depend on '$new-id' if it uses functionality that '$new-id' provides.
+
+Output JSON only:
+{
+  "suggestions": [
+    {"id": "X.Y.Z", "should_depend": true, "reason": "Uses token refresh logic"},
+    {"id": "A.B.C", "should_depend": false, "reason": "Unrelated functionality"}
+  ]
+}
+'
+
+  var result = ""
+  try {
+    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
+  } catch e {
+    put []
+    return
+  }
+
+  # Extract JSON from response
+  var json-result = ""
+  try {
+    set json-result = (echo $result | sed -n '/```json/,/```/p' | sed '1d;$d' | slurp)
+    if (eq $json-result "") {
+      set json-result = (echo $result | grep -o '{[^{}]*"suggestions"[^{}]*\[.*\][^{}]*}' | head -1)
+    }
+  } catch _ {
+    put []
+    return
+  }
+
+  # Parse suggestions
+  var suggestions = []
+  try {
+    set suggestions = [(echo $json-result | jq -c '.suggestions[]?' | each {|s|
+      var id = (echo $s | jq -r '.id')
+      var should = (echo $s | jq -r '.should_depend')
+      var reason = (echo $s | jq -r '.reason')
+      if (eq $should "true") {
+        put [&id=$id &should_depend=$true &reason=$reason]
+      }
+    })]
+  } catch _ { }
+
+  put $suggestions
+}
+
+# Prompt user for reverse dependency suggestions
+# Returns: "all", "none", or "review"
+fn prompt-reverse-deps {|new-id suggestions|
+  echo "" > /dev/tty
+  ui:status "Suggested reverse dependencies for "$new-id":" > /dev/tty
+
+  for s $suggestions {
+    var s-title = (prd:get-story-title $s[id])
+    echo "  • "$s[id]": "$s-title > /dev/tty
+    echo "    → "$s[reason] > /dev/tty
+  }
+
+  echo "" > /dev/tty
+  echo "\e[33m[y]es add all / [n]o skip all / [r]eview individually\e[0m" > /dev/tty
+
+  var answer = ""
+  try {
+    set answer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
+  } catch _ { }
+  echo "" > /dev/tty
+
+  if (re:match '^[yY]' $answer) {
+    put "all"
+  } elif (re:match '^[rR]' $answer) {
+    put "review"
+  } else {
+    put "none"
+  }
+}
+
+# Review each reverse dep suggestion individually
+# Returns list of IDs to add
+fn review-reverse-deps-individually {|new-id suggestions|
+  var to-add = []
+
+  for s $suggestions {
+    var s-title = (prd:get-story-title $s[id])
+    echo "" > /dev/tty
+    echo "Add "$new-id" as dependency to "$s[id]"?" > /dev/tty
+    echo "  "$s[id]": "$s-title > /dev/tty
+    echo "  Reason: "$s[reason] > /dev/tty
+    echo "\e[33m[y]es / [n]o\e[0m" > /dev/tty
+
+    var answer = ""
+    try {
+      set answer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
+    } catch _ { }
+    echo "" > /dev/tty
+
+    if (re:match '^[yY]' $answer) {
+      set to-add = [$@to-add $s[id]]
+    }
+  }
+
+  put $to-add
+}
+
+# Apply reverse dependency suggestions
+fn apply-reverse-deps {|new-id story-ids|
+  for sid $story-ids {
+    # Double-check no cycle before adding
+    if (not (prd:would-create-cycle $sid $new-id)) {
+      prd:add-dependency $sid $new-id
+      ui:success "  ✓ "$sid" now depends on "$new-id > /dev/tty
+    } else {
+      ui:warn "  ✗ Skipped "$sid" (would create cycle)" > /dev/tty
+    }
+  }
+}
+
 # Propagate external deps report to descendant stories
 # Analyzes descendants, identifies gaps, creates new stories, with user confirmation
 fn propagate-external-deps {|story-id report|
@@ -1009,6 +1195,31 @@ Rules:
 
       prd:create-story $new-story
       ui:success "  ✓ Created "$new-id": "$title > /dev/tty
+
+      # Check for reverse dependencies
+      var rev-suggestions = (check-reverse-deps $new-id $title $intent $cr-tags)
+      if (> (count $rev-suggestions) 0) {
+        if $auto-reverse-deps {
+          # Auto mode: add all suggested deps
+          ui:dim "  Auto-adding reverse dependencies..." > /dev/tty
+          var all-ids = [(each {|s| put $s[id]} $rev-suggestions)]
+          apply-reverse-deps $new-id $all-ids
+        } else {
+          # Prompt user
+          var choice = (prompt-reverse-deps $new-id $rev-suggestions)
+          if (eq $choice "all") {
+            var all-ids = [(each {|s| put $s[id]} $rev-suggestions)]
+            apply-reverse-deps $new-id $all-ids
+          } elif (eq $choice "review") {
+            var to-add = (review-reverse-deps-individually $new-id $rev-suggestions)
+            if (> (count $to-add) 0) {
+              apply-reverse-deps $new-id $to-add
+            }
+          } else {
+            ui:dim "  Skipped reverse dependencies" > /dev/tty
+          }
+        }
+      }
     }
   }
 
