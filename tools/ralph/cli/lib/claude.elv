@@ -595,40 +595,43 @@ fn run-plan-mode {|story-id target-version|
 }
 
 # Propagate external deps report to descendant stories
-# Analyzes which descendants need updating and updates their acceptance criteria
+# Analyzes descendants, identifies gaps, creates new stories, with user confirmation
 fn propagate-external-deps {|story-id report|
-  ui:status "Analyzing descendant stories for updates..."
+  ui:status "Analyzing PRD for updates and gaps..."
 
   # Get all descendants
   var descendants = [(prd:get-descendants $story-id)]
-
-  if (eq (count $descendants) 0) {
+  var summary = ""
+  if (> (count $descendants) 0) {
+    ui:dim "  Found "(count $descendants)" descendant(s): "(str:join ", " $descendants)
+    set summary = (prd:get-stories-summary $descendants)
+  } else {
     ui:dim "  No dependent stories found"
-    return
+    set summary = "(No existing dependent stories)"
   }
 
-  ui:dim "  Found "(count $descendants)" descendant(s): "(str:join ", " $descendants)
-
-  # Get summary of descendants for Claude
-  var summary = (prd:get-stories-summary $descendants)
   var story-title = (prd:get-story-title $story-id)
+  var story-info = (prd:get-story-info $story-id)
+  var info-parts = [(str:split "\t" $story-info)]
+  var phase = $info-parts[0]
+  var epic = $info-parts[1]
 
-  var prompt = 'You are updating a PRD based on implementation decisions.
+  var prompt = 'You are refining a PRD based on implementation decisions.
 
-Story '$story-id' ("'$story-title'") has external dependencies that were just implemented.
+Story '$story-id' ("'$story-title'") in Phase '$phase', Epic '$epic' has external dependencies that were just implemented.
 
 ## External Dependencies Report
 '$report'
 
-## Descendant Stories
+## Existing Descendant Stories
 These stories depend on '$story-id' (directly or transitively):
 
 '$summary'
 
 ## Task
-Analyze each descendant story. Determine which ones need their acceptance criteria updated based on the external deps report.
-
-For stories that need updates, provide specific, concrete acceptance criteria that reference the actual implementation details from the report.
+1. Analyze existing descendants: which need acceptance criteria updates?
+2. Identify GAPS: what new stories are needed based on the report?
+3. For new stories, determine proper phase/epic placement and dependencies
 
 Output format (JSON):
 ```json
@@ -636,31 +639,43 @@ Output format (JSON):
   "updates": [
     {
       "id": "X.Y.Z",
-      "reason": "Brief reason why this needs updating",
-      "acceptance": ["New criterion 1", "New criterion 2", "..."]
+      "reason": "Why this needs updating",
+      "acceptance": ["Updated criterion 1", "Updated criterion 2"]
+    }
+  ],
+  "create": [
+    {
+      "title": "Story title",
+      "intent": "Why this story is needed",
+      "acceptance": ["Criterion 1", "Criterion 2"],
+      "phase": '$phase',
+      "epic": '$epic',
+      "depends_on": ["'$story-id'"],
+      "reason": "Why this new story is needed"
     }
   ],
   "skip": [
     {
       "id": "X.Y.Z",
-      "reason": "Brief reason why this can stay as-is"
+      "reason": "Why this can stay as-is"
     }
   ]
 }
 ```
 
 Rules:
-- Only update stories where the external deps report is directly relevant
-- Keep acceptance criteria specific and testable
-- Preserve any existing criteria that are still valid
-- Reference concrete details from the report (endpoints, formats, etc.)
-- Skip stories that are unrelated to the external dependencies'
+- Only update stories where the report is directly relevant
+- Create new stories for functionality revealed by the report but not covered
+- New stories should have proper dependencies (on '$story-id' or other stories)
+- Keep acceptance criteria specific, testable, referencing concrete details
+- Use same phase/epic as '$story-id' unless clearly belongs elsewhere
+- Preserve valid existing criteria when updating'
 
   var result = ""
   try {
     set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
   } catch e {
-    ui:error "Failed to analyze descendants: "(to-string $e[reason])
+    ui:error "Failed to analyze PRD: "(to-string $e[reason])
     return
   }
 
@@ -674,54 +689,164 @@ Rules:
   }
 
   if (eq $json-block "") {
-    ui:dim "  No updates needed"
+    ui:dim "  No changes needed"
     return
   }
 
-  # Parse and apply updates
+  # Parse results
   var updates = []
+  var creates = []
+  var skips = []
   try {
     set updates = [(echo $json-block | jq -r '.updates[]? | "\(.id)|\(.reason)"')]
   } catch _ { }
-
-  var skips = []
+  try {
+    set creates = [(echo $json-block | jq -r '.create[]? | "\(.title)|\(.reason)"')]
+  } catch _ { }
   try {
     set skips = [(echo $json-block | jq -r '.skip[]? | "\(.id): \(.reason)"')]
   } catch _ { }
 
-  # Show skips
-  if (> (count $skips) 0) {
-    ui:dim "  Skipping (unrelated):"
-    for skip $skips {
-      ui:dim "    - "$skip
+  # Show summary
+  echo "" > /dev/tty
+  ui:divider "PRD Changes Summary" > /dev/tty
+
+  if (> (count $updates) 0) {
+    echo "" > /dev/tty
+    ui:status "Updates ("(count $updates)"):" > /dev/tty
+    for update $updates {
+      var parts = [(str:split "|" $update)]
+      ui:dim "  • "$parts[0]": "$parts[1] > /dev/tty
     }
+  }
+
+  if (> (count $creates) 0) {
+    echo "" > /dev/tty
+    ui:status "New stories ("(count $creates)"):" > /dev/tty
+    for create $creates {
+      var parts = [(str:split "|" $create)]
+      ui:dim "  • "$parts[0] > /dev/tty
+      if (> (count $parts) 1) {
+        ui:dim "    Reason: "$parts[1] > /dev/tty
+      }
+    }
+  }
+
+  if (> (count $skips) 0) {
+    echo "" > /dev/tty
+    ui:dim "Unchanged ("(count $skips)"):" > /dev/tty
+    for skip $skips {
+      ui:dim "  • "$skip > /dev/tty
+    }
+  }
+
+  # Check if any changes
+  if (and (eq (count $updates) 0) (eq (count $creates) 0)) {
+    echo "" > /dev/tty
+    ui:dim "No changes to make" > /dev/tty
+    ui:divider-end > /dev/tty
+    return
+  }
+
+  # User confirmation
+  echo "" > /dev/tty
+  ui:divider-end > /dev/tty
+  echo "\e[33m[y]es save / [n]o discard / [e]dit in editor\e[0m" > /dev/tty
+  var answer = ""
+  try {
+    set answer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
+  } catch _ { }
+  echo "" > /dev/tty
+
+  if (re:match '^[nN]' $answer) {
+    ui:dim "Changes discarded" > /dev/tty
+    return
+  }
+
+  if (re:match '^[eE]' $answer) {
+    # Open JSON in editor for manual adjustments
+    var tmp = (mktemp --suffix=.json)
+    echo $json-block | jq '.' > $tmp
+
+    var editor = "vim"
+    if (has-env EDITOR) { set editor = $E:EDITOR }
+
+    ui:status "Opening editor for adjustments..." > /dev/tty
+    try {
+      (external $editor) $tmp </dev/tty >/dev/tty 2>/dev/tty
+    } catch _ { }
+
+    set json-block = (cat $tmp | slurp)
+    rm -f $tmp
+
+    # Re-parse after edit
+    set updates = []
+    set creates = []
+    try {
+      set updates = [(echo $json-block | jq -r '.updates[]? | "\(.id)|\(.reason)"')]
+    } catch _ { }
+    try {
+      set creates = [(echo $json-block | jq -r '.create[]? | "\(.title)|\(.reason)"')]
+    } catch _ { }
   }
 
   # Apply updates
   if (> (count $updates) 0) {
-    ui:status "Updating "(count $updates)" descendant(s):"
+    ui:status "Applying updates..." > /dev/tty
     for update $updates {
       var parts = [(str:split "|" $update)]
       var sid = $parts[0]
-      var reason = ""
-      if (> (count $parts) 1) {
-        set reason = $parts[1]
-      }
+      var reason = $parts[1]
 
-      # Get new acceptance criteria for this story
       var new-acceptance = ""
       try {
         set new-acceptance = (echo $json-block | jq -c '.updates[] | select(.id == "'$sid'") | .acceptance')
-      } catch _ {
-        continue
-      }
+      } catch _ { continue }
 
       if (and (not (eq $new-acceptance "")) (not (eq $new-acceptance "null"))) {
         prd:update-story-acceptance $sid $new-acceptance
-        ui:success "  ✓ "$sid": "$reason
+        ui:success "  ✓ Updated "$sid > /dev/tty
       }
     }
-  } else {
-    ui:dim "  No stories need updating"
   }
+
+  # Create new stories
+  if (> (count $creates) 0) {
+    ui:status "Creating new stories..." > /dev/tty
+
+    var create-items = [(echo $json-block | jq -c '.create[]?')]
+    for item $create-items {
+      var title = (echo $item | jq -r '.title')
+      var cr-phase = (echo $item | jq -r '.phase')
+      var cr-epic = (echo $item | jq -r '.epic')
+      var cr-depends = (echo $item | jq -c '.depends_on // []')
+
+      # Get next story number
+      var story-num = (prd:get-next-story-number $cr-phase $cr-epic)
+      var new-id = $cr-phase"."$cr-epic"."$story-num
+
+      # Validate dependencies
+      var dep-list = [(echo $cr-depends | jq -r '.[]?')]
+      var validation = (prd:validate-dependencies $new-id $dep-list)
+      if (not $validation[valid]) {
+        ui:warn "  ✗ Skipping "$title": "(str:join ", " $validation[errors]) > /dev/tty
+        continue
+      }
+
+      # Build full story JSON
+      var new-story = (echo $item | jq -c '. + {
+        "id": "'$new-id'",
+        "story_number": '$story-num',
+        "target_version": "'(prd:get-current-version)'",
+        "passes": false,
+        "merged": false
+      }')
+
+      prd:create-story $new-story
+      ui:success "  ✓ Created "$new-id": "$title > /dev/tty
+    }
+  }
+
+  echo "" > /dev/tty
+  ui:success "PRD updated successfully" > /dev/tty
 }

@@ -905,3 +905,46 @@ fn update-story-acceptance {|story-id new-acceptance-json|
   jq '(.stories[] | select(.id == "'$story-id'")).acceptance = '$new-acceptance-json $prd-file > $tmp
   mv $tmp $prd-file
 }
+
+# Create a new story in the PRD
+# story-json should be a complete story object as JSON string
+fn create-story {|story-json|
+  var tmp = (mktemp)
+  jq '.stories += ['$story-json']' $prd-file > $tmp
+  mv $tmp $prd-file
+}
+
+# Get the next available story number for a phase.epic
+fn get-next-story-number {|phase epic|
+  var max = (jq '[.stories[] | select(.phase == '$phase' and .epic == '$epic') | .story_number] | max // 0' $prd-file)
+  put (+ $max 1)
+}
+
+# Validate dependencies exist and no cycles
+# Returns [&valid=$bool &errors=[$list]]
+fn validate-dependencies {|story-id depends-on|
+  var errors = []
+
+  for dep $depends-on {
+    # Check dep exists (handle both X.Y.Z and STORY-X.Y.Z formats)
+    var dep-id = $dep
+    if (str:has-prefix $dep "STORY-") {
+      set dep-id = (str:trim-prefix $dep "STORY-")
+    }
+
+    var exists = (jq -r '.stories[] | select(.id == "'$dep-id'") | .id // ""' $prd-file)
+    if (eq $exists "") {
+      set errors = [$@errors "Dependency "$dep" does not exist"]
+    }
+
+    # Check for cycle (would dep eventually depend on story-id?)
+    var dep-descendants = [(get-descendants $dep-id)]
+    for desc $dep-descendants {
+      if (eq $desc $story-id) {
+        set errors = [$@errors "Circular dependency: "$dep" eventually depends on "$story-id]
+      }
+    }
+  }
+
+  put [&valid=(eq (count $errors) 0) &errors=$errors]
+}
