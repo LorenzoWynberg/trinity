@@ -42,7 +42,7 @@ export default async function StoriesPage({ searchParams }: PageProps) {
         <p className="text-muted-foreground">{description}</p>
       </div>
 
-      <StoriesList stories={prd.stories} currentStoryId={currentStoryId} versions={versions} currentVersion={currentVersion} />
+      <StoriesList prd={prd} currentStoryId={currentStoryId} versions={versions} currentVersion={currentVersion} />
     </div>
   )
 }

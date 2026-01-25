@@ -11,10 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { Story, StoryStatus } from '@/lib/types'
+import type { PRD, Story, StoryStatus } from '@/lib/types'
 
 type StoriesListProps = {
-  stories: Story[]
+  prd: PRD
   currentStoryId: string | null
   versions: string[]
   currentVersion: string
@@ -28,11 +28,34 @@ function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatu
   return 'pending'
 }
 
-export function StoriesList({ stories, currentStoryId, versions, currentVersion }: StoriesListProps) {
+export function StoriesList({ prd, currentStoryId, versions, currentVersion }: StoriesListProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [selectedPhase, setSelectedPhase] = useState<string>('all')
   const [selectedEpics, setSelectedEpics] = useState<Record<number, string>>({})
+
+  const stories = prd.stories
+
+  // Build name lookups
+  const phaseNames = useMemo(() => {
+    const map = new Map<number, string>()
+    if (prd.phases) {
+      for (const p of prd.phases) {
+        map.set(p.id, p.name)
+      }
+    }
+    return map
+  }, [prd.phases])
+
+  const epicNames = useMemo(() => {
+    const map = new Map<string, string>()
+    if (prd.epics) {
+      for (const e of prd.epics) {
+        map.set(`${e.phase}-${e.id}`, e.name)
+      }
+    }
+    return map
+  }, [prd.epics])
 
   // Get unique phases and epics
   const phases = useMemo(() =>
@@ -123,14 +146,14 @@ export function StoriesList({ stories, currentStoryId, versions, currentVersion 
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium">Phase:</label>
           <Select value={selectedPhase} onValueChange={setSelectedPhase}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="All phases" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All phases</SelectItem>
               {phases.map(phase => (
                 <SelectItem key={phase} value={phase.toString()}>
-                  Phase {phase}
+                  {phaseNames.get(phase) ? `${phase}. ${phaseNames.get(phase)}` : `Phase ${phase}`}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -164,7 +187,9 @@ export function StoriesList({ stories, currentStoryId, versions, currentVersion 
                   return (
                     <div key={phase}>
                       <div className="flex items-center gap-4 mb-4">
-                        <h2 className="text-lg font-semibold">Phase {phase}</h2>
+                        <h2 className="text-lg font-semibold">
+                          {phaseNames.get(phase) ? `Phase ${phase}: ${phaseNames.get(phase)}` : `Phase ${phase}`}
+                        </h2>
                         {epics.length > 1 && (
                           <Select
                             value={currentEpicFilter}
@@ -172,16 +197,19 @@ export function StoriesList({ stories, currentStoryId, versions, currentVersion 
                               setSelectedEpics(prev => ({ ...prev, [phase]: value }))
                             }
                           >
-                            <SelectTrigger className="w-[150px] h-8 text-sm">
+                            <SelectTrigger className="w-[200px] h-8 text-sm">
                               <SelectValue placeholder="All epics" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="all">All epics</SelectItem>
-                              {epics.map(epic => (
-                                <SelectItem key={epic} value={epic.toString()}>
-                                  Epic {epic}
-                                </SelectItem>
-                              ))}
+                              {epics.map(epic => {
+                                const name = epicNames.get(`${phase}-${epic}`)
+                                return (
+                                  <SelectItem key={epic} value={epic.toString()}>
+                                    {name ? `${phase}.${epic} ${name}` : `Epic ${phase}.${epic}`}
+                                  </SelectItem>
+                                )
+                              })}
                             </SelectContent>
                           </Select>
                         )}

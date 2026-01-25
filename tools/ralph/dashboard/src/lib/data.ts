@@ -215,10 +215,19 @@ export async function getLearnings(): Promise<{ category: string; content: strin
 export function getPhaseProgress(prd: PRD): PhaseProgress[] {
   const phases = new Map<number, PhaseProgress>()
 
+  // Build phase name lookup
+  const phaseNames = new Map<number, string>()
+  if (prd.phases) {
+    for (const p of prd.phases) {
+      phaseNames.set(p.id, p.name)
+    }
+  }
+
   for (const story of prd.stories) {
     if (!phases.has(story.phase)) {
       phases.set(story.phase, {
         phase: story.phase,
+        name: phaseNames.get(story.phase),
         total: 0,
         merged: 0,
         passed: 0,
@@ -244,12 +253,28 @@ export function getPhaseProgress(prd: PRD): PhaseProgress[] {
 export function getEpicProgress(prd: PRD): EpicProgress[] {
   const epics = new Map<string, EpicProgress>()
 
+  // Build name lookups
+  const phaseNames = new Map<number, string>()
+  const epicNames = new Map<string, string>()
+  if (prd.phases) {
+    for (const p of prd.phases) {
+      phaseNames.set(p.id, p.name)
+    }
+  }
+  if (prd.epics) {
+    for (const e of prd.epics) {
+      epicNames.set(`${e.phase}-${e.id}`, e.name)
+    }
+  }
+
   for (const story of prd.stories) {
     const key = `${story.phase}-${story.epic}`
     if (!epics.has(key)) {
       epics.set(key, {
         phase: story.phase,
         epic: story.epic,
+        phaseName: phaseNames.get(story.phase),
+        epicName: epicNames.get(key),
         total: 0,
         merged: 0,
         stories: []

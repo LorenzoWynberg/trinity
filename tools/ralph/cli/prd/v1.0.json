@@ -1,4 +1,170 @@
 {
+  "phases": [
+    {
+      "id": 1,
+      "name": "Foundation"
+    },
+    {
+      "id": 2,
+      "name": "Database Layer"
+    },
+    {
+      "id": 3,
+      "name": "Integrations"
+    },
+    {
+      "id": 4,
+      "name": "Prompts & Schemas"
+    },
+    {
+      "id": 5,
+      "name": "Core Loop"
+    },
+    {
+      "id": 6,
+      "name": "CLI Commands"
+    },
+    {
+      "id": 7,
+      "name": "Polish"
+    },
+    {
+      "id": 8,
+      "name": "Release"
+    }
+  ],
+  "epics": [
+    {
+      "phase": 1,
+      "id": 1,
+      "name": "Project Setup"
+    },
+    {
+      "phase": 1,
+      "id": 2,
+      "name": "Configuration"
+    },
+    {
+      "phase": 2,
+      "id": 1,
+      "name": "PRD Tables"
+    },
+    {
+      "phase": 2,
+      "id": 2,
+      "name": "Tags"
+    },
+    {
+      "phase": 2,
+      "id": 3,
+      "name": "Activity & Learnings"
+    },
+    {
+      "phase": 2,
+      "id": 4,
+      "name": "Runtime State"
+    },
+    {
+      "phase": 3,
+      "id": 1,
+      "name": "Claude Integration"
+    },
+    {
+      "phase": 3,
+      "id": 2,
+      "name": "Git Integration"
+    },
+    {
+      "phase": 4,
+      "id": 0,
+      "name": "Prompts Structure"
+    },
+    {
+      "phase": 4,
+      "id": 1,
+      "name": "Response Schemas"
+    },
+    {
+      "phase": 4,
+      "id": 2,
+      "name": "Prompt Templates"
+    },
+    {
+      "phase": 4,
+      "id": 3,
+      "name": "Internal Command Prompts"
+    },
+    {
+      "phase": 5,
+      "id": 1,
+      "name": "Dev Loop"
+    },
+    {
+      "phase": 5,
+      "id": 2,
+      "name": "State & Recovery"
+    },
+    {
+      "phase": 6,
+      "id": 1,
+      "name": "Init & Analyze"
+    },
+    {
+      "phase": 6,
+      "id": 2,
+      "name": "Plan Commands"
+    },
+    {
+      "phase": 6,
+      "id": 3,
+      "name": "Run Command"
+    },
+    {
+      "phase": 6,
+      "id": 4,
+      "name": "Status & Version"
+    },
+    {
+      "phase": 6,
+      "id": 5,
+      "name": "Internal Commands"
+    },
+    {
+      "phase": 6,
+      "id": 6,
+      "name": "Human Testing"
+    },
+    {
+      "phase": 6,
+      "id": 7,
+      "name": "Release Commands"
+    },
+    {
+      "phase": 6,
+      "id": 8,
+      "name": "Skills Commands"
+    },
+    {
+      "phase": 7,
+      "id": 1,
+      "name": "UX Polish"
+    },
+    {
+      "phase": 7,
+      "id": 2,
+      "name": "Documentation"
+    },
+    {
+      "phase": 7,
+      "id": 3,
+      "name": "Testing"
+    },
+    {
+      "phase": 8,
+      "id": 1,
+      "name": "Release"
+    }
+  ],
   "stories": [
     {
       "id": "1.1.1",

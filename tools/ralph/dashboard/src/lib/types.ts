@@ -15,11 +15,25 @@ export interface Story {
   merge_commit?: string
   pr_url?: string
   target_version?: string
+  external_deps?: { name: string; description: string }[]
+}
+
+export interface Phase {
+  id: number
+  name: string
+}
+
+export interface Epic {
+  phase: number
+  id: number
+  name: string
 }
 
 export interface PRD {
   project: string
   version: string
+  phases?: Phase[]
+  epics?: Epic[]
   stories: Story[]
 }
 
@@ -71,6 +85,7 @@ export interface Metrics {
 // Computed Types
 export interface PhaseProgress {
   phase: number
+  name?: string
   total: number
   merged: number
   passed: number
@@ -81,6 +96,8 @@ export interface PhaseProgress {
 export interface EpicProgress {
   phase: number
   epic: number
+  phaseName?: string
+  epicName?: string
   total: number
   merged: number
   stories: Story[]

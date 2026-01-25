@@ -108,7 +108,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             {phases.map((phase) => (
               <ProgressBar
                 key={phase.phase}
-                label={`Phase ${phase.phase}`}
+                label={phase.name ? `${phase.phase}. ${phase.name}` : `Phase ${phase.phase}`}
                 value={phase.merged}
                 max={phase.total}
               />
