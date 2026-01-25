@@ -16,7 +16,8 @@
       "phase": 1,
       "epic": 1,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "complexity": "instant"
     },
     {
       "id": "1.1.2",
@@ -36,7 +37,8 @@
       "phase": 1,
       "epic": 1,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "complexity": "instant"
     },
     {
       "id": "1.1.3",
@@ -55,7 +57,8 @@
       "phase": 1,
       "epic": 1,
       "story_number": 3,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "complexity": "instant"
     },
     {
       "id": "1.2.1",
@@ -76,7 +79,8 @@
       "phase": 1,
       "epic": 2,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "complexity": "config"
     },
     {
       "id": "1.2.2",
@@ -98,7 +102,8 @@
       "phase": 1,
       "epic": 2,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "complexity": "config"
     },
     {
       "id": "1.2.3",
@@ -143,7 +148,8 @@
       "phase": 2,
       "epic": 1,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "complexity": "config"
     },
     {
       "id": "2.1.2",
@@ -164,7 +170,8 @@
       "phase": 2,
       "epic": 1,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "complexity": "config"
     },
     {
       "id": "2.1.3",
@@ -219,7 +226,10 @@
         "Human testing fields (required, instructions, url, status) stored",
         "Completion tracking fields: passes, merged, merge_commit, pr_url, branch",
         "passes = Claude completed work and pushed",
-        "merged = PR merged to integration branch"
+        "merged = PR merged to integration branch",
+        "complexity field: 'instant' | 'config' | 'build' (effort indicator for users)",
+        "external_deps field: JSON array of external dependencies [{name, description}]",
+        "external_deps_report field: user-provided report of external setup (endpoints, schemas, etc.)"
       ],
       "passes": false,
       "depends_on": [
@@ -429,7 +439,8 @@
       "phase": 3,
       "epic": 1,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "complexity": "config"
     },
     {
       "id": "3.1.2",
@@ -633,7 +644,8 @@
       "phase": 4,
       "epic": 0,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "complexity": "instant"
     },
     {
       "id": "4.1.1",
@@ -653,7 +665,8 @@
       "phase": 4,
       "epic": 1,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "complexity": "instant"
     },
     {
       "id": "4.1.2",
@@ -921,6 +934,27 @@
       "target_version": "v1.0"
     },
     {
+      "id": "4.2.12",
+      "title": "Create external-deps-report.md prompt template",
+      "intent": "Define prompt template for injecting external dependency context into story execution",
+      "acceptance": [
+        "prompts/templates/external-deps-report.md exists",
+        "Placeholder for external dependency list (name + description)",
+        "Placeholder for user's implementation report (endpoints, schemas, keys location)",
+        "Instructions for Claude to use this context when implementing integrations",
+        "Example format: 'Auth API is at POST /api/auth/login, returns JWT in response.token'",
+        "Warns Claude not to hardcode secrets, use environment variables"
+      ],
+      "passes": false,
+      "depends_on": [
+        "4.0.1"
+      ],
+      "phase": 4,
+      "epic": 2,
+      "story_number": 12,
+      "target_version": "v1.0"
+    },
+    {
       "id": "4.3.1",
       "title": "Create internal complete prompt",
       "intent": "Define prompt for validating story completion",
@@ -1076,7 +1110,8 @@
       "phase": 5,
       "epic": 1,
       "story_number": 4,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "complexity": "build"
     },
     {
       "id": "5.1.5",
@@ -1143,7 +1178,34 @@
       "phase": 5,
       "epic": 1,
       "story_number": 7,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "complexity": "build"
+    },
+    {
+      "id": "5.1.8",
+      "title": "Implement external dependency validation before execution",
+      "intent": "Ensure external dependencies (auth APIs, third-party services) are set up before Claude implements",
+      "acceptance": [
+        "Before executing story with external_deps field, check if user has confirmed setup",
+        "Show external deps list and prompt: [Y]es ready / [n]o stop / [r]eport",
+        "[r]eport opens $EDITOR for user to document what they built (endpoints, schemas, API keys location)",
+        "Report is stored in story.external_deps_report field",
+        "Report is injected into Claude's prompt as '## External Dependencies Context' section",
+        "If already has report from previous attempt, show it and ask: [u]se existing / [r]evise / [s]kip",
+        "--skip-external-deps flag bypasses this check (for re-runs where deps unchanged)",
+        "Stories without external_deps field skip this check entirely"
+      ],
+      "passes": false,
+      "depends_on": [
+        "5.1.7",
+        "2.1.5",
+        "4.2.12"
+      ],
+      "phase": 5,
+      "epic": 1,
+      "story_number": 8,
+      "target_version": "v1.0",
+      "complexity": "build"
     },
     {
       "id": "5.2.1",
@@ -1370,7 +1432,8 @@
         "instructions": "Run trinity run on a simple 2-3 story PRD. Verify: stories execute in correct order, output streams properly, story completion/blocking handled correctly, can interrupt with Ctrl+C",
         "url": null
       },
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "complexity": "build"
     },
     {
       "id": "6.3.2",
@@ -1425,7 +1488,8 @@
         "instructions": "Run trinity run, at PR prompt choose [f]eedback, verify: editor opens, feedback is used by Claude, returns to prompt. Test at both PR creation and merge checkpoints.",
         "url": null
       },
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "complexity": "build"
     },
     {
       "id": "6.4.1",
@@ -1687,7 +1751,8 @@
       "phase": 6,
       "epic": 7,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "complexity": "build"
     },
     {
       "id": "6.7.2",
@@ -1988,6 +2053,7 @@
         "Story validation with [c]larify and [a]uto-proceed options works",
         "Feedback at run checkpoints (PR create, update, merge) allows iteration",
         "Blocked state display shows unmerged PRs and blocked stories",
+        "External dependency validation prompts for report before stories with external_deps",
         "Release workflow with human gate completes successfully",
         "Hotfix flow works for quick fixes",
         "Error handling shows helpful messages",
@@ -2015,6 +2081,7 @@
         "4.3.4",
         "5.1.2",
         "5.1.7",
+        "5.1.8",
         "5.2.3",
         "6.2.3",
         "6.2.4",

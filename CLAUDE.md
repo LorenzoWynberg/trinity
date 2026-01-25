@@ -72,12 +72,24 @@ epics (id, phase_id, name, path, status, depends_on, priority)
 stories (id, epic_id, title, intent, acceptance, status, depends_on, priority,
          human_testing_required, human_testing_instructions, human_testing_url,
          target_version,       -- e.g., "v1.0", "v2.0"
+         complexity,           -- "instant" | "config" | "build" (effort indicator)
+         external_deps,        -- JSON array of external dependencies (see below)
+         external_deps_report, -- User-provided report of external dep implementation
          -- Completion tracking (two-stage: passes then merged)
          passes,               -- Claude completed work and pushed
          merged,               -- PR merged to integration branch
          merge_commit,         -- Git SHA of merge commit
          pr_url,               -- Link to PR
          branch)               -- Feature branch name
+
+-- External Dependencies Example:
+-- external_deps: [
+--   {"name": "Auth API", "description": "OAuth endpoints on main website"},
+--   {"name": "Stripe Setup", "description": "Payment provider account and API keys"}
+-- ]
+-- Before execution, user is prompted to confirm external deps are ready
+-- and provide a report (endpoints, schemas, keys location, etc.)
+-- This report is injected into Claude's prompt for implementation context
 
 -- Versions/Releases
 versions (id, name, status, released_at, git_tag, release_notes)
