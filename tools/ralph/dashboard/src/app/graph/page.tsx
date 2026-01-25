@@ -395,20 +395,12 @@ function GraphContent() {
     ? Math.max(...Array.from(highlightedEdges.values()))
     : 0
 
-  // Adaptive color spacing based on max depth
-  // depth <= 6: use every 4th color (spread across full spectrum)
-  // depth 7-12: use every 2nd color
-  // depth > 12: use all 25 colors
+  // Linear interpolation to spread colors evenly across full spectrum
   // Colors go from cyan (selected) -> yellow (roots/version)
   const getDepthColor = (depth: number) => {
-    let index: number
-    if (maxHighlightDepth <= 6) {
-      index = Math.min(depth * 4, depthColors.length - 1)
-    } else if (maxHighlightDepth <= 12) {
-      index = Math.min(depth * 2, depthColors.length - 1)
-    } else {
-      index = Math.min(depth, depthColors.length - 1)
-    }
+    if (maxHighlightDepth === 0) return depthColors[depthColors.length - 1]
+    // Map depth to index: 0 -> 0, maxDepth -> 24
+    const index = Math.round(depth * 24 / maxHighlightDepth)
     // Reverse: selected=cyan (end), roots=yellow (start)
     return depthColors[depthColors.length - 1 - index]
   }
