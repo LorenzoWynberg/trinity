@@ -22,20 +22,22 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setMounted(true)
-    // Fetch available versions
-    fetch('/api/versions')
-      .then(res => res.json())
-      .then(data => setVersions(data.versions || []))
-      .catch(() => {})
-    // Fetch current settings
-    fetch('/api/settings')
-      .then(res => res.json())
-      .then(data => {
-        if (data.defaultVersion) {
-          setDefaultVersion(data.defaultVersion)
-        }
-      })
-      .catch(() => {})
+    // Fetch available versions and settings together
+    Promise.all([
+      fetch('/api/versions').then(res => res.json()),
+      fetch('/api/settings').then(res => res.json())
+    ]).then(([versionData, settingsData]) => {
+      const availableVersions = versionData.versions || []
+      setVersions(availableVersions)
+
+      // Resolve 'first' or invalid version to actual first version
+      const savedVersion = settingsData.defaultVersion
+      if (savedVersion && savedVersion !== 'first' && availableVersions.includes(savedVersion)) {
+        setDefaultVersion(savedVersion)
+      } else if (availableVersions.length > 0) {
+        setDefaultVersion(availableVersions[0])
+      }
+    }).catch(() => {})
   }, [])
 
   const saveTheme = async (newTheme: string) => {
@@ -126,7 +128,6 @@ export default function SettingsPage() {
                   <SelectValue placeholder="Select version" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="first">First available</SelectItem>
                   {versions.map(version => (
                     <SelectItem key={version} value={version}>
                       {version}
