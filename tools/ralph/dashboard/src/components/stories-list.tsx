@@ -177,7 +177,7 @@ export function StoriesList({ stories, currentStoryId, versions }: StoriesListPr
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {phaseStories.map(story => (
                           <StoryCard
-                            key={story.id}
+                            key={`${story.target_version}-${story.id}`}
                             story={story}
                             status={getStoryStatus(story, currentStoryId)}
                           />
