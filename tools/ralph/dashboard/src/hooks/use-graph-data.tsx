@@ -330,38 +330,41 @@ export function calculateAutoPositions(
       const verStories = byVersion.get(ver) || []
       if (verStories.length === 0) continue
 
-      // Start position for stories (leave room for version header on left)
-      const storiesStartX = includeVersionHeaders ? currentX + VERSION_HEADER_WIDTH + H_GAP : currentX
-
-      const verPositions = calculateSingleVersionPositions(verStories, direction, storiesStartX, 0)
+      // Stories start at currentX (version node will be at the END)
+      const verPositions = calculateSingleVersionPositions(verStories, direction, currentX, 0)
       Object.assign(positions, verPositions)
-
-      if (includeVersionHeaders) {
-        if (direction === 'horizontal-compact') {
-          // For compact, center version header in max column height
-          const maxColHeight = MAX_PER_COL * NODE_HEIGHT + (MAX_PER_COL - 1) * V_GAP
-          const centerY = (maxColHeight - VERSION_HEADER_HEIGHT) / 2
-          positions[`version:${ver}`] = { x: currentX, y: centerY }
-        } else {
-          // For regular horizontal, find root stories and center with them
-          const depths = calculateDepths(verStories)
-          const rootStories = verStories.filter(s => (depths.get(s.id) || 0) === 0)
-
-          if (rootStories.length > 0) {
-            const rootYs = rootStories.map(s => verPositions[`${ver}:${s.id}`]?.y || 0)
-            const minY = Math.min(...rootYs)
-            const maxY = Math.max(...rootYs)
-            const centerY = (minY + maxY + NODE_HEIGHT - VERSION_HEADER_HEIGHT) / 2
-            positions[`version:${ver}`] = { x: currentX, y: centerY }
-          } else {
-            positions[`version:${ver}`] = { x: currentX, y: 0 }
-          }
-        }
-      }
 
       const posValues = Object.values(verPositions)
       const maxX = posValues.length > 0 ? Math.max(...posValues.map(p => p.x)) : currentX
-      currentX = maxX + NODE_WIDTH + VERSION_GAP
+
+      if (includeVersionHeaders) {
+        // Version node at the END (right side), after all stories
+        const versionX = maxX + NODE_WIDTH + H_GAP
+
+        if (direction === 'horizontal-compact') {
+          const maxColHeight = MAX_PER_COL * NODE_HEIGHT + (MAX_PER_COL - 1) * V_GAP
+          const centerY = (maxColHeight - VERSION_HEADER_HEIGHT) / 2
+          positions[`version:${ver}`] = { x: versionX, y: centerY }
+        } else {
+          // Center with leaf stories (max depth)
+          const depths = calculateDepths(verStories)
+          const maxDepth = Math.max(...Array.from(depths.values()), 0)
+          const leafStories = verStories.filter(s => (depths.get(s.id) || 0) === maxDepth)
+
+          if (leafStories.length > 0) {
+            const leafYs = leafStories.map(s => verPositions[`${ver}:${s.id}`]?.y || 0)
+            const minY = Math.min(...leafYs)
+            const maxY = Math.max(...leafYs)
+            const centerY = (minY + maxY + NODE_HEIGHT - VERSION_HEADER_HEIGHT) / 2
+            positions[`version:${ver}`] = { x: versionX, y: centerY }
+          } else {
+            positions[`version:${ver}`] = { x: versionX, y: 0 }
+          }
+        }
+        currentX = versionX + VERSION_HEADER_WIDTH + VERSION_GAP
+      } else {
+        currentX = maxX + NODE_WIDTH + VERSION_GAP
+      }
     }
   } else {
     let currentY = 0
@@ -370,18 +373,22 @@ export function calculateAutoPositions(
       const verStories = byVersion.get(ver) || []
       if (verStories.length === 0) continue
 
-      if (includeVersionHeaders) {
-        // Left-align version header for vertical layouts
-        positions[`version:${ver}`] = { x: 0, y: currentY }
-        currentY += VERSION_HEADER_HEIGHT + V_GAP
-      }
-
+      // Stories start at currentY (version node will be at the END/bottom)
       const verPositions = calculateSingleVersionPositions(verStories, direction, 0, currentY)
       Object.assign(positions, verPositions)
 
       const posValues = Object.values(verPositions)
       const maxY = posValues.length > 0 ? Math.max(...posValues.map(p => p.y)) : currentY
-      currentY = maxY + NODE_HEIGHT + VERSION_GAP
+
+      if (includeVersionHeaders) {
+        // Version node at the END (bottom), after all stories
+        const versionY = maxY + NODE_HEIGHT + V_GAP
+        // Left-align version header
+        positions[`version:${ver}`] = { x: 0, y: versionY }
+        currentY = versionY + VERSION_HEADER_HEIGHT + VERSION_GAP
+      } else {
+        currentY = maxY + NODE_HEIGHT + VERSION_GAP
+      }
     }
   }
 
@@ -505,7 +512,8 @@ export function useGraphData(version: string = 'all'): GraphData {
         setStories(storiesData)
 
         const isAllVersions = version === 'all'
-        const showVersionHeaders = isAllVersions && (versionsData.versions?.length || 0) >= 1
+        // Always show version headers when there are versions
+        const showVersionHeaders = (versionsData.versions?.length || 0) >= 1
 
         // Determine positions based on active layout
         let positions: Record<string, { x: number; y: number }>
@@ -593,22 +601,19 @@ export function useGraphData(version: string = 'all'): GraphData {
         const nodeIdSet = new Set(storiesData.map(s => getNodeId(s)))
         const edgeIds = new Set<string>() // Track edge IDs to avoid duplicates
 
-        // Add edges from version headers to root stories (no deps within SAME version)
+        // Add edges from leaf stories (dead ends) TO version nodes
+        // Version nodes are now at the END of the dependency chain
         if (showVersionHeaders) {
           for (const story of storiesData) {
             const nodeId = getNodeId(story)
-            // A story is a "root" of its version if it has no same-version deps
-            const hasSameVersionDeps = story.depends_on && story.depends_on.length > 0 &&
-              story.depends_on.some(depRef => {
-                const resolved = resolveDependency(depRef, storiesData, story.target_version)
-                return resolved.some(r => !r.crossVersion)
-              })
+            // A story is a "leaf" if nothing else in the same version depends on it
+            const isLeaf = !dependedOn.has(nodeId)
 
-            if (!hasSameVersionDeps && story.target_version) {
+            if (isLeaf && story.target_version) {
               edgeList.push({
-                id: `version:${story.target_version}->${nodeId}`,
-                source: `version:${story.target_version}`,
-                target: nodeId,
+                id: `${nodeId}->version:${story.target_version}`,
+                source: nodeId,
+                target: `version:${story.target_version}`,
                 type: 'smoothstep',
                 markerEnd: {
                   type: MarkerType.ArrowClosed,
@@ -624,8 +629,8 @@ export function useGraphData(version: string = 'all'): GraphData {
           }
         }
 
-        // Track version-to-version edges we've already created
-        const versionEdgesCreated = new Set<string>()
+        // Track version-to-story edges for cross-version deps
+        const crossVersionEdgesCreated = new Set<string>()
 
         for (const story of storiesData) {
           const storyNodeId = getNodeId(story)
@@ -633,14 +638,15 @@ export function useGraphData(version: string = 'all'): GraphData {
             for (const depRef of story.depends_on) {
               // Check if this is a full version dependency (e.g., "v1.0")
               if (/^v[0-9]+\.[0-9]+$/.test(depRef) && showVersionHeaders && story.target_version) {
-                // Create a single version-to-version edge
-                const versionEdgeId = `version:${depRef}->version:${story.target_version}`
-                if (!versionEdgesCreated.has(versionEdgeId)) {
-                  versionEdgesCreated.add(versionEdgeId)
+                // Create edge from the dep version TO this story
+                // (version:v1.0 is the end of v1.0's chain, connects to v2.0's root stories)
+                const crossEdgeId = `version:${depRef}->${storyNodeId}`
+                if (!crossVersionEdgesCreated.has(crossEdgeId)) {
+                  crossVersionEdgesCreated.add(crossEdgeId)
                   edgeList.push({
-                    id: versionEdgeId,
+                    id: crossEdgeId,
                     source: `version:${depRef}`,
-                    target: `version:${story.target_version}`,
+                    target: storyNodeId,
                     type: 'smoothstep',
                     markerEnd: {
                       type: MarkerType.ArrowClosed,
