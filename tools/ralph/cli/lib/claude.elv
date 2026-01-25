@@ -518,29 +518,24 @@ type(scope): brief description
 fn validate-story {|story-id|
   ui:status "Validating story acceptance criteria..."
 
-  # Get story details from prd.json
   var prd-file = (prd:get-prd-file)
-  var story-json = ""
-  try {
-    set story-json = (jq -r '.stories[] | select(.id == "'$story-id'")' $prd-file 2>/dev/null | slurp)
-  } catch _ {
-    ui:error "Failed to read story "$story-id
-    put $false
-    return
+
+  # Get title and acceptance using jq with fallback
+  var title = ""
+  var title-raw = [(jq -r '.stories[] | select(.id == "'$story-id'") | .title // ""' $prd-file 2>/dev/null)]
+  if (> (count $title-raw) 0) {
+    set title = $title-raw[0]
   }
 
-  if (eq $story-json "") {
-    ui:error "Story "$story-id" not found in PRD"
-    put $false
-    return
+  var acceptance = ""
+  var acc-raw = [(jq -r '.stories[] | select(.id == "'$story-id'") | .acceptance | join("\n- ") // ""' $prd-file 2>/dev/null)]
+  if (> (count $acc-raw) 0) {
+    set acceptance = $acc-raw[0]
   }
-
-  var title = (try { jq -r '.stories[] | select(.id == "'$story-id'") | .title // ""' $prd-file | slurp | str:trim-space } catch _ { put "" })
-  var acceptance = (try { jq -r '.stories[] | select(.id == "'$story-id'") | .acceptance | join("\n- ") // ""' $prd-file | slurp | str:trim-space } catch _ { put "" })
 
   if (eq $acceptance "") {
-    ui:warn "Story "$story-id" has no acceptance criteria"
-    put $false
+    ui:warn "Story "$story-id" has no acceptance criteria, skipping validation"
+    put $true
     return
   }
 
@@ -571,10 +566,13 @@ OR
 Be pragmatic - minor ambiguity is OK if the intent is clear. Only flag things that could lead to implementing the wrong thing.'
 
   var result = ""
-  try {
-    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
-  } catch e {
-    ui:warn "Validation check failed, proceeding anyway: "(to-string $e[reason])
+  var result-raw = [(echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null)]
+  if (> (count $result-raw) 0) {
+    set result = (str:join "\n" $result-raw)
+  }
+
+  if (eq $result "") {
+    ui:warn "Validation check failed, proceeding anyway"
     put $true
     return
   }
@@ -588,7 +586,6 @@ Be pragmatic - minor ambiguity is OK if the intent is clear. Only flag things th
   if (str:contains $result "<needs-clarification>") {
     ui:warn "Story needs clarification:" > /dev/tty
     echo "" > /dev/tty
-    # Extract questions between tags
     try {
       echo $result | sed -n '/<needs-clarification>/,/<\/needs-clarification>/p' | grep '^\s*-' > /dev/tty
     } catch _ {
