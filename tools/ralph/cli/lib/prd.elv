@@ -120,7 +120,7 @@ fn get-story-title {|story-id|
 
 # Build branch name from story ID
 fn get-branch-name {|story-id|
-  var info = (str:trim-space (get-story-info $story-id | slurp))
+  var info = (try { str:trim-space (get-story-info $story-id | slurp) } catch _ { put "" })
   if (eq $info "") {
     fail "Story "$story-id" not found in PRD"
   }
@@ -277,7 +277,7 @@ fn get-unmerged-passed {
 
 # Get branch name for a story (for resuming merge)
 fn get-story-branch {|story-id|
-  var info = (str:trim-space (get-story-info $story-id | slurp))
+  var info = (try { str:trim-space (get-story-info $story-id | slurp) } catch _ { put "" })
   if (eq $info "") {
     put ""
     return

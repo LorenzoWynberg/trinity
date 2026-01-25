@@ -15,7 +15,7 @@ fn init {|root branch|
 
 # Get current branch name
 fn current-branch {
-  str:trim-space (git -C $project-root rev-parse --abbrev-ref HEAD | slurp)
+  try { str:trim-space (git -C $project-root rev-parse --abbrev-ref HEAD | slurp) } catch _ { put "" }
 }
 
 # Check if branch exists (local or remote)
