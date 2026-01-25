@@ -1,6 +1,6 @@
 # Ralph Learnings
 
-> **TL;DR:** Two-stage completion (passes→merged), blocked state detection with dependency info, activity logs split by project (trinity/ for Ralph's work, ralph/ for human docs), release workflow with human gate and hotfix loop, PR defaults (yes create, no merge).
+> **TL;DR:** Two-stage completion (passes→merged), blocked state detection with dependency info, activity logs split by project (trinity/ for Ralph's work, ralph/ for human docs), release workflow with human gate and hotfix loop, PR defaults (yes create, no merge), validation flow with clarify/auto-proceed options.
 
 ## Streaming Claude Output
 
@@ -62,6 +62,37 @@ PRD state tracks two flags per story:
 - Prevents next story from starting before code is in dev
 - Allows identifying "passed but no PR" vs "PR open but not merged" scenarios
 - Metrics give visibility into the full pipeline
+
+## Story Validation
+
+### Validation prompt
+Before executing a story, Claude validates the acceptance criteria for ambiguity:
+```
+Story needs clarification:
+- What Go version should be used?
+- What module path format?
+
+[Y]es skip / [n]o stop / [c]larify / [a]uto-proceed
+```
+
+Options:
+- `[Y]` - Skip this story, try the next one (default)
+- `[n]` - Stop execution entirely
+- `[c]` - Open editor to provide clarification answers
+- `[a]` - Auto-proceed with reasonable assumptions
+
+### Clarification flow
+When user chooses `[c]larify`:
+1. Editor opens with story questions as comments
+2. User types clarification answers below
+3. Answers are injected into Claude's prompt as "## User Clarification" section
+4. Claude uses this context to resolve ambiguities
+
+### Auto-clarify flag
+`--auto-clarify` flag automatically uses auto-proceed mode without prompting. Useful for fully autonomous runs where you trust Claude to make reasonable decisions on ambiguous stories.
+
+### Validation returns
+`claude:validate-story` returns a map `[&valid=$bool &questions=$string]` so questions can be passed to the clarification editor if needed.
 
 ## PR Flow
 
