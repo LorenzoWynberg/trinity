@@ -182,6 +182,7 @@ export async function getActivityProjects(): Promise<ActivityProject[]> {
     const projects = entries
       .filter(e => e.isDirectory() && ['trinity', 'ralph'].includes(e.name))
       .map(e => e.name as ActivityProject)
+      .sort((a, b) => a === 'trinity' ? -1 : 1) // Trinity first
     return projects.length > 0 ? projects : ['trinity']
   } catch {
     return ['trinity']
