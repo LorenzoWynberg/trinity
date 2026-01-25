@@ -295,10 +295,10 @@ function GraphContent() {
       }
     }
 
-    // Find max depth to invert (so roots are yellow, clicked node is blue)
+    // Find max depth (clicked=0, furthest root=max)
     const maxDepth = Math.max(...Array.from(nodeDepths.values()))
 
-    // Now create edges with inverted depth (version=0/yellow, roots=1, clicked=max/blue)
+    // Create edges with depth from clicked node (clicked=yellow, roots=further colors)
     ancestors.forEach(ancestorId => {
       // Skip version nodes when creating story-to-story edges
       if (ancestorId.startsWith('version:')) return
@@ -311,16 +311,16 @@ function GraphContent() {
             if (ancestors.has(depId)) {
               const edgeId = `${depId}->${ancestorId}`
               const nodeDepth = nodeDepths.get(ancestorId) || 0
-              edgeDepths.set(edgeId, maxDepth - nodeDepth + 1) // +1 to leave room for version edge at 0
+              edgeDepths.set(edgeId, nodeDepth) // clicked's incoming edges = 0 (yellow)
             }
           })
         })
       } else if (story?.target_version) {
-        // Root story - add edge from version node (depth 0 = yellow, the very start)
+        // Root story - add edge from version node (furthest from clicked = last color)
         const versionNodeId = `version:${story.target_version}`
         if (ancestors.has(versionNodeId)) {
           const edgeId = `${versionNodeId}->${ancestorId}`
-          edgeDepths.set(edgeId, 0) // version edge is always the start (yellow)
+          edgeDepths.set(edgeId, maxDepth + 1) // version edge is the end (cyan)
         }
       }
     })
