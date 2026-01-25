@@ -215,7 +215,7 @@ function StoriesListInner({ prd, currentStoryId, versions, currentVersion }: Sto
                                 const name = epicNames.get(`${phase}-${epic}`)
                                 return (
                                   <SelectItem key={epic} value={epic.toString()}>
-                                    {name ? `${phase}.${epic} ${name}` : `Epic ${phase}.${epic}`}
+                                    {name ? `${epic}. ${name}` : `Epic ${epic}`}
                                   </SelectItem>
                                 )
                               })}
