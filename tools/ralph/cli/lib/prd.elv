@@ -275,6 +275,44 @@ fn get-unmerged-passed {
   jq -r '.stories[] | select(.passes == true and .merged != true) | .id' $prd-file
 }
 
+# Get stories that are blocked (not passed, deps not met)
+# Returns list of [story-id, blocking-dep, ...]
+fn get-blocked-stories {
+  var blocked = []
+  # Get stories that haven't passed yet
+  var candidates = [(jq -r '.stories[] | select(.passes != true) | "\(.id)|\(.depends_on // [] | join(","))"' $prd-file)]
+
+  for candidate $candidates {
+    var parts = [(str:split "|" $candidate)]
+    var sid = $parts[0]
+    var deps-str = $parts[1]
+
+    if (not (eq $deps-str "")) {
+      var deps = [(str:split "," $deps-str)]
+      # Check each dep - find first unmet one
+      for dep $deps {
+        if (not (check-dep-met $dep)) {
+          set blocked = [$@blocked [&story=$sid &blocked_by=$dep]]
+          break
+        }
+      }
+    }
+  }
+  put $@blocked
+}
+
+# Get PR URL for a story (if exists)
+fn get-pr-url {|story-id|
+  var url = (jq -r '.stories[] | select(.id == "'$story-id'") | .pr_url // ""' $prd-file)
+  put $url
+}
+
+# Check if there are pending stories (not passed, not skipped)
+fn has-pending-stories {
+  var pending = (jq '[.stories[] | select(.passes != true and .skipped != true)] | length' $prd-file)
+  not (eq $pending "0")
+}
+
 # Get branch name for a story (for resuming merge)
 fn get-story-branch {|story-id|
   var info = (try { str:trim-space (get-story-info $story-id | slurp) } catch _ { put "" })

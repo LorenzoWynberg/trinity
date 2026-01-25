@@ -425,8 +425,48 @@ while (< $current-iteration $config[max-iterations]) {
         set story-id = (prd:get-next-story)
       }
       if (eq $story-id "") {
-        ui:warn "No stories available (all complete or blocked)"
-        break
+        # Distinguish between "all complete" and "blocked"
+        if (prd:all-stories-complete) {
+          # All stories merged - will be handled by all_complete signal check
+          ui:success "All stories merged!"
+          break
+        } else {
+          # Stories exist but are blocked
+          echo ""
+          ui:box "BLOCKED - WAITING ON DEPENDENCIES" "warn"
+          echo ""
+
+          # Show unmerged PRs
+          var unmerged = [(prd:get-unmerged-passed)]
+          if (> (count $unmerged) 0) {
+            echo "Unmerged PRs:"
+            for sid $unmerged {
+              var pr-url = (prd:get-pr-url $sid)
+              var title = (prd:get-story-title $sid)
+              if (not (eq $pr-url "")) {
+                ui:dim "  • "$sid" ("$title"): "$pr-url
+              } else {
+                var branch = (prd:get-story-branch $sid)
+                ui:dim "  • "$sid" ("$title") - no PR yet (branch: "$branch")"
+              }
+            }
+            echo ""
+          }
+
+          # Show blocked stories
+          var blocked = [(prd:get-blocked-stories)]
+          if (> (count $blocked) 0) {
+            echo "Pending stories blocked by unmerged work:"
+            for info $blocked {
+              var title = (prd:get-story-title $info[story])
+              ui:dim "  • "$info[story]" ("$title") → waiting on "$info[blocked_by]
+            }
+            echo ""
+          }
+
+          ui:dim "Run ralph to pick up where you left off."
+          break
+        }
       }
       ui:success "Selected: "$story-id
 

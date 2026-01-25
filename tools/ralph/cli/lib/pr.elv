@@ -400,7 +400,10 @@ fn run-flow {|story-id branch-name story-title current-iteration &state-pr-url="
 
     var answer = (prompt-user 0)
     if (re:match '^[nN]$' $answer) {
-      ui:dim "Skipping PR (branch pushed: "$branch-name")" > /dev/tty
+      echo "" > /dev/tty
+      ui:warn "No PR created. Story "$story-id" is passed but unmerged." > /dev/tty
+      ui:dim "Dependent stories will remain blocked until PR is created and merged." > /dev/tty
+      ui:dim "Branch: "$branch-name > /dev/tty
       put [&result="skipped" &pr_url="" &stage="create"]
       return
     } elif (re:match '^[fF]$' $answer) {
