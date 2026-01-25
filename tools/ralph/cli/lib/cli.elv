@@ -28,6 +28,7 @@ var target-version = ""
 var skip-release = $false
 var auto-release = $false
 var release-tag = ""
+var auto-duplicate = $false
 
 # Parse command line arguments
 fn parse-args {|arguments|
@@ -77,10 +78,15 @@ fn parse-args {|arguments|
       set auto-clarify = $true
       set i = (+ $i 1)
     } elif (eq $arg "--yolo") {
-      # YOLO mode: no validation, auto PR, auto merge
+      # YOLO mode: no validation, auto PR, auto merge, auto duplicate
       set no-validate = $true
       set auto-pr = $true
       set auto-merge = $true
+      set auto-clarify = $true
+      set auto-duplicate = $true
+      set i = (+ $i 1)
+    } elif (eq $arg "--auto-duplicate") {
+      set auto-duplicate = $true
       set i = (+ $i 1)
     } elif (eq $arg "--notify") {
       set notify-enabled = $true
@@ -205,5 +211,6 @@ fn get-config {
     &skip-release=$skip-release
     &auto-release=$auto-release
     &release-tag=$release-tag
+    &auto-duplicate=$auto-duplicate
   ]
 }

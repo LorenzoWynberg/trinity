@@ -17,7 +17,7 @@ All three features apply primarily to `propagate-external-deps` but will also be
 
 **Priority:** High
 **Risk:** Low
-**Status:** Not started
+**Status:** Implemented
 
 ### Problem
 

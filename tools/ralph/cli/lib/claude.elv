@@ -16,15 +16,17 @@ var workflow-partial = ""
 var claude-timeout = 1800
 var quiet-mode = $false
 var max-iterations = 100
+var auto-duplicate = $false
 
 # Initialize with configuration
-fn init {|root sdir template timeout quiet max-iter|
+fn init {|root sdir template timeout quiet max-iter &auto-dup=$false|
   set project-root = $root
   set script-dir = $sdir
   set prompt-template = $template
   set claude-timeout = $timeout
   set quiet-mode = $quiet
   set max-iterations = $max-iter
+  set auto-duplicate = $auto-dup
 
   # Load feedback template and workflow partial (relative to script directory)
   var prompts-dir = (path:join $sdir "prompts")
@@ -594,6 +596,108 @@ fn run-plan-mode {|story-id target-version|
   ui:dim "Plan mode complete. No files were modified."
 }
 
+# Check if a proposed story is a duplicate of an existing story
+# Returns: [&duplicate=$id-or-nil &similarity=$high-med-low &reason=$string]
+fn check-for-duplicate {|title intent tags-json similar-ids|
+  if (eq (count $similar-ids) 0) {
+    put [&duplicate=$nil &similarity="" &reason=""]
+    return
+  }
+
+  # Build context about similar stories
+  var stories-context = ""
+  for sid $similar-ids {
+    var s-title = (prd:get-story-title $sid)
+    var s-info = (jq -r '.stories[] | select(.id == "'$sid'") | "\(.acceptance | join("; "))\t\(.tags | join(", "))"' (prd:get-prd-file))
+    var parts = [(str:split "\t" $s-info)]
+    var s-acceptance = $parts[0]
+    var s-tags = $parts[1]
+    set stories-context = $stories-context"- "$sid": \""$s-title"\" ["$s-tags"]\n  Acceptance: "$s-acceptance"\n\n"
+  }
+
+  var prompt = 'Check if this proposed new story duplicates an existing one.
+
+## Proposed Story
+Title: "'$title'"
+Intent: "'$intent'"
+Tags: '$tags-json'
+
+## Existing Stories (share ≥1 tag)
+'$stories-context'
+
+## Task
+Determine if the proposed story is a duplicate (covers same functionality) of any existing story.
+Use 60% semantic similarity as threshold.
+
+Output JSON only:
+- If duplicate: {"duplicate": "X.Y.Z", "similarity": "high", "reason": "Both handle token expiry..."}
+- If no duplicate: {"duplicate": null, "similarity": "none", "reason": "Proposed story covers different functionality"}
+'
+
+  var result = ""
+  try {
+    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
+  } catch e {
+    # On error, assume no duplicate
+    put [&duplicate=$nil &similarity="" &reason="Error checking"]
+    return
+  }
+
+  # Extract JSON from response
+  var json-result = ""
+  try {
+    # Try to find JSON in response
+    set json-result = (echo $result | grep -o '{[^}]*}' | head -1)
+  } catch _ {
+    put [&duplicate=$nil &similarity="" &reason="Could not parse response"]
+    return
+  }
+
+  var dup-id = ""
+  var dup-sim = ""
+  var dup-reason = ""
+  try {
+    set dup-id = (echo $json-result | jq -r '.duplicate // ""')
+    set dup-sim = (echo $json-result | jq -r '.similarity // ""')
+    set dup-reason = (echo $json-result | jq -r '.reason // ""')
+  } catch _ { }
+
+  if (or (eq $dup-id "") (eq $dup-id "null")) {
+    put [&duplicate=$nil &similarity=$dup-sim &reason=$dup-reason]
+  } else {
+    put [&duplicate=$dup-id &similarity=$dup-sim &reason=$dup-reason]
+  }
+}
+
+# Prompt user for duplicate resolution
+# Returns: "update", "create", or "skip"
+fn prompt-duplicate-choice {|proposed-title dup-id dup-reason|
+  var dup-title = (prd:get-story-title $dup-id)
+  var dup-tags = (jq -r '.stories[] | select(.id == "'$dup-id'") | .tags | join(", ")' (prd:get-prd-file))
+
+  echo "" > /dev/tty
+  ui:warn "Potential duplicate found:" > /dev/tty
+  echo "  Existing: "$dup-id": "$dup-title" ["$dup-tags"]" > /dev/tty
+  echo "  Proposed: "$proposed-title > /dev/tty
+  echo "  Reason:   "$dup-reason > /dev/tty
+  echo "" > /dev/tty
+  echo "\e[33m[u]pdate existing / [c]reate new anyway / [s]kip\e[0m" > /dev/tty
+
+  var answer = ""
+  try {
+    set answer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
+  } catch _ { }
+  echo "" > /dev/tty
+
+  if (re:match '^[uU]' $answer) {
+    put "update"
+  } elif (re:match '^[cC]' $answer) {
+    put "create"
+  } else {
+    put "skip"
+  }
+}
+
 # Propagate external deps report to descendant stories
 # Analyzes descendants, identifies gaps, creates new stories, with user confirmation
 fn propagate-external-deps {|story-id report|
@@ -843,9 +947,43 @@ Rules:
     var create-items = [(echo $json-block | jq -c '.create[]?')]
     for item $create-items {
       var title = (echo $item | jq -r '.title')
+      var intent = (echo $item | jq -r '.intent // ""')
       var cr-phase = (echo $item | jq -r '.phase')
       var cr-epic = (echo $item | jq -r '.epic')
       var cr-depends = (echo $item | jq -c '.depends_on // []')
+      var cr-tags = (echo $item | jq -c '.tags // []')
+
+      # Check for duplicates before creating
+      var similar-ids = [(prd:find-similar-by-tags $cr-tags &min-overlap=(num 1))]
+      if (> (count $similar-ids) 0) {
+        var dup-check = (check-for-duplicate $title $intent $cr-tags $similar-ids)
+
+        if (not (eq $dup-check[duplicate] $nil)) {
+          var action = ""
+          if $auto-duplicate {
+            # Auto mode: update existing
+            set action = "update"
+            ui:dim "  Auto-updating existing "$dup-check[duplicate]" instead of creating new" > /dev/tty
+          } else {
+            # Prompt user
+            set action = (prompt-duplicate-choice $title $dup-check[duplicate] $dup-check[reason])
+          }
+
+          if (eq $action "update") {
+            # Update existing story instead of creating
+            var existing-acceptance = (echo $item | jq -c '.acceptance // []')
+            var existing-tags = $cr-tags
+            var fields-json = (put [&acceptance=$existing-acceptance &tags=$existing-tags] | to-json)
+            prd:update-story $dup-check[duplicate] $fields-json
+            ui:success "  ✓ Updated existing "$dup-check[duplicate] > /dev/tty
+            continue
+          } elif (eq $action "skip") {
+            ui:dim "  ○ Skipped: "$title > /dev/tty
+            continue
+          }
+          # action == "create" falls through to create below
+        }
+      }
 
       # Get next story number
       var story-num = (prd:get-next-story-number $cr-phase $cr-epic)
