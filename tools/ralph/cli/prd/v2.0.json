@@ -1,7 +1,7 @@
 {
   "stories": [
     {
-      "id": "STORY-1.1.1",
+      "id": "v2:STORY-1.1.1",
       "title": "Create API package structure",
       "intent": "Establish the API layer foundation with router, middleware, and handler patterns",
       "acceptance": [
@@ -18,7 +18,7 @@
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-1.1.2",
+      "id": "v2:STORY-1.1.2",
       "title": "Implement phases API",
       "intent": "Expose phase data with progress statistics for dashboard",
       "acceptance": [
@@ -28,14 +28,14 @@
         "Returns 404 if version not found"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.1"],
+      "depends_on": ["v2:STORY-1.1.1"],
       "phase": 1,
       "epic": 1,
       "story_number": 2,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-1.1.3",
+      "id": "v2:STORY-1.1.3",
       "title": "Implement epics API",
       "intent": "Expose epic data with filtering and progress stats",
       "acceptance": [
@@ -45,14 +45,14 @@
         "Supports ?version=v1.0 query parameter"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.2"],
+      "depends_on": ["v2:STORY-1.1.2"],
       "phase": 1,
       "epic": 1,
       "story_number": 3,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-1.1.4",
+      "id": "v2:STORY-1.1.4",
       "title": "Implement stories API",
       "intent": "Expose story data with comprehensive filtering",
       "acceptance": [
@@ -62,14 +62,14 @@
         "Supports pagination with ?limit=N&offset=N"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.3"],
+      "depends_on": ["v2:STORY-1.1.3"],
       "phase": 1,
       "epic": 1,
       "story_number": 4,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-1.1.5",
+      "id": "v2:STORY-1.1.5",
       "title": "Implement story detail API",
       "intent": "Expose full story details including dependencies",
       "acceptance": [
@@ -79,14 +79,14 @@
         "Returns 404 if story not found"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.4"],
+      "depends_on": ["v2:STORY-1.1.4"],
       "phase": 1,
       "epic": 1,
       "story_number": 5,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-1.1.6",
+      "id": "v2:STORY-1.1.6",
       "title": "Implement activity API",
       "intent": "Expose activity logs with date range filtering",
       "acceptance": [
@@ -97,14 +97,14 @@
         "Returns most recent first"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.1"],
+      "depends_on": ["v2:STORY-1.1.1"],
       "phase": 1,
       "epic": 1,
       "story_number": 6,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-1.1.7",
+      "id": "v2:STORY-1.1.7",
       "title": "Implement learnings API",
       "intent": "Expose learnings with search and tag filtering",
       "acceptance": [
@@ -114,14 +114,14 @@
         "Each entry includes: id, title, content, tags array, created_at"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.1"],
+      "depends_on": ["v2:STORY-1.1.1"],
       "phase": 1,
       "epic": 1,
       "story_number": 7,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-1.1.8",
+      "id": "v2:STORY-1.1.8",
       "title": "Implement metrics API",
       "intent": "Expose token usage and timing statistics",
       "acceptance": [
@@ -132,14 +132,14 @@
         "Supports ?version=v1.0 filter"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.1"],
+      "depends_on": ["v2:STORY-1.1.1"],
       "phase": 1,
       "epic": 1,
       "story_number": 8,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-1.1.9",
+      "id": "v2:STORY-1.1.9",
       "title": "Implement versions API",
       "intent": "Expose version list with progress information",
       "acceptance": [
@@ -148,14 +148,14 @@
         "Includes: status (planning|in_progress|released), released_at, git_tag"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.1"],
+      "depends_on": ["v2:STORY-1.1.1"],
       "phase": 1,
       "epic": 1,
       "story_number": 9,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-1.1.10",
+      "id": "v2:STORY-1.1.10",
       "title": "Implement state API",
       "intent": "Expose current agent state for dashboard",
       "acceptance": [
@@ -164,14 +164,14 @@
         "Includes: started_at, attempts, error if any"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.1"],
+      "depends_on": ["v2:STORY-1.1.1"],
       "phase": 1,
       "epic": 1,
       "story_number": 10,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-1.1.11",
+      "id": "v2:STORY-1.1.11",
       "title": "Implement settings API",
       "intent": "Store and retrieve dashboard preferences",
       "acceptance": [
@@ -181,14 +181,14 @@
         "Settings persisted to db.Settings table"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.1"],
+      "depends_on": ["v2:STORY-1.1.1"],
       "phase": 1,
       "epic": 1,
       "story_number": 11,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-1.1.12",
+      "id": "v2:STORY-1.1.12",
       "title": "Implement graph-layout API",
       "intent": "Persist custom graph layouts per version",
       "acceptance": [
@@ -198,14 +198,14 @@
         "Layout data includes: active, defaultLayout, customLayouts map"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.11"],
+      "depends_on": ["v2:STORY-1.1.11"],
       "phase": 1,
       "epic": 1,
       "story_number": 12,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-1.2.1",
+      "id": "v2:STORY-1.2.1",
       "title": "Initialize Next.js project",
       "intent": "Set up the dashboard frontend with modern React stack",
       "acceptance": [
@@ -216,14 +216,14 @@
         "npm run build produces production build"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.1.1"],
+      "depends_on": ["v2:STORY-1.1.1"],
       "phase": 1,
       "epic": 2,
       "story_number": 1,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-1.2.2",
+      "id": "v2:STORY-1.2.2",
       "title": "Add shadcn/ui components",
       "intent": "Install reusable UI component library",
       "acceptance": [
@@ -233,14 +233,14 @@
         "lib/utils.ts with cn() helper"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.2.1"],
+      "depends_on": ["v2:STORY-1.2.1"],
       "phase": 1,
       "epic": 2,
       "story_number": 2,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-1.2.3",
+      "id": "v2:STORY-1.2.3",
       "title": "Create layout and navigation",
       "intent": "Build the dashboard shell with sidebar navigation",
       "acceptance": [
@@ -251,14 +251,14 @@
         "Responsive layout (sidebar collapses on mobile)"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.2.2"],
+      "depends_on": ["v2:STORY-1.2.2"],
       "phase": 1,
       "epic": 2,
       "story_number": 3,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-1.2.4",
+      "id": "v2:STORY-1.2.4",
       "title": "Add @xyflow/react",
       "intent": "Install graph visualization library for dependency graph",
       "acceptance": [
@@ -267,14 +267,14 @@
         "Custom node types can be registered"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.2.2"],
+      "depends_on": ["v2:STORY-1.2.2"],
       "phase": 1,
       "epic": 2,
       "story_number": 4,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.1.1",
+      "id": "v2:STORY-2.1.1",
       "title": "Create stats cards component",
       "intent": "Build reusable metric display cards",
       "acceptance": [
@@ -291,7 +291,7 @@
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.1.2",
+      "id": "v2:STORY-2.1.2",
       "title": "Create progress bars component",
       "intent": "Build progress visualization for phases and epics",
       "acceptance": [
@@ -307,7 +307,7 @@
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.1.3",
+      "id": "v2:STORY-2.1.3",
       "title": "Create current work component",
       "intent": "Display active story and agent status",
       "acceptance": [
@@ -325,7 +325,7 @@
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.1.4",
+      "id": "v2:STORY-2.1.4",
       "title": "Build home page",
       "intent": "Create the dashboard home page with overview",
       "acceptance": [
@@ -337,14 +337,14 @@
         "5-second auto-refresh"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.1.1", "STORY-2.1.2", "STORY-2.1.3"],
+      "depends_on": ["v2:STORY-2.1.1", "v2:STORY-2.1.2", "v2:STORY-2.1.3"],
       "phase": 2,
       "epic": 1,
       "story_number": 4,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.2.1",
+      "id": "v2:STORY-2.2.1",
       "title": "Create story card component",
       "intent": "Build compact story display for lists",
       "acceptance": [
@@ -361,7 +361,7 @@
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.2.2",
+      "id": "v2:STORY-2.2.2",
       "title": "Create stories list component",
       "intent": "Build filterable and sortable story list",
       "acceptance": [
@@ -371,14 +371,14 @@
         "Searchable by title or id"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.2.1"],
+      "depends_on": ["v2:STORY-2.2.1"],
       "phase": 2,
       "epic": 2,
       "story_number": 2,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.2.3",
+      "id": "v2:STORY-2.2.3",
       "title": "Create story detail modal",
       "intent": "Show full story info in a modal dialog",
       "acceptance": [
@@ -389,14 +389,14 @@
         "Close button and click-outside-to-close"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.2.1"],
+      "depends_on": ["v2:STORY-2.2.1"],
       "phase": 2,
       "epic": 2,
       "story_number": 3,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.2.4",
+      "id": "v2:STORY-2.2.4",
       "title": "Build stories page",
       "intent": "Create the stories list page with filters",
       "acceptance": [
@@ -408,14 +408,14 @@
         "Stories grouped by phase"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.2.2", "STORY-2.2.3"],
+      "depends_on": ["v2:STORY-2.2.2", "v2:STORY-2.2.3"],
       "phase": 2,
       "epic": 2,
       "story_number": 4,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.2.5",
+      "id": "v2:STORY-2.2.5",
       "title": "Add story detail page",
       "intent": "Create dedicated page for story details",
       "acceptance": [
@@ -426,14 +426,14 @@
         "Edit button (for future inline editing)"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.2.4"],
+      "depends_on": ["v2:STORY-2.2.4"],
       "phase": 2,
       "epic": 2,
       "story_number": 5,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.3.1",
+      "id": "v2:STORY-2.3.1",
       "title": "Create story node component",
       "intent": "Build custom React Flow node for stories",
       "acceptance": [
@@ -445,14 +445,14 @@
         "Handles for edge connections"
       ],
       "passes": false,
-      "depends_on": ["STORY-1.2.4"],
+      "depends_on": ["v2:STORY-1.2.4"],
       "phase": 2,
       "epic": 3,
       "story_number": 1,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.3.2",
+      "id": "v2:STORY-2.3.2",
       "title": "Create version node component",
       "intent": "Build custom node for version headers in graph",
       "acceptance": [
@@ -463,14 +463,14 @@
         "Connects to root stories of that version"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.3.1"],
+      "depends_on": ["v2:STORY-2.3.1"],
       "phase": 2,
       "epic": 3,
       "story_number": 2,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.3.3",
+      "id": "v2:STORY-2.3.3",
       "title": "Implement auto-layout",
       "intent": "Calculate node positions automatically",
       "acceptance": [
@@ -481,14 +481,14 @@
         "Version headers positioned appropriately"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.3.2"],
+      "depends_on": ["v2:STORY-2.3.2"],
       "phase": 2,
       "epic": 3,
       "story_number": 3,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.3.4",
+      "id": "v2:STORY-2.3.4",
       "title": "Implement custom layouts",
       "intent": "Allow users to save custom node arrangements",
       "acceptance": [
@@ -499,14 +499,14 @@
         "Nodes draggable only in custom layout mode"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.3.3"],
+      "depends_on": ["v2:STORY-2.3.3"],
       "phase": 2,
       "epic": 3,
       "story_number": 4,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.3.5",
+      "id": "v2:STORY-2.3.5",
       "title": "Add layout selector",
       "intent": "Dropdown to choose between layouts",
       "acceptance": [
@@ -517,14 +517,14 @@
         "Delete button for custom layouts"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.3.4"],
+      "depends_on": ["v2:STORY-2.3.4"],
       "phase": 2,
       "epic": 3,
       "story_number": 5,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.3.6",
+      "id": "v2:STORY-2.3.6",
       "title": "Add default layout per version",
       "intent": "Set and remember preferred layout per version",
       "acceptance": [
@@ -534,14 +534,14 @@
         "Visual indicator for current default"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.3.5"],
+      "depends_on": ["v2:STORY-2.3.5"],
       "phase": 2,
       "epic": 3,
       "story_number": 6,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.3.7",
+      "id": "v2:STORY-2.3.7",
       "title": "Implement click-to-highlight",
       "intent": "Show dependency path when clicking a node",
       "acceptance": [
@@ -552,14 +552,14 @@
         "Click same node or background to deselect"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.3.3"],
+      "depends_on": ["v2:STORY-2.3.3"],
       "phase": 2,
       "epic": 3,
       "story_number": 7,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.3.8",
+      "id": "v2:STORY-2.3.8",
       "title": "Add depth-based edge colors",
       "intent": "Color edges by distance from selected node",
       "acceptance": [
@@ -570,14 +570,14 @@
         "Shorter visual edges render on top (higher z-index)"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.3.7"],
+      "depends_on": ["v2:STORY-2.3.7"],
       "phase": 2,
       "epic": 3,
       "story_number": 8,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.3.9",
+      "id": "v2:STORY-2.3.9",
       "title": "Add version node connections",
       "intent": "Connect version node to root stories",
       "acceptance": [
@@ -586,14 +586,14 @@
         "Version edge color follows depth gradient"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.3.8"],
+      "depends_on": ["v2:STORY-2.3.8"],
       "phase": 2,
       "epic": 3,
       "story_number": 9,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.3.10",
+      "id": "v2:STORY-2.3.10",
       "title": "Implement double-click modal",
       "intent": "Open story detail modal on double-click",
       "acceptance": [
@@ -603,14 +603,14 @@
         "Close modal returns to graph"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.2.3", "STORY-2.3.1"],
+      "depends_on": ["v2:STORY-2.2.3", "v2:STORY-2.3.1"],
       "phase": 2,
       "epic": 3,
       "story_number": 10,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.3.11",
+      "id": "v2:STORY-2.3.11",
       "title": "Add dead-ends toggle",
       "intent": "Highlight stories that nothing depends on",
       "acceptance": [
@@ -620,14 +620,14 @@
         "Setting persisted via settings API"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.3.3"],
+      "depends_on": ["v2:STORY-2.3.3"],
       "phase": 2,
       "epic": 3,
       "story_number": 11,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.3.12",
+      "id": "v2:STORY-2.3.12",
       "title": "Add fullscreen mode",
       "intent": "Allow graph to fill entire screen",
       "acceptance": [
@@ -637,14 +637,14 @@
         "Button icon changes when in fullscreen"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.3.3"],
+      "depends_on": ["v2:STORY-2.3.3"],
       "phase": 2,
       "epic": 3,
       "story_number": 12,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.3.13",
+      "id": "v2:STORY-2.3.13",
       "title": "Add minimap",
       "intent": "Provide overview navigation for large graphs",
       "acceptance": [
@@ -654,14 +654,14 @@
         "Clickable to navigate"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.3.3"],
+      "depends_on": ["v2:STORY-2.3.3"],
       "phase": 2,
       "epic": 3,
       "story_number": 13,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.3.14",
+      "id": "v2:STORY-2.3.14",
       "title": "Build graph page",
       "intent": "Create the full dependency graph page",
       "acceptance": [
@@ -674,14 +674,14 @@
         "5-second data refresh"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.3.5", "STORY-2.3.6", "STORY-2.3.7", "STORY-2.3.8", "STORY-2.3.9", "STORY-2.3.10", "STORY-2.3.11", "STORY-2.3.12", "STORY-2.3.13"],
+      "depends_on": ["v2:STORY-2.3.5", "v2:STORY-2.3.6", "v2:STORY-2.3.7", "v2:STORY-2.3.8", "v2:STORY-2.3.9", "v2:STORY-2.3.10", "v2:STORY-2.3.11", "v2:STORY-2.3.12", "v2:STORY-2.3.13"],
       "phase": 2,
       "epic": 3,
       "story_number": 14,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.4.1",
+      "id": "v2:STORY-2.4.1",
       "title": "Create activity entry component",
       "intent": "Display individual activity log entry",
       "acceptance": [
@@ -698,7 +698,7 @@
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.4.2",
+      "id": "v2:STORY-2.4.2",
       "title": "Create activity timeline",
       "intent": "Display activity entries grouped by date",
       "acceptance": [
@@ -708,14 +708,14 @@
         "Empty state when no activity"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.4.1"],
+      "depends_on": ["v2:STORY-2.4.1"],
       "phase": 2,
       "epic": 4,
       "story_number": 2,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.4.3",
+      "id": "v2:STORY-2.4.3",
       "title": "Build activity page",
       "intent": "Create the activity log page",
       "acceptance": [
@@ -726,14 +726,14 @@
         "Export button (future)"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.4.2"],
+      "depends_on": ["v2:STORY-2.4.2"],
       "phase": 2,
       "epic": 4,
       "story_number": 3,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.5.1",
+      "id": "v2:STORY-2.5.1",
       "title": "Create learning card component",
       "intent": "Display learning entry preview",
       "acceptance": [
@@ -750,7 +750,7 @@
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.5.2",
+      "id": "v2:STORY-2.5.2",
       "title": "Create markdown viewer",
       "intent": "Render markdown content with syntax highlighting",
       "acceptance": [
@@ -767,7 +767,7 @@
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.5.3",
+      "id": "v2:STORY-2.5.3",
       "title": "Build learnings page",
       "intent": "Create the learnings knowledge base page",
       "acceptance": [
@@ -778,14 +778,14 @@
         "Click card shows full content with MarkdownViewer"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.5.1", "STORY-2.5.2"],
+      "depends_on": ["v2:STORY-2.5.1", "v2:STORY-2.5.2"],
       "phase": 2,
       "epic": 5,
       "story_number": 3,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.6.1",
+      "id": "v2:STORY-2.6.1",
       "title": "Create chart components",
       "intent": "Build reusable chart visualizations",
       "acceptance": [
@@ -803,7 +803,7 @@
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.6.2",
+      "id": "v2:STORY-2.6.2",
       "title": "Build metrics page",
       "intent": "Create the metrics dashboard page",
       "acceptance": [
@@ -814,14 +814,14 @@
         "Summary stats cards at top"
       ],
       "passes": false,
-      "depends_on": ["STORY-2.6.1"],
+      "depends_on": ["v2:STORY-2.6.1"],
       "phase": 2,
       "epic": 6,
       "story_number": 2,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-2.7.1",
+      "id": "v2:STORY-2.7.1",
       "title": "Build settings page",
       "intent": "Create user preferences page",
       "acceptance": [
@@ -839,7 +839,7 @@
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-3.1.1",
+      "id": "v2:STORY-3.1.1",
       "title": "Add WebSocket support",
       "intent": "Enable real-time server-to-client communication",
       "acceptance": [
@@ -856,7 +856,7 @@
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-3.1.2",
+      "id": "v2:STORY-3.1.2",
       "title": "Implement live status updates",
       "intent": "Push story status changes to dashboard",
       "acceptance": [
@@ -866,14 +866,14 @@
         "Home page stats update in real-time"
       ],
       "passes": false,
-      "depends_on": ["STORY-3.1.1"],
+      "depends_on": ["v2:STORY-3.1.1"],
       "phase": 3,
       "epic": 1,
       "story_number": 2,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-3.1.3",
+      "id": "v2:STORY-3.1.3",
       "title": "Add activity stream",
       "intent": "Show real-time activity feed",
       "acceptance": [
@@ -883,14 +883,14 @@
         "Unread indicator when page not visible"
       ],
       "passes": false,
-      "depends_on": ["STORY-3.1.1"],
+      "depends_on": ["v2:STORY-3.1.1"],
       "phase": 3,
       "epic": 1,
       "story_number": 3,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-3.2.1",
+      "id": "v2:STORY-3.2.1",
       "title": "Create agent card component",
       "intent": "Display individual agent status",
       "acceptance": [
@@ -907,7 +907,7 @@
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-3.2.2",
+      "id": "v2:STORY-3.2.2",
       "title": "Build agents panel",
       "intent": "Show all active agents in sidebar or panel",
       "acceptance": [
@@ -917,14 +917,14 @@
         "Collapsible panel"
       ],
       "passes": false,
-      "depends_on": ["STORY-3.2.1", "STORY-3.1.1"],
+      "depends_on": ["v2:STORY-3.2.1", "v2:STORY-3.1.1"],
       "phase": 3,
       "epic": 2,
       "story_number": 2,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-3.2.3",
+      "id": "v2:STORY-3.2.3",
       "title": "Add agent view to graph",
       "intent": "Show which agent is working on which story",
       "acceptance": [
@@ -934,14 +934,14 @@
         "Filter to show only one agent's work"
       ],
       "passes": false,
-      "depends_on": ["STORY-3.2.2", "STORY-2.3.14"],
+      "depends_on": ["v2:STORY-3.2.2", "v2:STORY-2.3.14"],
       "phase": 3,
       "epic": 2,
       "story_number": 3,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-3.3.1",
+      "id": "v2:STORY-3.3.1",
       "title": "Create approval queue",
       "intent": "List stories awaiting human testing approval",
       "acceptance": [
@@ -958,7 +958,7 @@
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-3.3.2",
+      "id": "v2:STORY-3.3.2",
       "title": "Add approve/reject UI",
       "intent": "Allow humans to approve or reject completed stories",
       "acceptance": [
@@ -968,14 +968,14 @@
         "Confirmation dialog before action"
       ],
       "passes": false,
-      "depends_on": ["STORY-3.3.1"],
+      "depends_on": ["v2:STORY-3.3.1"],
       "phase": 3,
       "epic": 3,
       "story_number": 2,
       "target_version": "v2.0"
     },
     {
-      "id": "STORY-3.3.3",
+      "id": "v2:STORY-3.3.3",
       "title": "Add testing instructions view",
       "intent": "Show what and how to test for each story",
       "acceptance": [
@@ -985,7 +985,7 @@
         "Copy URL button"
       ],
       "passes": false,
-      "depends_on": ["STORY-3.3.1"],
+      "depends_on": ["v2:STORY-3.3.1"],
       "phase": 3,
       "epic": 3,
       "story_number": 3,
