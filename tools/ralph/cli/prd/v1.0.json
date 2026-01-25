@@ -191,7 +191,11 @@
       "phase": 1,
       "epic": 1,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "cli",
+        "core"
+      ]
     },
     {
       "id": "1.1.2",
@@ -211,7 +215,10 @@
       "phase": 1,
       "epic": 1,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "cli"
+      ]
     },
     {
       "id": "1.1.3",
@@ -230,7 +237,11 @@
       "phase": 1,
       "epic": 1,
       "story_number": 3,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "cli",
+        "git"
+      ]
     },
     {
       "id": "1.2.1",
@@ -251,7 +262,15 @@
       "phase": 1,
       "epic": 2,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "config",
+        "core",
+        "db",
+        "git",
+        "validation"
+      ]
     },
     {
       "id": "1.2.2",
@@ -273,7 +292,11 @@
       "phase": 1,
       "epic": 2,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "config",
+        "git"
+      ]
     },
     {
       "id": "1.2.3",
@@ -298,7 +321,11 @@
         "instructions": "Test config show displays readable output, config set persists values, config edit opens editor correctly",
         "url": null
       },
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "config",
+        "testing"
+      ]
     },
     {
       "id": "2.1.1",
@@ -318,7 +345,11 @@
       "phase": 2,
       "epic": 1,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "core",
+        "db"
+      ]
     },
     {
       "id": "2.1.2",
@@ -339,7 +370,11 @@
       "phase": 2,
       "epic": 1,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "core",
+        "db"
+      ]
     },
     {
       "id": "2.1.3",
@@ -359,7 +394,11 @@
       "phase": 2,
       "epic": 1,
       "story_number": 3,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "db",
+        "prd"
+      ]
     },
     {
       "id": "2.1.4",
@@ -379,7 +418,11 @@
       "phase": 2,
       "epic": 1,
       "story_number": 4,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "db",
+        "prd"
+      ]
     },
     {
       "id": "2.1.5",
@@ -406,7 +449,13 @@
       "phase": 2,
       "epic": 1,
       "story_number": 5,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "api",
+        "claude",
+        "db",
+        "git"
+      ]
     },
     {
       "id": "2.1.6",
@@ -428,7 +477,11 @@
       "phase": 2,
       "epic": 1,
       "story_number": 6,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "db",
+        "prd"
+      ]
     },
     {
       "id": "2.1.7",
@@ -447,7 +500,11 @@
       "phase": 2,
       "epic": 1,
       "story_number": 7,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "db",
+        "prd"
+      ]
     },
     {
       "id": "2.2.1",
@@ -467,7 +524,10 @@
       "phase": 2,
       "epic": 2,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "db"
+      ]
     },
     {
       "id": "2.2.2",
@@ -487,7 +547,10 @@
       "phase": 2,
       "epic": 2,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "db"
+      ]
     },
     {
       "id": "2.3.1",
@@ -507,7 +570,10 @@
       "phase": 2,
       "epic": 3,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "db"
+      ]
     },
     {
       "id": "2.3.2",
@@ -527,7 +593,10 @@
       "phase": 2,
       "epic": 3,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "db"
+      ]
     },
     {
       "id": "2.4.1",
@@ -547,7 +616,10 @@
       "phase": 2,
       "epic": 4,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "db"
+      ]
     },
     {
       "id": "2.4.2",
@@ -567,7 +639,10 @@
       "phase": 2,
       "epic": 4,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "db"
+      ]
     },
     {
       "id": "2.4.3",
@@ -587,7 +662,10 @@
       "phase": 2,
       "epic": 4,
       "story_number": 3,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "db"
+      ]
     },
     {
       "id": "3.1.1",
@@ -607,7 +685,13 @@
       "phase": 3,
       "epic": 1,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "core",
+        "git",
+        "validation"
+      ]
     },
     {
       "id": "3.1.2",
@@ -629,7 +713,11 @@
       "phase": 3,
       "epic": 1,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "core"
+      ]
     },
     {
       "id": "3.1.3",
@@ -649,7 +737,10 @@
       "phase": 3,
       "epic": 1,
       "story_number": 3,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude"
+      ]
     },
     {
       "id": "3.1.4",
@@ -669,7 +760,8 @@
       "phase": 3,
       "epic": 1,
       "story_number": 4,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": []
     },
     {
       "id": "3.1.5",
@@ -689,7 +781,10 @@
       "phase": 3,
       "epic": 1,
       "story_number": 5,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude"
+      ]
     },
     {
       "id": "3.1.6",
@@ -708,7 +803,8 @@
       "phase": 3,
       "epic": 1,
       "story_number": 6,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": []
     },
     {
       "id": "3.2.1",
@@ -728,7 +824,12 @@
       "phase": 3,
       "epic": 2,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "core",
+        "git",
+        "validation"
+      ]
     },
     {
       "id": "3.2.2",
@@ -748,7 +849,11 @@
       "phase": 3,
       "epic": 2,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "core",
+        "git"
+      ]
     },
     {
       "id": "3.2.3",
@@ -769,7 +874,10 @@
       "phase": 3,
       "epic": 2,
       "story_number": 3,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "git"
+      ]
     },
     {
       "id": "3.2.4",
@@ -791,7 +899,11 @@
       "phase": 3,
       "epic": 2,
       "story_number": 4,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "core",
+        "git"
+      ]
     },
     {
       "id": "4.0.1",
@@ -811,7 +923,11 @@
       "phase": 4,
       "epic": 0,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "prompts"
+      ]
     },
     {
       "id": "4.1.1",
@@ -831,7 +947,11 @@
       "phase": 4,
       "epic": 1,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "prompts"
+      ]
     },
     {
       "id": "4.1.2",
@@ -851,7 +971,11 @@
       "phase": 4,
       "epic": 1,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "prompts"
+      ]
     },
     {
       "id": "4.1.3",
@@ -871,7 +995,11 @@
       "phase": 4,
       "epic": 1,
       "story_number": 3,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "prompts"
+      ]
     },
     {
       "id": "4.2.1",
@@ -891,7 +1019,12 @@
       "phase": 4,
       "epic": 2,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "core",
+        "prompts"
+      ]
     },
     {
       "id": "4.2.2",
@@ -911,7 +1044,12 @@
       "phase": 4,
       "epic": 2,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "prd",
+        "prompts"
+      ]
     },
     {
       "id": "4.2.3",
@@ -932,7 +1070,11 @@
       "phase": 4,
       "epic": 2,
       "story_number": 3,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "prompts"
+      ]
     },
     {
       "id": "4.2.4",
@@ -953,7 +1095,11 @@
       "phase": 4,
       "epic": 2,
       "story_number": 4,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "prompts"
+      ]
     },
     {
       "id": "4.2.5",
@@ -973,7 +1119,11 @@
       "phase": 4,
       "epic": 2,
       "story_number": 5,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "prompts"
+      ]
     },
     {
       "id": "4.2.6",
@@ -994,7 +1144,11 @@
       "phase": 4,
       "epic": 2,
       "story_number": 6,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "prompts"
+      ]
     },
     {
       "id": "4.2.7",
@@ -1014,7 +1168,11 @@
       "phase": 4,
       "epic": 2,
       "story_number": 7,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "prompts"
+      ]
     },
     {
       "id": "4.2.8",
@@ -1034,7 +1192,11 @@
       "phase": 4,
       "epic": 2,
       "story_number": 8,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "prompts"
+      ]
     },
     {
       "id": "4.2.9",
@@ -1054,7 +1216,13 @@
       "phase": 4,
       "epic": 2,
       "story_number": 9,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "prd",
+        "prompts",
+        "validation"
+      ]
     },
     {
       "id": "4.2.10",
@@ -1075,7 +1243,11 @@
       "phase": 4,
       "epic": 2,
       "story_number": 10,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "prompts"
+      ]
     },
     {
       "id": "4.2.11",
@@ -1096,7 +1268,12 @@
       "phase": 4,
       "epic": 2,
       "story_number": 11,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "prompts",
+        "release"
+      ]
     },
     {
       "id": "4.2.12",
@@ -1117,7 +1294,12 @@
       "phase": 4,
       "epic": 2,
       "story_number": 12,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "api",
+        "claude",
+        "prompts"
+      ]
     },
     {
       "id": "4.3.1",
@@ -1136,7 +1318,12 @@
       "phase": 4,
       "epic": 3,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "prompts",
+        "validation"
+      ]
     },
     {
       "id": "4.3.2",
@@ -1155,7 +1342,11 @@
       "phase": 4,
       "epic": 3,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "prompts"
+      ]
     },
     {
       "id": "4.3.3",
@@ -1174,7 +1365,13 @@
       "phase": 4,
       "epic": 3,
       "story_number": 3,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "prd",
+        "prompts",
+        "validation"
+      ]
     },
     {
       "id": "4.3.4",
@@ -1193,7 +1390,13 @@
       "phase": 4,
       "epic": 3,
       "story_number": 4,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "prd",
+        "prompts",
+        "validation"
+      ]
     },
     {
       "id": "5.1.1",
@@ -1213,7 +1416,12 @@
       "phase": 5,
       "epic": 1,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "core",
+        "loop"
+      ]
     },
     {
       "id": "5.1.2",
@@ -1234,7 +1442,12 @@
       "phase": 5,
       "epic": 1,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "db",
+        "loop",
+        "prd"
+      ]
     },
     {
       "id": "5.1.3",
@@ -1254,7 +1467,11 @@
       "phase": 5,
       "epic": 1,
       "story_number": 3,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "git",
+        "loop"
+      ]
     },
     {
       "id": "5.1.4",
@@ -1275,7 +1492,12 @@
       "phase": 5,
       "epic": 1,
       "story_number": 4,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "loop",
+        "prd"
+      ]
     },
     {
       "id": "5.1.5",
@@ -1296,7 +1518,11 @@
       "phase": 5,
       "epic": 1,
       "story_number": 5,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "loop"
+      ]
     },
     {
       "id": "5.1.6",
@@ -1316,7 +1542,11 @@
       "phase": 5,
       "epic": 1,
       "story_number": 6,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "loop"
+      ]
     },
     {
       "id": "5.1.7",
@@ -1342,7 +1572,14 @@
       "phase": 5,
       "epic": 1,
       "story_number": 7,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "loop",
+        "prd",
+        "prompts",
+        "validation"
+      ]
     },
     {
       "id": "5.1.8",
@@ -1367,7 +1604,13 @@
       "phase": 5,
       "epic": 1,
       "story_number": 8,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "db",
+        "loop",
+        "validation"
+      ]
     },
     {
       "id": "5.1.9",
@@ -1392,7 +1635,15 @@
       "epic": 1,
       "story_number": 9,
       "target_version": "v1.0",
-      "passes": false
+      "passes": false,
+      "tags": [
+        "api",
+        "claude",
+        "db",
+        "loop",
+        "prd",
+        "validation"
+      ]
     },
     {
       "id": "5.2.1",
@@ -1412,7 +1663,11 @@
       "phase": 5,
       "epic": 2,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "git",
+        "recovery"
+      ]
     },
     {
       "id": "5.2.2",
@@ -1432,7 +1687,10 @@
       "phase": 5,
       "epic": 2,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "recovery"
+      ]
     },
     {
       "id": "5.2.3",
@@ -1451,7 +1709,12 @@
       "phase": 5,
       "epic": 2,
       "story_number": 3,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "git",
+        "recovery"
+      ]
     },
     {
       "id": "6.1.1",
@@ -1478,7 +1741,13 @@
         "instructions": "Run trinity init in a test project directory. Verify: prompts appear correctly, directories created in ~/.trinity/projects/, database initialized, CLAUDE.md offer works",
         "url": null
       },
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "cli",
+        "db",
+        "testing"
+      ]
     },
     {
       "id": "6.1.2",
@@ -1503,7 +1772,12 @@
         "instructions": "Run trinity analyze on a known project (Go, React, Python). Verify: correct stack detected, sensible skill suggestions, output is readable and accurate",
         "url": null
       },
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "cli",
+        "testing"
+      ]
     },
     {
       "id": "6.2.1",
@@ -1529,7 +1803,14 @@
         "instructions": "Test both flows: 1) Add to empty PRD - verify creates sensible structure, 2) Add to existing PRD - verify new items integrate correctly with proper dependencies",
         "url": null
       },
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "cli",
+        "db",
+        "prd",
+        "testing"
+      ]
     },
     {
       "id": "6.2.2",
@@ -1554,7 +1835,12 @@
         "instructions": "Create a PRD with multiple phases/epics/stories. Verify: hierarchy displays correctly, status indicators work, specific ref lookup works, dependencies shown clearly",
         "url": null
       },
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "cli",
+        "prd",
+        "testing"
+      ]
     },
     {
       "id": "6.2.3",
@@ -1573,7 +1859,11 @@
       "phase": 6,
       "epic": 2,
       "story_number": 3,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "cli",
+        "prd"
+      ]
     },
     {
       "id": "6.2.4",
@@ -1593,7 +1883,11 @@
       "phase": 6,
       "epic": 2,
       "story_number": 4,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "cli",
+        "prd"
+      ]
     },
     {
       "id": "6.3.1",
@@ -1619,7 +1913,13 @@
         "instructions": "Run trinity run on a simple 2-3 story PRD. Verify: stories execute in correct order, output streams properly, story completion/blocking handled correctly, can interrupt with Ctrl+C",
         "url": null
       },
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "cli",
+        "loop",
+        "testing"
+      ]
     },
     {
       "id": "6.3.2",
@@ -1643,7 +1943,12 @@
         "instructions": "Watch trinity run output on a real story. Verify: streaming output is readable, progress shows current story, banners appear on state changes, final summary is clear",
         "url": null
       },
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "loop",
+        "testing"
+      ]
     },
     {
       "id": "6.3.3",
@@ -1674,7 +1979,13 @@
         "instructions": "Run trinity run, at PR prompt choose [f]eedback, verify: editor opens, feedback is used by Claude, returns to prompt. Test at both PR creation and merge checkpoints.",
         "url": null
       },
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "loop",
+        "prompts",
+        "testing"
+      ]
     },
     {
       "id": "6.4.1",
@@ -1699,7 +2010,11 @@
         "instructions": "Run trinity status at various stages of a project. Verify: progress counts accurate, recent activity displayed, blocked items highlighted, output is clear and useful",
         "url": null
       },
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "cli",
+        "testing"
+      ]
     },
     {
       "id": "6.4.2",
@@ -1719,7 +2034,10 @@
       "phase": 6,
       "epic": 4,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "cli"
+      ]
     },
     {
       "id": "6.4.3",
@@ -1741,7 +2059,8 @@
       "phase": 6,
       "epic": 4,
       "story_number": 3,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": []
     },
     {
       "id": "6.4.4",
@@ -1760,7 +2079,8 @@
       "phase": 6,
       "epic": 4,
       "story_number": 4,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": []
     },
     {
       "id": "6.5.1",
@@ -1781,7 +2101,12 @@
       "phase": 6,
       "epic": 5,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "cli",
+        "db",
+        "git"
+      ]
     },
     {
       "id": "6.5.2",
@@ -1801,7 +2126,11 @@
       "phase": 6,
       "epic": 5,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "cli",
+        "db"
+      ]
     },
     {
       "id": "6.5.3",
@@ -1821,7 +2150,11 @@
       "phase": 6,
       "epic": 5,
       "story_number": 3,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "cli",
+        "prd"
+      ]
     },
     {
       "id": "6.5.4",
@@ -1841,7 +2174,10 @@
       "phase": 6,
       "epic": 5,
       "story_number": 4,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "cli"
+      ]
     },
     {
       "id": "6.5.5",
@@ -1861,7 +2197,11 @@
       "phase": 6,
       "epic": 5,
       "story_number": 5,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "cli",
+        "prd"
+      ]
     },
     {
       "id": "6.6.1",
@@ -1887,7 +2227,11 @@
         "instructions": "Create a story with human_testing.required=true. Run it to completion. Verify: loop pauses, instructions displayed, trinity approve works, story marked complete, loop can continue",
         "url": null
       },
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "cli",
+        "testing"
+      ]
     },
     {
       "id": "6.6.2",
@@ -1913,7 +2257,12 @@
         "instructions": "Reject a completed story with feedback. Run trinity run again. Verify: feedback is visible to Claude in next attempt, story iterates based on feedback",
         "url": null
       },
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "cli",
+        "testing"
+      ]
     },
     {
       "id": "6.7.1",
@@ -1936,7 +2285,15 @@
       "phase": 6,
       "epic": 7,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "api",
+        "claude",
+        "cli",
+        "git",
+        "prompts",
+        "release"
+      ]
     },
     {
       "id": "6.7.2",
@@ -1960,7 +2317,13 @@
       "phase": 6,
       "epic": 7,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "cli",
+        "release",
+        "validation"
+      ]
     },
     {
       "id": "6.7.3",
@@ -1983,7 +2346,13 @@
       "phase": 6,
       "epic": 7,
       "story_number": 3,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "cli",
+        "git",
+        "release"
+      ]
     },
     {
       "id": "6.8.1",
@@ -2002,7 +2371,11 @@
       "phase": 6,
       "epic": 8,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "cli",
+        "skills"
+      ]
     },
     {
       "id": "6.8.2",
@@ -2022,7 +2395,11 @@
       "phase": 6,
       "epic": 8,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "cli",
+        "skills"
+      ]
     },
     {
       "id": "6.8.3",
@@ -2041,7 +2418,11 @@
       "phase": 6,
       "epic": 8,
       "story_number": 3,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "cli",
+        "skills"
+      ]
     },
     {
       "id": "8.1.1",
@@ -2062,7 +2443,13 @@
       "phase": 8,
       "epic": 1,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "db",
+        "git",
+        "ux"
+      ]
     },
     {
       "id": "8.1.2",
@@ -2088,7 +2475,11 @@
         "instructions": "Run various trinity commands (status, run, errors). Verify: colors appear correctly in terminal, colors disabled when piped to file, contrast is readable",
         "url": null
       },
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "testing",
+        "ux"
+      ]
     },
     {
       "id": "8.1.3",
@@ -2112,7 +2503,13 @@
         "instructions": "Run operations that take time (analyze, run). Verify: spinner animates smoothly, cleans up on completion, cleans up on Ctrl+C, disabled in non-TTY",
         "url": null
       },
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "claude",
+        "db",
+        "testing",
+        "ux"
+      ]
     },
     {
       "id": "8.2.1",
@@ -2131,7 +2528,10 @@
       "phase": 8,
       "epic": 2,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "docs"
+      ]
     },
     {
       "id": "8.2.2",
@@ -2150,7 +2550,10 @@
       "phase": 8,
       "epic": 2,
       "story_number": 2,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "docs"
+      ]
     },
     {
       "id": "8.3.1",
@@ -2175,7 +2578,10 @@
         "instructions": "Run complete workflow on a fresh test project: trinity init, trinity analyze, trinity plan add with simple feature, trinity run. Verify entire flow works end-to-end",
         "url": null
       },
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "testing"
+      ]
     },
     {
       "id": "8.3.2",
@@ -2199,7 +2605,11 @@
         "instructions": "Start trinity run, kill process mid-story (kill -9), restart trinity run. Verify: crash detected, resume prompt appears, can successfully resume or restart story",
         "url": null
       },
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "recovery",
+        "testing"
+      ]
     },
     {
       "id": "8.3.3",
@@ -2223,7 +2633,10 @@
         "instructions": "Create PRD with complex dependencies (story->story, story->epic, cross-phase). Run and verify: correct execution order, no story runs before deps, completion unblocks correctly",
         "url": null
       },
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "testing"
+      ]
     },
     {
       "id": "9.1.1",
@@ -2298,7 +2711,12 @@
         "required": true,
         "instructions": "Run through complete workflow on fresh project. Test all major features: init, analyze, plan, run, approve/reject, pr feedback, release, hotfix. Document any issues. Sign off when ready for v1.0.",
         "url": null
-      }
+      },
+      "tags": [
+        "claude",
+        "testing",
+        "validation"
+      ]
     },
     {
       "id": "7.1.1",
@@ -2318,7 +2736,13 @@
       "phase": 7,
       "epic": 1,
       "story_number": 1,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "api",
+        "auth",
+        "core",
+        "validation"
+      ]
     },
     {
       "id": "7.1.2",
@@ -2345,6 +2769,11 @@
           "name": "License API",
           "description": "API endpoint for validating license keys. Should accept POST with {key: string} and return {valid: bool, tier: string, expires_at: timestamp, features: [string]}"
         }
+      ],
+      "tags": [
+        "api",
+        "auth",
+        "validation"
       ]
     },
     {
@@ -2365,7 +2794,12 @@
       "phase": 7,
       "epic": 1,
       "story_number": 3,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "api",
+        "auth",
+        "validation"
+      ]
     },
     {
       "id": "7.1.4",
@@ -2391,7 +2825,15 @@
         "required": true,
         "instructions": "Test trinity auth login with valid and invalid keys. Verify: prompts correctly, validates against API, saves on success, shows clear errors on failure",
         "url": null
-      }
+      },
+      "tags": [
+        "api",
+        "auth",
+        "claude",
+        "cli",
+        "testing",
+        "validation"
+      ]
     },
     {
       "id": "7.1.5",
@@ -2411,7 +2853,11 @@
       "phase": 7,
       "epic": 1,
       "story_number": 5,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "auth",
+        "cli"
+      ]
     },
     {
       "id": "7.1.6",
@@ -2433,7 +2879,12 @@
       "phase": 7,
       "epic": 1,
       "story_number": 6,
-      "target_version": "v1.0"
+      "target_version": "v1.0",
+      "tags": [
+        "auth",
+        "claude",
+        "loop"
+      ]
     }
   ]
 }
