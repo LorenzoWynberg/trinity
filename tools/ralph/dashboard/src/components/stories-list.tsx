@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { StoryCard } from '@/components/story-card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -20,6 +20,15 @@ type StoriesListProps = {
   currentVersion: string
 }
 
+// Wrapper with Suspense to avoid hydration mismatch from useSearchParams + Radix Select
+export function StoriesList(props: StoriesListProps) {
+  return (
+    <Suspense fallback={<div className="h-96 bg-muted/50 animate-pulse rounded-md" />}>
+      <StoriesListInner {...props} />
+    </Suspense>
+  )
+}
+
 function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatus {
   if (story.skipped) return 'skipped'
   if (story.merged) return 'merged'
@@ -28,7 +37,7 @@ function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatu
   return 'pending'
 }
 
-export function StoriesList({ prd, currentStoryId, versions, currentVersion }: StoriesListProps) {
+function StoriesListInner({ prd, currentStoryId, versions, currentVersion }: StoriesListProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [selectedPhase, setSelectedPhase] = useState<string>('all')
