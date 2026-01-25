@@ -701,6 +701,87 @@ fn handle-skip {|story-id reason project-root|
   ui:success "Story skipped. Dependents can now proceed."
 }
 
+# Check if a story has external dependencies
+fn has-external-deps {|story-id|
+  var deps = (jq -r '.stories[] | select(.id == "'$story-id'") | .external_deps // [] | length' $prd-file)
+  not (eq $deps "0")
+}
+
+# Get external dependencies for a story (returns list of {name, description} maps)
+fn get-external-deps {|story-id|
+  jq -r '.stories[] | select(.id == "'$story-id'") | .external_deps // [] | .[] | "\(.name)|\(.description)"' $prd-file
+}
+
+# Get user report for external dependencies via editor
+# Opens editor with dep descriptions, returns user's implementation report
+fn get-external-deps-report {|story-id|
+  echo "" > /dev/tty
+
+  # Create temp file with dep context
+  var tmp = (mktemp --suffix=.md)
+  var story-title = (get-story-title $story-id)
+
+  echo "# External Dependencies Report for "$story-id > $tmp
+  echo "# "$story-title >> $tmp
+  echo "#" >> $tmp
+  echo "# This story requires the following external dependencies to be set up:" >> $tmp
+  echo "#" >> $tmp
+
+  # Add each dependency as a comment
+  var deps = [(get-external-deps $story-id)]
+  for dep $deps {
+    var parts = [(str:split "|" $dep)]
+    var name = $parts[0]
+    var desc = ""
+    if (> (count $parts) 1) {
+      set desc = $parts[1]
+    }
+    echo "# - "$name": "$desc >> $tmp
+  }
+
+  echo "#" >> $tmp
+  echo "# Describe how you implemented these dependencies below." >> $tmp
+  echo "# Include: endpoints, auth methods, API keys location, schemas, etc." >> $tmp
+  echo "# Lines starting with # are ignored." >> $tmp
+  echo "# Save and close to submit, empty file to cancel." >> $tmp
+  echo "" >> $tmp
+
+  # Determine editor (fallback chain)
+  var editor = "vim"
+  if (has-env EDITOR) {
+    set editor = $E:EDITOR
+  } elif (has-env VISUAL) {
+    set editor = $E:VISUAL
+  }
+
+  ui:status "Opening editor for external deps report..." > /dev/tty
+  ui:dim "  Using: "$editor > /dev/tty
+
+  # Open editor
+  try {
+    (external $editor) $tmp </dev/tty >/dev/tty 2>/dev/tty
+  } catch e {
+    ui:error "Failed to open editor: "(to-string $e[reason]) > /dev/tty
+    rm -f $tmp
+    put ""
+    return
+  }
+
+  # Parse result, ignoring comment lines
+  var content = ""
+  try {
+    set content = (cat $tmp | grep -v '^#' | str:trim-space (slurp))
+  } catch _ { }
+
+  rm -f $tmp
+
+  if (eq $content "") {
+    ui:dim "No report provided (empty or cancelled)" > /dev/tty
+  }
+
+  put $content
+}
+
 # Get user clarification for a story via editor
 # Opens editor with validation questions, returns user's clarification text
 fn get-clarification {|story-id questions|

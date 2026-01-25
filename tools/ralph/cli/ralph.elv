@@ -219,6 +219,7 @@ var current-iteration = 0
 var resume-mode = $config[resume-mode]
 var pending-feedback = ""  # Feedback from PR review to pass to next Claude run
 var pending-clarification = ""  # Clarification from validation questions to pass to Claude
+var pending-ext-deps-report = ""  # External deps report to pass to Claude
 
 while (< $current-iteration $config[max-iterations]) {
     set current-iteration = (+ $current-iteration 1)
@@ -357,8 +358,57 @@ while (< $current-iteration $config[max-iterations]) {
       }
     }
 
-    # Prepare Claude prompt (with any pending feedback or clarification)
-    var prep = (claude:prepare $story-id $branch-name $current-state[attempts] $current-iteration $pending-feedback &clarification=$pending-clarification)
+    # Check for external dependencies (unless already have report or in feedback mode)
+    if (and (eq $pending-feedback "") (eq $pending-ext-deps-report "")) {
+      if (prd:has-external-deps $story-id) {
+        echo "" > /dev/tty
+        ui:warn "Story "$story-id" has external dependencies:" > /dev/tty
+        echo "" > /dev/tty
+        var deps = [(prd:get-external-deps $story-id)]
+        for dep $deps {
+          var parts = [(str:split "|" $dep)]
+          var name = $parts[0]
+          var desc = ""
+          if (> (count $parts) 1) {
+            set desc = $parts[1]
+          }
+          ui:dim "  • "$name": "$desc > /dev/tty
+        }
+        echo "" > /dev/tty
+        echo "\e[33m[r]eport / [n]o skip\e[0m" > /dev/tty
+        try {
+          var answer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
+          echo "" > /dev/tty
+          if (re:match '^[nN]' $answer) {
+            ui:dim "Skipping story, will try next..." > /dev/tty
+            # Reset state so next iteration picks a new story
+            set current-state[current_story] = $nil
+            set current-state[branch] = $nil
+            set current-state[status] = "idle"
+            set current-state[attempts] = (num 0)
+            state:write $current-state
+            continue
+          } else {
+            # Default to [r]eport
+            set pending-ext-deps-report = (prd:get-external-deps-report $story-id)
+            if (eq $pending-ext-deps-report "") {
+              ui:dim "No report provided, skipping story..." > /dev/tty
+              # Reset state so next iteration picks a new story
+              set current-state[current_story] = $nil
+              set current-state[branch] = $nil
+              set current-state[status] = "idle"
+              set current-state[attempts] = (num 0)
+              state:write $current-state
+              continue
+            }
+            ui:success "External deps report received, proceeding..." > /dev/tty
+          }
+        } catch { }
+      }
+    }
+
+    # Prepare Claude prompt (with any pending feedback, clarification, or external deps report)
+    var prep = (claude:prepare $story-id $branch-name $current-state[attempts] $current-iteration $pending-feedback &clarification=$pending-clarification &external_deps_report=$pending-ext-deps-report)
     var prompt-file = $prep[prompt-file]
     var output-file = $prep[output-file]
     var story-title = $prep[story-title]
@@ -372,7 +422,7 @@ while (< $current-iteration $config[max-iterations]) {
       echo ""
     }
 
-    # Clear feedback/clarification after using it, track mode for display
+    # Clear feedback/clarification/ext-deps-report after using it, track mode for display
     var mode-label = "attempt "$current-state[attempts]
     var was-feedback-refinement = $false
     if (not (eq $pending-feedback "")) {
@@ -382,6 +432,9 @@ while (< $current-iteration $config[max-iterations]) {
     } elif (not (eq $pending-clarification "")) {
       set mode-label = "with clarification"
       set pending-clarification = ""  # Clear after use
+    } elif (not (eq $pending-ext-deps-report "")) {
+      set mode-label = "with external deps"
+      set pending-ext-deps-report = ""  # Clear after use
     }
     ui:status "Running Claude ("$mode-label")..."
     ui:dim "  Story:  "$story-id

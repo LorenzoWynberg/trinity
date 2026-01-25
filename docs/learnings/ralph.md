@@ -1,6 +1,6 @@
 # Ralph Learnings
 
-> **TL;DR:** Two-stage completion (passes→merged), blocked state detection with dependency info, activity logs split by project (trinity/ for Ralph's work, ralph/ for human docs), release workflow with human gate and hotfix loop, PR defaults (yes create, no merge), validation flow with clarify/auto-proceed options.
+> **TL;DR:** Two-stage completion (passes→merged), blocked state detection with dependency info, activity logs split by project (trinity/ for Ralph's work, ralph/ for human docs), release workflow with human gate and hotfix loop, PR defaults (yes create, no merge), validation flow with clarify/auto-proceed options, external deps flow with report requirement.
 
 ## Streaming Claude Output
 
@@ -93,6 +93,43 @@ When user chooses `[c]larify`:
 
 ### Validation returns
 `claude:validate-story` returns a map `[&valid=$bool &questions=$string]` so questions can be passed to the clarification editor if needed.
+
+## External Dependencies
+
+### When stories need external setup
+Some stories depend on external systems (auth APIs, third-party services, etc.) that must be set up before Claude can implement them. These are tracked in the `external_deps` field:
+
+```json
+{
+  "external_deps": [
+    {"name": "Auth API", "description": "OAuth endpoints on main website"},
+    {"name": "API Keys", "description": "User can generate keys in dashboard"}
+  ]
+}
+```
+
+### External deps prompt
+Before executing a story with external deps, Ralph prompts:
+```
+Story STORY-X.Y.Z has external dependencies:
+  • Auth API: OAuth endpoints on main website
+  • API Keys: User can generate keys in dashboard
+
+[r]eport / [n]o skip
+```
+
+- `[r]` (default) - Open editor to provide implementation report
+- `[n]` - Skip story, try next one
+
+### Report flow
+When user chooses `[r]eport`:
+1. Editor opens with dep names/descriptions as comments
+2. User documents how they implemented (endpoints, auth, keys, schemas)
+3. Report is injected into Claude's prompt as "## External Dependencies Report"
+4. Claude uses this to integrate correctly
+
+### No "yes ready" option
+Unlike validation, there's no "proceed without report" option. If a story has external deps, Claude needs to know *how* they were implemented to integrate with them. You either provide the report or skip.
 
 ## PR Flow
 

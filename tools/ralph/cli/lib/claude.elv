@@ -191,7 +191,8 @@ fn get-recent-activity-logs {
 # Prepare prompt and return paths needed for streaming
 # Returns: [&prompt-file=<path> &output-file=<path> &story-title=<title>]
 # Optional &clarification param for validation clarifications
-fn prepare {|story-id branch-name attempt iteration feedback &clarification=""|
+# Optional &external_deps_report param for external dependency implementation details
+fn prepare {|story-id branch-name attempt iteration feedback &clarification="" &external_deps_report=""|
   var prompt = ""
 
   # If feedback is provided and we have a feedback template, use it
@@ -274,6 +275,21 @@ Use this to guide your implementation decisions.
 "
     # Insert before the Quick Reference section
     set prompt = (str:replace &max=-1 "## Quick Reference" $clarification-section"## Quick Reference" $prompt)
+  }
+
+  # Add external dependencies report if provided
+  if (not (eq $external_deps_report "")) {
+    var ext-deps-section = "## External Dependencies Report
+
+This story has external dependencies that the user has already implemented. Here is their report:
+
+> "$external_deps_report"
+
+Use this information to integrate with the external systems correctly (endpoints, auth, schemas, etc.).
+
+"
+    # Insert before the Quick Reference section
+    set prompt = (str:replace &max=-1 "## Quick Reference" $ext-deps-section"## Quick Reference" $prompt)
   }
 
   var output-file = (mktemp)
