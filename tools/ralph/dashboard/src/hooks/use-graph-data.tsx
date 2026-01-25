@@ -167,6 +167,7 @@ function calculateDepths(stories: Story[]): Map<string, number> {
 type LayoutDirection = 'horizontal' | 'horizontal-compact' | 'vertical' | 'vertical-compact'
 
 // Calculate auto-layout positions for a single version
+// Returns positions keyed by versioned node ID: "v1.0:1.1.1"
 function calculateSingleVersionPositions(
   stories: Story[],
   direction: LayoutDirection,
@@ -175,6 +176,9 @@ function calculateSingleVersionPositions(
 ): Record<string, { x: number; y: number }> {
   const depths = calculateDepths(stories)
   const positions: Record<string, { x: number; y: number }> = {}
+
+  // Helper to create versioned key
+  const posKey = (story: Story) => `${story.target_version}:${story.id}`
 
   // Group stories by depth
   const byDepth = new Map<number, Story[]>()
@@ -210,7 +214,7 @@ function calculateSingleVersionPositions(
     for (let depth = 0; depth <= maxDepth; depth++) {
       const group = byDepth.get(depth) || []
       group.forEach((story, idx) => {
-        positions[story.id] = {
+        positions[posKey(story)] = {
           x: offsetX + depth * (NODE_WIDTH + H_GAP),
           y: offsetY + idx * (NODE_HEIGHT + V_GAP)
         }
@@ -234,7 +238,7 @@ function calculateSingleVersionPositions(
         const yOff = (maxColHeight - colHeight) / 2
 
         chunk.forEach((story, idx) => {
-          positions[story.id] = {
+          positions[posKey(story)] = {
             x: offsetX + currentCol * (NODE_WIDTH + H_GAP),
             y: offsetY + yOff + idx * (NODE_HEIGHT + V_GAP)
           }
@@ -247,7 +251,7 @@ function calculateSingleVersionPositions(
     for (let depth = 0; depth <= maxDepth; depth++) {
       const group = byDepth.get(depth) || []
       group.forEach((story, idx) => {
-        positions[story.id] = {
+        positions[posKey(story)] = {
           x: offsetX + idx * (NODE_WIDTH + H_GAP),
           y: offsetY + depth * (NODE_HEIGHT + V_GAP)
         }
@@ -268,7 +272,7 @@ function calculateSingleVersionPositions(
         const xOff = (maxRowWidth - rowWidth) / 2
 
         chunk.forEach((story, idx) => {
-          positions[story.id] = {
+          positions[posKey(story)] = {
             x: offsetX + xOff + idx * (NODE_WIDTH + H_GAP),
             y: offsetY + currentRow * (NODE_HEIGHT + V_GAP)
           }
@@ -344,7 +348,7 @@ export function calculateAutoPositions(
           const rootStories = verStories.filter(s => (depths.get(s.id) || 0) === 0)
 
           if (rootStories.length > 0) {
-            const rootYs = rootStories.map(s => verPositions[s.id]?.y || 0)
+            const rootYs = rootStories.map(s => verPositions[`${ver}:${s.id}`]?.y || 0)
             const minY = Math.min(...rootYs)
             const maxY = Math.max(...rootYs)
             const centerY = (minY + maxY + NODE_HEIGHT - VERSION_HEADER_HEIGHT) / 2
@@ -386,7 +390,7 @@ export function calculateAutoPositions(
       const storiesToCenter = rootStories.length > 0 ? rootStories : verStories
       if (storiesToCenter.length > 0) {
         const xs = storiesToCenter.map(s => {
-          const pos = tempPositions[s.id]
+          const pos = tempPositions[`${ver}:${s.id}`]
           return pos ? pos.x : 0
         }).filter(x => x !== undefined)
         if (xs.length > 0) {
@@ -594,7 +598,7 @@ export function useGraphData(version: string = 'all'): GraphData {
         for (const story of storiesData) {
           const nodeId = getNodeId(story)
           const status = getStoryStatus(story, currentStoryId)
-          const pos = positions[story.id] || { x: 0, y: 0 }
+          const pos = positions[nodeId] || { x: 0, y: 0 }
           const isDeadEnd = !dependedOn.has(nodeId)
           nodeList.push({
             id: nodeId,
