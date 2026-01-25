@@ -60,3 +60,7 @@ Run `go work sync` after:
 - Keep each module focused (core for shared logic, cli for CLI app)
 - Use workspaces for local development, not for publishing
 - Version core functionality before CLI depends on it in production
+
+---
+<!-- updatedAt: 2026-01-25 -->
+<!-- lastCompactedAt: 2026-01-25 -->

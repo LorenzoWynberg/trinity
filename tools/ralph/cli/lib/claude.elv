@@ -5,6 +5,7 @@ use path
 use re
 use ./ui
 use ./prd
+use ./learnings
 
 # Configuration (set by init)
 var project-root = ""
@@ -305,134 +306,9 @@ fn cleanup {|output-file|
   ui:dim "  Cleaned up temp file"
 }
 
-# Extract learnings from completed story
-# Analyzes what was done and appends to docs/learnings/
+# Extract learnings from completed story (delegates to learnings module)
 fn extract-learnings {|story-id branch-name|
-  ui:status "Extracting learnings from story..."
-
-  # Get story activity (from today's log)
-  var activity = ""
-  var today = (date '+%Y-%m-%d')
-  var activity-file = (path:join $project-root "logs" "activity" "trinity" $today".md")
-  if (path:is-regular $activity-file) {
-    try {
-      set activity = (cat $activity-file | slurp)
-    } catch _ { }
-  }
-
-  # Get diff for this story
-  var diff = ""
-  try {
-    var base = "dev"  # TODO: get from config
-    set diff = (git -C $project-root diff $base"..."$branch-name 2>/dev/null | slurp)
-  } catch _ { }
-
-  if (eq $diff "") {
-    ui:dim "  No diff found, skipping learning extraction"
-    return
-  }
-
-  # Get existing learnings for context (to avoid duplicates)
-  var existing = ""
-  var learnings-dir = (path:join $project-root "docs" "learnings")
-  if (path:is-dir $learnings-dir) {
-    try {
-      set existing = (cat $learnings-dir"/"*.md 2>/dev/null | slurp)
-    } catch _ { }
-  }
-
-  var prompt = 'Analyze this completed story and extract learnings.
-
-STORY: '$story-id'
-
-ACTIVITY LOG:
-'$activity'
-
-CHANGES MADE (DIFF):
-'$diff'
-
-EXISTING LEARNINGS (do not duplicate these):
-'$existing'
-
-Look for:
-- Gotchas or surprises encountered
-- Patterns that would help future stories
-- Project-specific conventions discovered
-- Mistakes made and then corrected
-- Non-obvious implementation details
-
-Output format - choose ONE:
-
-If nothing notable to learn:
-<no-learnings/>
-
-OR if there are learnings:
-<learning file="gotchas.md">
-## Title of Learning
-
-Content to append...
-</learning>
-
-<learning file="patterns.md">
-## Another Learning
-
-More content...
-</learning>
-
-Valid files: gotchas.md, patterns.md, conventions.md
-
-Only extract genuinely useful, non-obvious learnings. Be concise.'
-
-  var result = ""
-  try {
-    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
-  } catch e {
-    ui:warn "Learning extraction failed: "(to-string $e[reason])
-    return
-  }
-
-  if (str:contains $result "<no-learnings/>") {
-    ui:dim "  No notable learnings from this story"
-    return
-  }
-
-  # Parse and apply learnings
-  if (str:contains $result "<learning") {
-    # Ensure learnings directory exists
-    mkdir -p $learnings-dir
-
-    # Extract each learning block and append to appropriate file
-    # Simple parsing - look for <learning file="X"> ... </learning>
-    var count = 0
-    for file [gotchas.md patterns.md conventions.md] {
-      var pattern = '<learning file="'$file'">'
-      if (str:contains $result $pattern) {
-        try {
-          # Extract content between tags
-          var content = (echo $result | sed -n '/<learning file="'$file'">/,/<\/learning>/p' | sed '1d;$d')
-          if (not (eq (str:trim-space $content) "")) {
-            var target = (path:join $learnings-dir $file)
-            # Create file if doesn't exist
-            if (not (path:is-regular $target)) {
-              echo "# "$file > $target
-              echo "" >> $target
-            }
-            echo "" >> $target
-            echo $content >> $target
-            set count = (+ $count 1)
-          }
-        } catch _ { }
-      }
-    }
-
-    if (> $count 0) {
-      ui:success "  Extracted "$count" learning(s)"
-    } else {
-      ui:dim "  No learnings parsed"
-    }
-  } else {
-    ui:dim "  No learnings found in response"
-  }
+  learnings:extract $story-id $branch-name
 }
 
 # Generate plan-only prompt for a story (no file changes)

@@ -156,3 +156,7 @@ Key flags for streaming:
 - `--line-buffered` on grep
 - `--unbuffered` on jq
 - `-rj` on jq (raw output, join)
+
+---
+<!-- updatedAt: 2026-01-25 -->
+<!-- lastCompactedAt: 2026-01-25 -->

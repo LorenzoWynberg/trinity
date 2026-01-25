@@ -17,6 +17,7 @@ use ./lib/claude
 use ./lib/pr
 use ./lib/metrics
 use ./lib/release
+use ./lib/learnings
 
 # Get script directory and paths
 var script-dir = (path:dir (src)[name])
@@ -62,6 +63,10 @@ claude:init $project-root $script-dir $prompt-template $config[claude-timeout] $
 pr:init $project-root $config[base-branch] $config[auto-pr] $config[auto-merge]
 metrics:init $metrics-file
 release:init $project-root $config[base-branch] "main" $config[claude-timeout]
+learnings:init $project-root &base=$config[base-branch]
+
+# Check if learnings need compaction (monthly maintenance)
+learnings:check-and-compact
 
 # Handle status mode (show and exit)
 if $config[status-mode] {

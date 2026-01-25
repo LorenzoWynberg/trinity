@@ -223,3 +223,7 @@ export function VersionSelector(props) {
 ## Elvish
 
 Ralph is written in Elvish shell. See `docs/learnings/elvish.md` for language-specific patterns and gotchas (arity mismatches, value vs byte pipelines, map access, etc.).
+
+---
+<!-- updatedAt: 2026-01-25 -->
+<!-- lastCompactedAt: 2026-01-25 -->
