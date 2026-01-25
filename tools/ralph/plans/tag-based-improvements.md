@@ -440,13 +440,150 @@ if clearly necessary. When in doubt, skip."
 
 ---
 
+## Auto Flags & Yolo Mode
+
+### Individual Auto Flags
+
+Each feature gets an `--auto-*` flag for unattended operation:
+
+| Flag | Behavior |
+|------|----------|
+| `--auto-duplicate` | Auto-update existing story when duplicate detected (don't prompt) |
+| `--auto-reverse-deps` | Auto-accept all reverse dependency suggestions |
+| `--auto-related` | Auto-apply related story updates (implies `--include-related`) |
+
+**Example:**
+```bash
+./ralph.elv --auto-duplicate --auto-reverse-deps
+```
+
+### Yolo Mode
+
+`--yolo` enables maximum automation - all auto flags at once:
+
+```bash
+./ralph.elv --yolo
+# Equivalent to:
+./ralph.elv --auto-pr --auto-merge --auto-clarify \
+            --auto-duplicate --auto-reverse-deps --auto-related
+```
+
+### Hard Gates (Even Yolo Respects These)
+
+Some things **cannot** be automated - they require human input or represent terminal states:
+
+| Gate | Yolo Behavior | Why |
+|------|---------------|-----|
+| **Unmet dependencies** | Exit with blocked state | Can't proceed without merged deps |
+| **External deps** | Still prompt for report | Claude needs to know HOW it was implemented |
+| **Human testing required** | Still pause for approval | Explicit human gate in story |
+| **Circular dependency detected** | Reject and warn | Would break PRD integrity |
+
+**Flow with yolo + external deps:**
+```
+./ralph.elv --yolo
+
+Story 7.1.2 has external dependencies:
+  • License API: OAuth endpoints on main website
+
+[r]eport / [n]o skip    ← Still prompted, can't skip this
+
+> User provides report
+
+✓ Auto-propagating to descendants...
+✓ Auto-updating duplicates...
+✓ Auto-adding reverse deps...
+✓ Auto-creating PR...
+✓ Auto-merging...
+```
+
+### Implementation
+
+**cli.elv additions:**
+```elvish
+var auto-duplicate = $false
+var auto-reverse-deps = $false
+var auto-related = $false
+var yolo = $false
+
+# In flag parsing:
+--auto-duplicate { set auto-duplicate = $true }
+--auto-reverse-deps { set auto-reverse-deps = $true }
+--auto-related { set auto-related = $true }
+--yolo {
+  set yolo = $true
+  set auto-pr = $true
+  set auto-merge = $true
+  set auto-clarify = $true
+  set auto-duplicate = $true
+  set auto-reverse-deps = $true
+  set auto-related = $true
+}
+```
+
+**In propagate-external-deps:**
+```elvish
+# Duplicate detection
+if $duplicate-found {
+  if $cli:auto-duplicate {
+    # Auto-update existing
+    update-existing-story $duplicate-id
+  } else {
+    # Prompt user
+    prompt-duplicate-choice
+  }
+}
+
+# Reverse deps
+if (> (count $suggestions) 0) {
+  if $cli:auto-reverse-deps {
+    # Auto-accept all
+    apply-all-reverse-deps $suggestions
+  } else {
+    # Prompt user
+    prompt-reverse-dep-choice
+  }
+}
+```
+
+### Hard Gate Enforcement
+
+```elvish
+# These ALWAYS prompt/exit regardless of yolo:
+
+fn check-external-deps {|story-id|
+  if (prd:has-external-deps $story-id) {
+    # No auto flag for this - always prompt
+    var report = (prd:get-external-deps-report $story-id)
+    if (eq $report "") {
+      # Must get report, can't skip
+      ui:warn "External deps require implementation report"
+      prompt-for-report  # No --auto-external-deps flag exists
+    }
+  }
+}
+
+fn check-dependencies {|story-id|
+  var unmet = (prd:get-unmet-deps $story-id)
+  if (> (count $unmet) 0) {
+    # Blocked state - exit, don't continue
+    prd:show-blocked-state
+    exit 0  # Clean exit, not error
+  }
+}
+```
+
+---
+
 ## Open Questions
 
 1. **Similarity threshold:** What % similarity triggers duplicate warning? 60%? 70%?
 2. **Tag overlap minimum:** ≥1 tag or ≥2 tags for related stories?
 3. **Phase ordering:** Should Phase 6 stories ever depend on Phase 7? Or is that always backwards?
 4. **Performance:** How many stories is too many to analyze at once?
+5. **Yolo + external deps:** Should there be a `--external-deps-file` flag to provide report from file for CI/CD scenarios?
 
 ---
 
 *Created: 2026-01-25 ~16:30 CR*
+*Updated: 2026-01-25 ~16:45 CR - Added auto flags and yolo mode*
