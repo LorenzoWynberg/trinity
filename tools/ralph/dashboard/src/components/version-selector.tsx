@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Select,
@@ -14,7 +15,7 @@ interface VersionSelectorProps {
   currentVersion: string
 }
 
-export function VersionSelector({ versions, currentVersion }: VersionSelectorProps) {
+function VersionSelectorInner({ versions, currentVersion }: VersionSelectorProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -43,5 +44,13 @@ export function VersionSelector({ versions, currentVersion }: VersionSelectorPro
         ))}
       </SelectContent>
     </Select>
+  )
+}
+
+export function VersionSelector(props: VersionSelectorProps) {
+  return (
+    <Suspense fallback={<div className="w-[120px] h-8 bg-muted animate-pulse rounded-md" />}>
+      <VersionSelectorInner {...props} />
+    </Suspense>
   )
 }
