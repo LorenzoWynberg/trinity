@@ -564,6 +564,7 @@ export function useGraphData(version: string = 'all'): GraphData {
         // Create edges
         const edgeList: Edge[] = []
         const nodeIds = new Set(storiesData.map(s => s.id))
+        const edgeIds = new Set<string>() // Track edge IDs to avoid duplicates
 
         // Add edges from version headers to root stories (stories with no deps)
         if (showVersionHeaders) {
@@ -603,12 +604,17 @@ export function useGraphData(version: string = 'all'): GraphData {
 
               for (const actualDepId of resolvedIds) {
                 if (nodeIds.has(actualDepId)) {
+                  const edgeId = `${actualDepId}->${story.id}`
+                  // Skip duplicate edges (can happen when phase ref and explicit story ref resolve to same story)
+                  if (edgeIds.has(edgeId)) continue
+                  edgeIds.add(edgeId)
+
                   const depStory = storiesData.find(s => s.id === actualDepId)
                   const isDepMerged = depStory?.merged
                   const isCrossVersion = depStory?.target_version !== story.target_version
 
                   edgeList.push({
-                    id: `${actualDepId}->${story.id}`,
+                    id: edgeId,
                     source: actualDepId,
                     target: story.id,
                     type: 'smoothstep',
