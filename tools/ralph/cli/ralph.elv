@@ -18,6 +18,7 @@ use ./lib/pr
 use ./lib/metrics
 use ./lib/release
 use ./lib/learnings
+use ./lib/format
 
 # Get script directory and paths
 var script-dir = (path:dir (src)[name])
@@ -64,6 +65,7 @@ pr:init $project-root $config[base-branch] $config[auto-pr] $config[auto-merge]
 metrics:init $metrics-file
 release:init $project-root $config[base-branch] "main" $config[claude-timeout]
 learnings:init $project-root &base=$config[base-branch]
+format:init $project-root
 
 # Check if learnings need compaction (monthly maintenance)
 learnings:check-and-compact
@@ -421,9 +423,9 @@ while (< $current-iteration $config[max-iterations]) {
       rm -f $output-file".result" 2>/dev/null
     }
 
-    # Format Go files
+    # Format code files
     echo ""
-    git:format-go-files
+    format:go-files
     echo ""
 
     # Verbose: show raw Claude output
