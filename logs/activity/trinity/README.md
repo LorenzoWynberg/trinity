@@ -1,6 +1,8 @@
 # Trinity Activity Logs
 
-Daily development activity logs for the Trinity CLI tool.
+Daily development activity logs for Trinity CLI tool development.
+
+**Written by:** Ralph (autonomous development loop)
 
 ## Purpose
 
@@ -40,6 +42,13 @@ Brief overview of what was accomplished today.
 - Problem and how it was resolved
 ```
 
+## Usage by Ralph
+
+Ralph automatically:
+1. Reads the 2 most recent logs for context
+2. Includes them in Claude's prompt via `{{RECENT_ACTIVITY_LOGS}}`
+3. Claude updates the current day's log with progress
+
 ## Archive
 
 Older activity logs are moved to `archive/` to keep the main directory clean.
@@ -48,7 +57,11 @@ Older activity logs are moved to `archive/` to keep the main directory clean.
 ```
 logs/activity/trinity/
 ├── README.md           # This file
-├── 2026-01-24.md       # Recent logs
+├── 2026-01-24.md       # Recent logs (keep last 7 days)
+├── 2026-01-23.md
 └── archive/
     └── 2026-01/        # Monthly folders
+        └── 2026-01-15.md
 ```
+
+**When to archive:** Ralph moves logs older than 7 days to `archive/YYYY-MM/` folder.

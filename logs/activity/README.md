@@ -7,20 +7,19 @@ Development activity logs organized by project.
 ```
 logs/activity/
 ├── README.md       # This file
-├── trinity/        # Trinity CLI tool activity logs
+├── trinity/        # Trinity CLI development (written by Ralph)
 │   ├── README.md
 │   ├── YYYY-MM-DD.md
 │   └── archive/
-└── ralph/          # Ralph development loop activity logs
+└── ralph/          # Ralph development (written by humans)
     ├── README.md
-    ├── YYYY-MM-DD.md
-    └── archive/
+    └── YYYY-MM-DD.md
 ```
 
 ## Projects
 
-- **trinity/** - Activity logs for Trinity CLI tool development
-- **ralph/** - Activity logs for Ralph (autonomous development loop)
+- **trinity/** - Activity logs for Trinity CLI tool development, written by Ralph
+- **ralph/** - Activity logs for Ralph's own development, written by humans
 
 ## Dashboard
 

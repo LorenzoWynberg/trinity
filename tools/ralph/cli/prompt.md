@@ -21,7 +21,7 @@ Read these files first:
 
 If attempt > 1 or refinement: check `git log` and `git diff` for previous work. Focus on the feedback if provided.
 
-**Activity Log:** Create or update `logs/activity/ralph/YYYY-MM-DD.md` (today's date). Add entry for starting work on {{VERSION}} / {{CURRENT_STORY}}. Include version in headers (e.g., "## {{VERSION}} - {{CURRENT_STORY}}: Title"). Before archiving old logs: extract learnings to `docs/learnings/`. Archive logs older than 7 days to `logs/activity/ralph/archive/YYYY-MM/`.
+**Activity Log:** Create or update `logs/activity/trinity/YYYY-MM-DD.md` (today's date). Add entry for starting work on {{VERSION}} / {{CURRENT_STORY}}. Include version in headers (e.g., "## {{VERSION}} - {{CURRENT_STORY}}: Title"). Before archiving old logs: extract learnings to `docs/learnings/`. Archive logs older than 7 days to `logs/activity/trinity/archive/YYYY-MM/`.
 
 ### Recent Activity Logs (Detailed Context)
 Review these recent activity logs for detailed context on recent work:
@@ -67,7 +67,7 @@ Update these files:
 - `tools/ralph/cli/progress.txt`: APPEND entry with date, changes, learnings
 - `tools/ralph/cli/prd.json`: Set `"passes": true` for {{CURRENT_STORY}}
   - NOTE: Do NOT set `merged` - Ralph handles that after PR is merged
-- `logs/activity/ralph/YYYY-MM-DD.md`: Update with completed work, files modified, decisions made
+- `logs/activity/trinity/YYYY-MM-DD.md`: Update with completed work, files modified, decisions made
 
 Then commit and push (no Co-Authored-By lines):
 ```bash
@@ -96,7 +96,7 @@ Don't commit. Don't update prd.json.
 **Still capture learnings from failure:**
 - `docs/learnings/*.md`: Add what you learned to the appropriate file's **Gotchas** section
 - `tools/ralph/cli/progress.txt`: APPEND what was tried and why blocked
-- `logs/activity/ralph/YYYY-MM-DD.md`: Detailed blocker info and what was attempted
+- `logs/activity/trinity/YYYY-MM-DD.md`: Detailed blocker info and what was attempted
 
 Failures are valuable learning opportunities - don't lose them!
 
