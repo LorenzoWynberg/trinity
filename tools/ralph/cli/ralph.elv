@@ -429,7 +429,7 @@ while (< $current-iteration $config[max-iterations]) {
         if (prd:all-stories-complete) {
           # All stories merged - will be handled by all_complete signal check
           ui:success "All stories merged!"
-          break
+          exit 0
         } else {
           # Stories exist but are blocked
           echo ""
@@ -465,7 +465,7 @@ while (< $current-iteration $config[max-iterations]) {
           }
 
           ui:dim "Run ralph to pick up where you left off."
-          break
+          exit 0
         }
       }
       ui:success "Selected: "$story-id
