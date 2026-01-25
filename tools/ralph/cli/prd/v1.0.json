@@ -1530,7 +1530,7 @@
       "title": "Implement trinity hotfix command",
       "intent": "Enable quick fixes outside the normal PRD flow",
       "acceptance": [
-        "trinity hotfix 'description' creates branch hotfix/<timestamp> from dev",
+        "trinity hotfix 'description' creates branch hotfix/<slugified-description> from dev (e.g., 'fix login bug' → hotfix/fix-login-bug)",
         "Uses prompts/templates/hotfix.md template with description placeholder",
         "Runs Claude with streaming output, same as story execution",
         "On completion, creates PR to dev branch with title 'hotfix: <description>'",
