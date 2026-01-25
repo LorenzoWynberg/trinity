@@ -86,6 +86,12 @@ export interface EpicProgress {
 
 export type StoryStatus = 'pending' | 'in_progress' | 'passed' | 'merged' | 'skipped' | 'blocked'
 
+export interface BlockedInfo {
+  story: Story
+  blockedBy: string
+  blockerStory?: Story
+}
+
 export function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatus {
   if (story.skipped) return 'skipped'
   if (story.merged) return 'merged'

@@ -1,6 +1,6 @@
 import fs from 'fs/promises'
 import path from 'path'
-import type { PRD, State, Metrics, PhaseProgress, EpicProgress, Story, VersionInfo } from './types'
+import type { PRD, State, Metrics, PhaseProgress, EpicProgress, Story, VersionInfo, BlockedInfo } from './types'
 
 // Paths relative to project root
 const PROJECT_ROOT = path.join(process.cwd(), '../../..')
@@ -288,4 +288,60 @@ export function getTotalStats(prd: PRD, metrics: Metrics | null) {
     totalTokens: metrics?.total_tokens ?? 0,
     totalDuration: metrics?.total_duration_seconds ?? 0
   }
+}
+
+// Check if a dependency is met (story is merged)
+function isDepMet(prd: PRD, dep: string): boolean {
+  // Handle STORY-X.Y.Z format
+  if (dep.startsWith('STORY-')) {
+    const story = prd.stories.find(s => s.id === dep)
+    return story?.merged === true
+  }
+  // Handle phase:epic format (e.g., "1:2")
+  if (dep.includes(':')) {
+    const [phase, epic] = dep.split(':').map(Number)
+    const stories = prd.stories.filter(s => s.phase === phase && s.epic === epic)
+    return stories.length > 0 && stories.every(s => s.merged)
+  }
+  // Handle phase only (e.g., "1")
+  const phase = parseInt(dep)
+  if (!isNaN(phase)) {
+    const stories = prd.stories.filter(s => s.phase === phase)
+    return stories.length > 0 && stories.every(s => s.merged)
+  }
+  return false
+}
+
+// Get stories that are blocked by unmerged dependencies
+export function getBlockedStories(prd: PRD): BlockedInfo[] {
+  const blocked: BlockedInfo[] = []
+
+  for (const story of prd.stories) {
+    // Skip if already passed, merged, or skipped
+    if (story.passes || story.merged || story.skipped) continue
+
+    // Check dependencies
+    if (story.depends_on && story.depends_on.length > 0) {
+      for (const dep of story.depends_on) {
+        if (!isDepMet(prd, dep)) {
+          const blockerStory = dep.startsWith('STORY-')
+            ? prd.stories.find(s => s.id === dep)
+            : undefined
+          blocked.push({
+            story,
+            blockedBy: dep,
+            blockerStory
+          })
+          break // Only show first unmet dependency
+        }
+      }
+    }
+  }
+
+  return blocked.slice(0, 5) // Limit to 5 for dashboard
+}
+
+// Get stories that passed but haven't been merged yet
+export function getUnmergedPassed(prd: PRD): Story[] {
+  return prd.stories.filter(s => s.passes && !s.merged)
 }

@@ -1,8 +1,9 @@
-import { getPRD, getState, getMetrics, getPhaseProgress, getTotalStats, getStoryById, getVersions } from '@/lib/data'
+import { getPRD, getState, getMetrics, getPhaseProgress, getTotalStats, getStoryById, getVersions, getBlockedStories, getUnmergedPassed } from '@/lib/data'
 import { StatsCard } from '@/components/stats-card'
 import { ProgressBar } from '@/components/progress-bar'
 import { CurrentWork } from '@/components/current-work'
 import { VersionSelector } from '@/components/version-selector'
+import { BlockedStories } from '@/components/blocked-stories'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ListTodo, CheckCircle, Coins, Clock } from 'lucide-react'
 
@@ -56,6 +57,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const stats = getTotalStats(prd, metrics)
   const phases = getPhaseProgress(prd)
   const currentStory = state?.current_story ? getStoryById(prd, state.current_story) : undefined
+  const blocked = getBlockedStories(prd)
+  const unmergedPassed = getUnmergedPassed(prd)
 
   return (
     <div className="p-8 space-y-8">
@@ -116,6 +119,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         {/* Current Work */}
         <CurrentWork state={state} story={currentStory} />
       </div>
+
+      {/* Blocked Stories */}
+      <BlockedStories blocked={blocked} unmergedPassed={unmergedPassed} />
     </div>
   )
 }
