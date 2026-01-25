@@ -69,20 +69,21 @@ Based on Ralph dashboard implementation. Target: full feature parity.
 
 | Story | Title | Acceptance |
 |-------|-------|------------|
-| 2.3.1 | Create story node component | Status colors, title, click handlers |
-| 2.3.2 | Create version node component | Version badge with progress bar |
+| 2.3.1 | Create story node component | Status colors, versioned node ID (`v1.0:1.1.1`), click handlers |
+| 2.3.2 | Create version node component | Version badge with progress bar, positioned at END of chain |
 | 2.3.3 | Implement auto-layout | Horizontal, vertical, compact variants |
 | 2.3.4 | Implement custom layouts | Save, load, delete named layouts |
 | 2.3.5 | Add layout selector | Dropdown with built-in + custom layouts |
 | 2.3.6 | Add default layout per version | Star button to set default |
 | 2.3.7 | Implement click-to-highlight | Click node shows dependency path |
-| 2.3.8 | Add depth-based edge colors | Rainbow gradient from root to clicked |
-| 2.3.9 | Add version node connections | Version → root stories edges |
+| 2.3.8 | Add depth-based edge colors | Per-version rainbow gradient (25 colors), resets per version |
+| 2.3.9 | Add version node connections | Leaf stories → version edges (version at END of chain) |
 | 2.3.10 | Implement double-click modal | Double-click opens story detail |
 | 2.3.11 | Add dead-ends toggle | Orange footer on leaf nodes, toggle button |
 | 2.3.12 | Add fullscreen mode | Fullscreen button, ESC to exit |
 | 2.3.13 | Add minimap | Corner minimap for navigation |
-| 2.3.14 | Build graph page | Full graph with all controls |
+| 2.3.14 | Add per-version color gradients | Each version has independent color range (cyan→yellow) |
+| 2.3.15 | Build graph page | Full graph with all controls |
 
 ### Epic 4: Activity Page
 
@@ -151,7 +152,7 @@ Based on Ralph dashboard implementation. Target: full feature parity.
 | 1 | 2 | 4 | Dashboard Setup |
 | 2 | 1 | 4 | Home Page |
 | 2 | 2 | 5 | Stories Page |
-| 2 | 3 | 14 | Graph Page |
+| 2 | 3 | 15 | Graph Page |
 | 2 | 4 | 3 | Activity Page |
 | 2 | 5 | 3 | Learnings Page |
 | 2 | 6 | 2 | Metrics Page |
@@ -160,7 +161,7 @@ Based on Ralph dashboard implementation. Target: full feature parity.
 | 3 | 2 | 3 | Multi-Agent View |
 | 3 | 3 | 3 | Human Testing Gates |
 
-**Total: 57 stories across 3 phases**
+**Total: 58 stories across 3 phases**
 
 ---
 
@@ -171,18 +172,34 @@ Based on Ralph dashboard implementation. Target: full feature parity.
 - [x] Custom layout save/load/delete
 - [x] Default layout per version
 - [x] Click to highlight dependency path
-- [x] Depth-based rainbow edge colors (13 colors, adaptive)
-- [x] Version nodes with progress
+- [x] Depth-based rainbow edge colors (25 colors, per-version gradients)
+- [x] Version nodes at END of chain (as deliverable/goal)
+- [x] Version nodes always visible (not just in all-versions view)
+- [x] Versioned node IDs prevent conflicts (`v1.0:mvp:auth:1`)
 - [x] Double-click for story modal
 - [x] Dead-ends toggle (orange indicator)
 - [x] Fullscreen mode
 - [x] Minimap navigation
+- [x] Edge z-index by pixel length (shorter edges on top)
 
 ### Dependency System
-- [x] Phase dependencies ("1" = all phase 1 stories)
-- [x] Epic dependencies ("1:2" = phase 1, epic 2)
-- [x] Story dependencies ("STORY-1.2.3")
-- [x] Cross-version dependencies ("v1.0:STORY-1.2.3")
+- [x] Phase dependencies ("mvp" = all leaf stories in mvp phase)
+- [x] Epic dependencies ("mvp:auth" = auth epic in mvp phase)
+- [x] Story dependencies ("mvp:auth:1" = story 1 in auth epic)
+- [x] Cross-version story dependencies ("v1.0:mvp:auth:1")
+- [x] Cross-version whole version dependencies ("v1.0" = entire version complete)
+- [x] Cross-version edges styled orange dotted
+
+### Story ID Format (Trinity)
+```
+mvp                      → whole phase (all leaf stories)
+mvp:auth                 → epic (all leaf stories in epic)
+mvp:auth:1               → specific story
+v1.0:mvp:auth:1          → cross-version specific story
+v1.0                     → entire version must be complete
+```
+
+Note: Ralph uses numeric format (`1.2.3`), Trinity uses named format (`mvp:auth:1`)
 
 ### Settings Persistence
 - [x] Graph layout per version

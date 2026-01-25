@@ -12,7 +12,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "v1.0"
+        "v1.0:8.1.1"
       ],
       "phase": 1,
       "epic": 1,
@@ -25,7 +25,8 @@
       "intent": "Expose phase data with progress statistics for dashboard",
       "acceptance": [
         "GET /api/phases returns list of phases",
-        "Each phase includes: id, name, status, story count, merged count, progress percentage",
+        "Each phase includes: id (slug like 'mvp'), name, status, story count, merged count, progress percentage",
+        "Phase IDs are named slugs (mvp, growth) not numbers",
         "Supports ?version=v1.0 query parameter",
         "Returns 404 if version not found"
       ],
@@ -44,8 +45,9 @@
       "intent": "Expose epic data with filtering and progress stats",
       "acceptance": [
         "GET /api/epics returns list of epics",
-        "Supports ?phase=N filter",
-        "Each epic includes: id, phase_id, name, story count, merged count, progress percentage",
+        "Supports ?phase=mvp filter (named phase slug)",
+        "Each epic includes: id (slug like 'auth'), phase_id, name, story count, merged count, progress percentage",
+        "Epic IDs are named slugs (auth, payments) not numbers",
         "Supports ?version=v1.0 query parameter"
       ],
       "passes": false,
@@ -63,7 +65,8 @@
       "intent": "Expose story data with comprehensive filtering",
       "acceptance": [
         "GET /api/stories returns list of stories",
-        "Supports filters: ?phase=N, ?epic=N, ?status=pending|passed|merged, ?version=v1.0, ?tags=auth,api",
+        "Supports filters: ?phase=mvp, ?epic=auth, ?status=pending|passed|merged, ?version=v1.0, ?tags=auth,api",
+        "Story IDs follow format: mvp:auth:1 (phase:epic:number)",
         "Each story includes: id, title, status, phase, epic, depends_on count",
         "Supports pagination with ?limit=N&offset=N"
       ],
@@ -81,8 +84,9 @@
       "title": "Implement story detail API",
       "intent": "Expose full story details including dependencies",
       "acceptance": [
-        "GET /api/stories/:id returns full story object",
+        "GET /api/stories/:id returns full story object (id like mvp:auth:1)",
         "Includes: id, title, intent, acceptance criteria array, depends_on array, dependents array",
+        "depends_on supports: mvp (phase), mvp:auth (epic), mvp:auth:1 (story), v1.0:mvp:auth:1 (cross-version)",
         "Includes: status, passes, merged, merge_commit, pr_url, branch",
         "Returns 404 if story not found"
       ],
@@ -488,9 +492,11 @@
     {
       "id": "2.3.1",
       "title": "Create story node component",
-      "intent": "Build custom React Flow node for stories",
+      "intent": "Build custom React Flow node for stories with versioned IDs",
       "acceptance": [
         "StoryNode component for React Flow",
+        "Versioned node IDs: v1.0:mvp:auth:1 (prevents conflicts across versions)",
+        "Supports Trinity named format (mvp:auth:1) not just numeric (1.1.1)",
         "Shows story ID and truncated title",
         "Status-based background colors",
         "Click handler for selection",
@@ -509,13 +515,15 @@
     {
       "id": "2.3.2",
       "title": "Create version node component",
-      "intent": "Build custom node for version headers in graph",
+      "intent": "Build custom node for version headers in graph - positioned at END of dependency chain as deliverable/goal",
       "acceptance": [
         "VersionNode component for React Flow",
         "Shows version name (e.g., v1.0)",
         "Shows progress bar with merged/total",
         "Purple background color",
-        "Connects to root stories of that version"
+        "Positioned at END of chain (right in horizontal, bottom in vertical)",
+        "Leaf stories connect TO version node (stories → version)",
+        "Always visible (not just in all-versions view)"
       ],
       "passes": false,
       "depends_on": [
@@ -535,7 +543,8 @@
         "Supports 4 layouts: horizontal, horizontal-compact, vertical, vertical-compact",
         "Compact variants limit to 6 nodes per row/column",
         "Nodes positioned by dependency depth",
-        "Version headers positioned appropriately"
+        "Version headers positioned at END of chain",
+        "resolveDependency() supports Trinity named format: mvp, mvp:auth, mvp:auth:1"
       ],
       "passes": false,
       "depends_on": [
@@ -628,13 +637,14 @@
     {
       "id": "2.3.8",
       "title": "Add depth-based edge colors",
-      "intent": "Color edges by distance from selected node",
+      "intent": "Color edges by distance from selected node with per-version gradients",
       "acceptance": [
         "25-color gradient from cyan to yellow",
-        "Selected node edges = cyan",
-        "Root/version edges = yellow",
-        "Linear interpolation: spreads colors evenly regardless of max depth",
-        "Shorter visual edges render on top (higher z-index)"
+        "Selected node/leaves = cyan, roots = yellow",
+        "Per-version gradients: each version has independent color range",
+        "Linear interpolation: spreads colors evenly based on version's max depth",
+        "Shorter visual edges render on top (higher z-index)",
+        "Highlighted nodes z-index above all edges"
       ],
       "passes": false,
       "depends_on": [
@@ -648,11 +658,15 @@
     {
       "id": "2.3.9",
       "title": "Add version node connections",
-      "intent": "Connect version node to root stories",
+      "intent": "Connect leaf stories to version node (version at END of chain)",
       "acceptance": [
-        "Edges from version node to all root stories (no deps)",
+        "Edges from leaf stories TO version node (stories → version)",
+        "Leaf = story nothing in same version depends on",
+        "Cross-version deps excluded from leaf detection",
         "Version edges included in highlight path",
-        "Version edge color follows depth gradient"
+        "Cross-version edges styled orange dotted (version:v1.0 → v2.0 stories)",
+        "Clicking version highlights all stories flowing into it",
+        "Supports Trinity named deps: mvp, mvp:auth, mvp:auth:1, v1.0:mvp:auth:1"
       ],
       "passes": false,
       "depends_on": [
@@ -742,6 +756,26 @@
     },
     {
       "id": "2.3.14",
+      "title": "Add per-version color gradients",
+      "intent": "Each version has independent color range when highlighting paths",
+      "acceptance": [
+        "Each version calculates its own max depth independently",
+        "v1.0 gradient: cyan (leaves) → yellow (roots) based on v1.0 depth",
+        "v2.0 gradient: cyan (leaves) → yellow (roots) based on v2.0 depth",
+        "Cross-version edges use target version's color scheme",
+        "Colors reset at version boundaries for clarity"
+      ],
+      "passes": false,
+      "depends_on": [
+        "2.3.8"
+      ],
+      "phase": 2,
+      "epic": 3,
+      "story_number": 14,
+      "target_version": "v2.0"
+    },
+    {
+      "id": "2.3.15",
       "title": "Build graph page",
       "intent": "Create the full dependency graph page",
       "acceptance": [
@@ -763,11 +797,12 @@
         "2.3.10",
         "2.3.11",
         "2.3.12",
-        "2.3.13"
+        "2.3.13",
+        "2.3.14"
       ],
       "phase": 2,
       "epic": 3,
-      "story_number": 14,
+      "story_number": 15,
       "target_version": "v2.0"
     },
     {
@@ -1056,7 +1091,7 @@
       "passes": false,
       "depends_on": [
         "3.2.2",
-        "2.3.14"
+        "2.3.15"
       ],
       "phase": 3,
       "epic": 2,

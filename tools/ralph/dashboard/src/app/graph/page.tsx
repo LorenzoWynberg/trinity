@@ -81,7 +81,8 @@ function GraphContent() {
   const layoutSaveDebouncer = useDebouncer(saveLayoutData, { wait: 500 })
 
   const [highlightedNodes, setHighlightedNodes] = useState<Set<string>>(new Set())
-  const [highlightedEdges, setHighlightedEdges] = useState<Map<string, number>>(new Map()) // edgeId -> depth
+  const [highlightedEdges, setHighlightedEdges] = useState<Map<string, { depth: number; version: string }>>(new Map()) // edgeId -> {depth, version}
+  const [maxDepthPerVersion, setMaxDepthPerVersion] = useState<Map<string, number>>(new Map())
 
   const [selectedStory, setSelectedStory] = useState<Story | null>(null)
   const [selectedStatus, setSelectedStatus] = useState<StoryStatus>('pending')
@@ -303,13 +304,18 @@ function GraphContent() {
     return visited
   }, [stories, extractStoryId, extractVersion])
 
-  // Build a set of leaf story IDs (stories nothing depends on in their version)
+  // Build a set of leaf story IDs (stories nothing in same version depends on)
   const leafStoryIds = useMemo(() => {
     const dependedOn = new Set<string>()
     stories.forEach(story => {
       story.depends_on?.forEach(depRef => {
         const resolved = resolveDependency(depRef, stories, story.target_version)
-        resolved.forEach(r => dependedOn.add(r.nodeId))
+        resolved.forEach(r => {
+          // Only count same-version dependencies for leaf detection
+          if (!r.crossVersion) {
+            dependedOn.add(r.nodeId)
+          }
+        })
       })
     })
     return new Set(
@@ -319,10 +325,11 @@ function GraphContent() {
     )
   }, [stories])
 
-  // Get edges in the dependency path with depth (distance from clicked node)
-  const getPathEdgesWithDepth = useCallback((nodeId: string, ancestors: Set<string>): Map<string, number> => {
-    const edgeDepths = new Map<string, number>()
+  // Get edges in the dependency path with depth (distance from clicked node) per version
+  const getPathEdgesWithDepth = useCallback((nodeId: string, ancestors: Set<string>): { edges: Map<string, { depth: number; version: string }>; maxPerVersion: Map<string, number> } => {
+    const edgeDepths = new Map<string, { depth: number; version: string }>()
     const nodeDepths = new Map<string, number>()
+    const nodeVersions = new Map<string, string>() // Track which version each node belongs to
 
     // BFS to calculate node depths from the clicked node
     const queue: [string, number][] = [[nodeId, 0]]
@@ -330,6 +337,14 @@ function GraphContent() {
       const [id, depth] = queue.shift()!
       if (nodeDepths.has(id)) continue
       nodeDepths.set(id, depth)
+
+      // Track version for this node
+      if (id.startsWith('version:')) {
+        nodeVersions.set(id, id.replace('version:', ''))
+      } else {
+        const ver = extractVersion(id)
+        if (ver) nodeVersions.set(id, ver)
+      }
 
       // Version nodes: their deps are all stories in that version
       if (id.startsWith('version:')) {
@@ -366,11 +381,30 @@ function GraphContent() {
       }
     }
 
-    // Find max depth (clicked=0, furthest root=max)
-    const maxDepth = Math.max(...Array.from(nodeDepths.values()))
+    // Calculate max depth per version (for color normalization)
+    const maxPerVersion = new Map<string, number>()
+    nodeDepths.forEach((depth, nodeId) => {
+      const ver = nodeVersions.get(nodeId)
+      if (ver) {
+        const current = maxPerVersion.get(ver) || 0
+        if (depth > current) maxPerVersion.set(ver, depth)
+      }
+    })
 
-    // Create edges with depth from clicked node
+    // Calculate depth offset per version (so each version's depth starts from 0)
+    const minDepthPerVersion = new Map<string, number>()
+    nodeDepths.forEach((depth, nodeId) => {
+      const ver = nodeVersions.get(nodeId)
+      if (ver) {
+        const current = minDepthPerVersion.get(ver)
+        if (current === undefined || depth < current) minDepthPerVersion.set(ver, depth)
+      }
+    })
+
+    // Create edges with version-relative depth
     ancestors.forEach(ancestorId => {
+      const ancestorVersion = nodeVersions.get(ancestorId)
+
       // Version node: create edges FROM leaf stories TO version
       if (ancestorId.startsWith('version:')) {
         const ver = ancestorId.replace('version:', '')
@@ -378,7 +412,9 @@ function GraphContent() {
           const storyNodeId = `${ver}:${s.id}`
           if (ancestors.has(storyNodeId) && leafStoryIds.has(storyNodeId)) {
             const edgeId = `${storyNodeId}->${ancestorId}`
-            edgeDepths.set(edgeId, nodeDepths.get(ancestorId) || 0)
+            const globalDepth = nodeDepths.get(ancestorId) || 0
+            const minDepth = minDepthPerVersion.get(ver) || 0
+            edgeDepths.set(edgeId, { depth: globalDepth - minDepth, version: ver })
           }
         })
         return
@@ -389,14 +425,16 @@ function GraphContent() {
       const story = stories.find(s => s.id === storyId && (!version || s.target_version === version))
       if (story?.depends_on && story.depends_on.length > 0) {
         story.depends_on.forEach(depRef => {
-          // Whole version dep - create version → story edge
+          // Whole version dep - create version → story edge (cross-version edge belongs to target version)
           if (/^v[0-9]+\.[0-9]+$/.test(depRef)) {
             const versionNodeId = `version:${depRef}`
             if (ancestors.has(versionNodeId)) {
-              // Edge from the dep version to this story
               const edgeId = `${versionNodeId}->${ancestorId}`
-              const nodeDepth = nodeDepths.get(ancestorId) || 0
-              edgeDepths.set(edgeId, nodeDepth)
+              const globalDepth = nodeDepths.get(ancestorId) || 0
+              // Cross-version edge: use the target story's version for coloring
+              const edgeVersion = version || 'unknown'
+              const minDepth = minDepthPerVersion.get(edgeVersion) || 0
+              edgeDepths.set(edgeId, { depth: globalDepth - minDepth, version: edgeVersion })
             }
             return
           }
@@ -404,26 +442,37 @@ function GraphContent() {
           resolved.forEach(r => {
             if (ancestors.has(r.nodeId)) {
               const edgeId = `${r.nodeId}->${ancestorId}`
-              const nodeDepth = nodeDepths.get(ancestorId) || 0
-              edgeDepths.set(edgeId, nodeDepth)
+              const globalDepth = nodeDepths.get(ancestorId) || 0
+              const edgeVersion = version || 'unknown'
+              const minDepth = minDepthPerVersion.get(edgeVersion) || 0
+              edgeDepths.set(edgeId, { depth: globalDepth - minDepth, version: edgeVersion })
             }
           })
         })
       }
     })
 
-    return edgeDepths
+    // Adjust maxPerVersion to be relative (max - min for each version)
+    const relativeMaxPerVersion = new Map<string, number>()
+    maxPerVersion.forEach((max, ver) => {
+      const min = minDepthPerVersion.get(ver) || 0
+      relativeMaxPerVersion.set(ver, max - min)
+    })
+
+    return { edges: edgeDepths, maxPerVersion: relativeMaxPerVersion }
   }, [stories, extractStoryId, extractVersion, leafStoryIds])
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     if (highlightedNodes.has(node.id) && highlightedNodes.size === getAncestors(node.id).size) {
       setHighlightedNodes(new Set())
       setHighlightedEdges(new Map())
+      setMaxDepthPerVersion(new Map())
     } else {
       const ancestors = getAncestors(node.id)
-      const pathEdges = getPathEdgesWithDepth(node.id, ancestors)
+      const { edges: pathEdges, maxPerVersion } = getPathEdgesWithDepth(node.id, ancestors)
       setHighlightedNodes(ancestors)
       setHighlightedEdges(pathEdges)
+      setMaxDepthPerVersion(maxPerVersion)
     }
   }, [getAncestors, getPathEdgesWithDepth, highlightedNodes])
 
@@ -448,6 +497,7 @@ function GraphContent() {
   const onPaneClick = useCallback(() => {
     setHighlightedNodes(new Set())
     setHighlightedEdges(new Map())
+    setMaxDepthPerVersion(new Map())
   }, [])
 
   // Depth-based colors for highlighted edges (25-color rainbow gradient)
@@ -479,17 +529,13 @@ function GraphContent() {
     '#06b6d4', // 24 - cyan
   ]
 
-  // Get max depth from highlighted edges
-  const maxHighlightDepth = highlightedEdges.size > 0
-    ? Math.max(...Array.from(highlightedEdges.values()))
-    : 0
-
-  // Linear interpolation to spread colors evenly across full spectrum
-  // Colors go from cyan (selected) -> yellow (roots/version)
-  const getDepthColor = (depth: number) => {
-    if (maxHighlightDepth === 0) return depthColors[depthColors.length - 1]
+  // Linear interpolation to spread colors evenly across full spectrum per version
+  // Colors go from cyan (selected/leaves) -> yellow (roots)
+  const getDepthColor = (depth: number, version: string) => {
+    const maxDepth = maxDepthPerVersion.get(version) || 0
+    if (maxDepth === 0) return depthColors[depthColors.length - 1]
     // Map depth to index: 0 -> 0, maxDepth -> 24
-    const index = Math.round(depth * 24 / maxHighlightDepth)
+    const index = Math.round(depth * 24 / maxDepth)
     // Reverse: selected=cyan (end), roots=yellow (start)
     return depthColors[depthColors.length - 1 - index]
   }
@@ -513,14 +559,16 @@ function GraphContent() {
 
   const styledEdges: Edge[] = edges.map(edge => {
     const isHighlighted = highlightedEdges.has(edge.id)
-    const depth = highlightedEdges.get(edge.id) ?? 0
+    const edgeInfo = highlightedEdges.get(edge.id)
+    const depth = edgeInfo?.depth ?? 0
+    const version = edgeInfo?.version ?? ''
     const length = getEdgeLength(edge)
     return {
       ...edge,
       style: {
         ...edge.style,
         strokeWidth: isHighlighted ? 4 : 2,
-        stroke: isHighlighted ? getDepthColor(depth) : (edge.style?.stroke || defaultEdgeColor),
+        stroke: isHighlighted ? getDepthColor(depth, version) : (edge.style?.stroke || defaultEdgeColor),
         opacity: hasHighlighting && !isHighlighted ? 0 : 1,
       },
       // Shorter visual edges on top (higher z-index for shorter length)
@@ -764,6 +812,7 @@ function GraphContent() {
           if (!open) {
             setHighlightedNodes(new Set())
             setHighlightedEdges(new Map())
+            setMaxDepthPerVersion(new Map())
           }
         }}
       />
