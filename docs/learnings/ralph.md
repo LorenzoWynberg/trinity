@@ -379,8 +379,30 @@ After creating a new story, Ralph checks if existing stories should depend on it
 - `--auto-reverse-deps` - Auto-add all suggestions
 - Included in `--yolo` mode
 
+### Tag-based propagation (smarter expansion)
+
+By default, `propagate-external-deps` only analyzes descendants (stories in dependency tree). With `--include-related`, also analyzes tag-related stories:
+
+**Two-phase analysis:**
+- **Phase A (always):** Descendants - direct dependency tree, high confidence
+- **Phase B (with flag):** Related by tags - not in tree, conservative analysis
+
+**Phase B flow:**
+1. Find stories with ≥1 tag overlap with source
+2. Exclude source and descendants (already in Phase A)
+3. Sort by tree proximity (same epic → same phase → adjacent → distant)
+4. Analyze with conservative prompt ("might be affected, when in doubt skip")
+5. Show separate UI section: `[a]pply all / [r]eview individually / [s]kip`
+
+**Flags:**
+- `--include-related` - Enable Phase B analysis
+- `--auto-related` - Auto-apply related updates (implies --include-related)
+- Both included in `--yolo` mode
+
+**Why optional:** Tag expansion can cause scope creep, false positives, and more Claude API calls. Making it opt-in lets users choose when they want deeper analysis.
+
 ### Yolo mode
-`--yolo` enables all `--auto-*` flags: `--no-validate`, `--auto-pr`, `--auto-merge`, `--auto-clarify`, `--auto-duplicate`, `--auto-reverse-deps`
+`--yolo` enables all `--auto-*` flags: `--no-validate`, `--auto-pr`, `--auto-merge`, `--auto-clarify`, `--auto-duplicate`, `--auto-reverse-deps`, `--include-related`, `--auto-related`
 
 Still respects hard gates: unmet deps (exit), external deps (prompt for report), human testing.
 

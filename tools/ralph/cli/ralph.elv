@@ -60,7 +60,7 @@ var prompt-template = (cat $prompt-file | slurp)
 # Initialize remaining modules
 state:init $state-file &root=$project-root
 git:init $project-root $config[base-branch]
-claude:init $project-root $script-dir $prompt-template $config[claude-timeout] $config[quiet-mode] $config[max-iterations] &auto-dup=$config[auto-duplicate] &auto-rev-deps=$config[auto-reverse-deps]
+claude:init $project-root $script-dir $prompt-template $config[claude-timeout] $config[quiet-mode] $config[max-iterations] &auto-dup=$config[auto-duplicate] &auto-rev-deps=$config[auto-reverse-deps] &inc-related=$config[include-related] &auto-rel=$config[auto-related]
 pr:init $project-root $config[base-branch] $config[auto-pr] $config[auto-merge]
 metrics:init $metrics-file
 release:init $project-root $config[base-branch] "main" $config[claude-timeout]

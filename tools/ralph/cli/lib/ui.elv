@@ -87,6 +87,8 @@ OPTIONS:
   --auto-clarify          Auto-proceed on validation questions (make reasonable assumptions)
   --auto-duplicate        Auto-update existing story when duplicate detected (default: prompt)
   --auto-reverse-deps     Auto-add reverse dependencies when suggested (default: prompt)
+  --include-related       Analyze tag-related stories beyond dependency tree
+  --auto-related          Auto-apply related story updates (implies --include-related)
   --yolo                  Full auto: all --auto-* flags enabled
   --no-notifs             Disable desktop notifications (default: enabled)
   --skip ID "reason"      Skip a story, allowing dependents to proceed

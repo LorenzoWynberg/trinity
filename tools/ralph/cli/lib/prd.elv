@@ -1018,3 +1018,42 @@ fn get-story-deps {|story-id|
 fn get-story-phase {|story-id|
   jq -r '.stories[] | select(.id == "'$story-id'") | .phase' $prd-file
 }
+
+# Get story epic number
+fn get-story-epic {|story-id|
+  jq -r '.stories[] | select(.id == "'$story-id'") | .epic' $prd-file
+}
+
+# Get story tags as JSON array
+fn get-story-tags {|story-id|
+  jq -c '.stories[] | select(.id == "'$story-id'") | .tags // []' $prd-file
+}
+
+# Sort stories by tree proximity to a source story
+# Returns stories ordered: same epic → same phase → adjacent phase → distant
+fn sort-by-proximity {|source-id story-ids|
+  var source-phase = (num (get-story-phase $source-id))
+  var source-epic = (num (get-story-epic $source-id))
+
+  var same-epic = []
+  var same-phase = []
+  var adjacent-phase = []
+  var distant = []
+
+  for sid $story-ids {
+    var sid-phase = (num (get-story-phase $sid))
+    var sid-epic = (num (get-story-epic $sid))
+
+    if (and (eq $sid-phase $source-phase) (eq $sid-epic $source-epic)) {
+      set same-epic = [$@same-epic $sid]
+    } elif (eq $sid-phase $source-phase) {
+      set same-phase = [$@same-phase $sid]
+    } elif (or (eq $sid-phase (- $source-phase 1)) (eq $sid-phase (+ $source-phase 1))) {
+      set adjacent-phase = [$@adjacent-phase $sid]
+    } else {
+      set distant = [$@distant $sid]
+    }
+  }
+
+  put [$@same-epic $@same-phase $@adjacent-phase $@distant]
+}

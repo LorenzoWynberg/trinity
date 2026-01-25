@@ -18,9 +18,11 @@ var quiet-mode = $false
 var max-iterations = 100
 var auto-duplicate = $false
 var auto-reverse-deps = $false
+var include-related = $false
+var auto-related = $false
 
 # Initialize with configuration
-fn init {|root sdir template timeout quiet max-iter &auto-dup=$false &auto-rev-deps=$false|
+fn init {|root sdir template timeout quiet max-iter &auto-dup=$false &auto-rev-deps=$false &inc-related=$false &auto-rel=$false|
   set project-root = $root
   set script-dir = $sdir
   set prompt-template = $template
@@ -29,6 +31,8 @@ fn init {|root sdir template timeout quiet max-iter &auto-dup=$false &auto-rev-d
   set max-iterations = $max-iter
   set auto-duplicate = $auto-dup
   set auto-reverse-deps = $auto-rev-deps
+  set include-related = $inc-related
+  set auto-related = $auto-rel
 
   # Load feedback template and workflow partial (relative to script directory)
   var prompts-dir = (path:join $sdir "prompts")
@@ -884,12 +888,132 @@ fn apply-reverse-deps {|new-id story-ids|
   }
 }
 
+# Analyze a batch of stories with optional context from previous decisions
+# Returns list of decision objects with action, id, reason, etc.
+fn analyze-batch {|stories report story-id story-title phase epic previous-context &conservative=$false|
+  var summary = (prd:get-stories-summary $stories)
+
+  var conservative-note = ""
+  if $conservative {
+    set conservative-note = "
+**CONSERVATIVE MODE:** These stories share tags but don't depend on the source story.
+They MIGHT be affected. Be conservative - only suggest updates if clearly necessary.
+When in doubt, mark as skip.
+"
+  }
+
+  var context-section = ""
+  if (not (eq $previous-context "")) {
+    set context-section = "
+## Previous Decisions
+"$previous-context"
+Avoid duplicating these decisions.
+"
+  }
+
+  var prompt = 'You are refining a PRD based on implementation decisions.
+
+Story '$story-id' ("'$story-title'") in Phase '$phase', Epic '$epic' has external dependencies that were just implemented.
+'$conservative-note'
+## External Dependencies Report
+'$report'
+'$context-section'
+## Stories to Analyze
+'$summary'
+
+## Available Tags
+Domain: core, cli, db, git, claude, prompts, auth
+Feature: config, prd, loop, validation, recovery, release, skills
+Concern: api, testing, ux, docs
+
+## Task
+1. Analyze each story: does it need acceptance criteria or tag updates based on the report?
+2. Identify GAPS: what new stories are needed based on the report?
+3. Check for DUPLICATES: before creating, verify no similar story exists
+
+Output format (JSON):
+```json
+{
+  "updates": [
+    {
+      "id": "X.Y.Z",
+      "reason": "Why this needs updating",
+      "acceptance": ["Updated criterion 1", "Updated criterion 2"],
+      "tags": ["auth", "api"]
+    }
+  ],
+  "create": [
+    {
+      "title": "Story title",
+      "intent": "Why this story is needed",
+      "acceptance": ["Criterion 1", "Criterion 2"],
+      "tags": ["auth", "api"],
+      "phase": '$phase',
+      "epic": '$epic',
+      "depends_on": ["'$story-id'"],
+      "reason": "Why this new story is needed"
+    }
+  ],
+  "skip": [
+    {
+      "id": "X.Y.Z",
+      "reason": "Why this can stay as-is"
+    }
+  ]
+}
+```
+
+Rules:
+- Only update stories where the report is directly relevant
+- Create new stories for functionality revealed by the report but not covered
+- Keep acceptance criteria specific, testable, referencing concrete details'
+
+  var result = ""
+  try {
+    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
+  } catch e {
+    put ""
+    return
+  }
+
+  # Extract JSON from response
+  var json-block = ""
+  try {
+    set json-block = (echo $result | sed -n '/```json/,/```/p' | sed '1d;$d' | slurp)
+  } catch _ { }
+
+  put $json-block
+}
+
+# Format decisions for context aggregation
+fn format-decisions-for-context {|decisions|
+  if (eq (count $decisions) 0) {
+    put ""
+    return
+  }
+
+  var ctx = ""
+  for d $decisions {
+    if (eq $d[action] "create") {
+      set ctx = $ctx"- CREATED: '"$d[title]"' as "$d[id]"\n"
+    } elif (eq $d[action] "update") {
+      set ctx = $ctx"- UPDATED: "$d[id]" ("$d[reason]")\n"
+    } elif (eq $d[action] "skip") {
+      set ctx = $ctx"- SKIPPED: "$d[id]"\n"
+    }
+  }
+  put $ctx
+}
+
 # Propagate external deps report to descendant stories
 # Analyzes descendants, identifies gaps, creates new stories, with user confirmation
 fn propagate-external-deps {|story-id report|
   ui:status "Analyzing PRD for updates and gaps..."
 
-  # Get all descendants
+  # Get source story info
+  var source-tags = (prd:get-story-tags $story-id)
+
+  # Get all descendants for Phase A
   var descendants = [(prd:get-descendants $story-id)]
   var summary = ""
   if (> (count $descendants) 0) {
@@ -1224,5 +1348,253 @@ Rules:
   }
 
   echo "" > /dev/tty
-  ui:success "PRD updated successfully" > /dev/tty
+  ui:success "Phase A: Descendants updated successfully" > /dev/tty
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PHASE B: Tag-Related Analysis (only with --include-related flag)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  if (not $include-related) {
+    return
+  }
+
+  echo "" > /dev/tty
+  ui:divider "Phase B: Analyzing Related Stories" > /dev/tty
+
+  # Build context from Phase A decisions
+  var phase-a-context = ""
+  if (> (count $updates) 0) {
+    for update $updates {
+      var parts = [(str:split "|" $update)]
+      set phase-a-context = $phase-a-context"- UPDATED: "$parts[0]" ("$parts[1]")\n"
+    }
+  }
+  for item $create-items {
+    var cr-title = (echo $item | jq -r '.title')
+    set phase-a-context = $phase-a-context"- CREATED: '"$cr-title"'\n"
+  }
+  for skip $skips {
+    set phase-a-context = $phase-a-context"- SKIPPED: "$skip"\n"
+  }
+
+  # Find stories with tag overlap that are NOT descendants
+  var related = []
+  try {
+    var all-related = [(prd:find-similar-by-tags $source-tags &min-overlap=(num 1))]
+    for r $all-related {
+      # Exclude source story
+      if (eq $r $story-id) { continue }
+      # Exclude descendants (already handled in Phase A)
+      if (has-value $descendants $r) { continue }
+      set related = [$@related $r]
+    }
+  } catch _ { }
+
+  if (eq (count $related) 0) {
+    ui:dim "  No additional related stories found" > /dev/tty
+    ui:divider-end > /dev/tty
+    return
+  }
+
+  # Sort by tree proximity (same epic → same phase → adjacent → distant)
+  set related = (prd:sort-by-proximity $story-id $related)
+
+  ui:dim "  Found "(count $related)" related stories by tags: "(str:join ", " $related) > /dev/tty
+  echo "" > /dev/tty
+
+  # Analyze related stories with conservative prompt
+  var related-summary = (prd:get-stories-summary $related)
+
+  var related-prompt = 'You are refining a PRD based on implementation decisions.
+
+Story '$story-id' ("'$story-title'") in Phase '$phase', Epic '$epic' has external dependencies that were just implemented.
+
+**CONSERVATIVE MODE:** These stories share tags but do NOT depend on the source story.
+They MIGHT be affected. Be conservative - only suggest updates if clearly necessary.
+When in doubt, mark as skip.
+
+## External Dependencies Report
+'$report'
+
+## Previous Decisions (Phase A - Descendants)
+'$phase-a-context'
+Avoid duplicating these decisions.
+
+## Related Stories to Analyze (share ≥1 tag)
+'$related-summary'
+
+## Task
+Analyze CONSERVATIVELY: Does this external deps report clearly affect these stories?
+Only suggest updates if there is a clear, direct impact.
+
+Output format (JSON):
+```json
+{
+  "updates": [
+    {
+      "id": "X.Y.Z",
+      "reason": "Why this clearly needs updating",
+      "acceptance": ["Updated criterion 1", "Updated criterion 2"],
+      "tags": ["auth", "api"]
+    }
+  ],
+  "skip": [
+    {
+      "id": "X.Y.Z",
+      "reason": "Why this is unrelated or does not need changes"
+    }
+  ]
+}
+```
+
+Rules:
+- Be CONSERVATIVE - when in doubt, skip
+- No new story creation in Phase B (only updates to existing)
+- Only update if the report directly and clearly affects the story'
+
+  var related-result = ""
+  try {
+    set related-result = (echo $related-prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
+  } catch e {
+    ui:warn "  Failed to analyze related stories: "(to-string $e[reason]) > /dev/tty
+    ui:divider-end > /dev/tty
+    return
+  }
+
+  # Extract JSON from response
+  var related-json = ""
+  try {
+    set related-json = (echo $related-result | sed -n '/```json/,/```/p' | sed '1d;$d' | slurp)
+  } catch _ { }
+
+  if (eq $related-json "") {
+    ui:dim "  No updates needed for related stories" > /dev/tty
+    ui:divider-end > /dev/tty
+    return
+  }
+
+  # Parse results
+  var related-updates = []
+  var related-skips = []
+  try {
+    set related-updates = [(echo $related-json | jq -r '.updates[]? | "\(.id)|\(.reason)"')]
+  } catch _ { }
+  try {
+    set related-skips = [(echo $related-json | jq -r '.skip[]? | "\(.id): \(.reason)"')]
+  } catch _ { }
+
+  # Show summary
+  echo "" > /dev/tty
+  ui:status "Related Stories Analysis:" > /dev/tty
+
+  if (> (count $related-updates) 0) {
+    echo "" > /dev/tty
+    ui:status "Suggested updates ("(count $related-updates)"):" > /dev/tty
+    for update $related-updates {
+      var parts = [(str:split "|" $update)]
+      ui:dim "  ? "$parts[0]": "$parts[1] > /dev/tty
+    }
+  }
+
+  if (> (count $related-skips) 0) {
+    echo "" > /dev/tty
+    ui:dim "Unaffected ("(count $related-skips)"):" > /dev/tty
+    for skip $related-skips {
+      ui:dim "  ○ "$skip > /dev/tty
+    }
+  }
+
+  # Check if any updates
+  if (eq (count $related-updates) 0) {
+    echo "" > /dev/tty
+    ui:dim "No updates needed for related stories" > /dev/tty
+    ui:divider-end > /dev/tty
+    return
+  }
+
+  # User confirmation (or auto-related mode)
+  echo "" > /dev/tty
+  var related-action = ""
+  if $auto-related {
+    set related-action = "apply"
+    ui:dim "Auto-applying related updates..." > /dev/tty
+  } else {
+    echo "\e[33m[a]pply all / [r]eview individually / [s]kip all\e[0m" > /dev/tty
+    try {
+      set related-action = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
+    } catch _ { }
+    echo "" > /dev/tty
+  }
+
+  if (re:match '^[sS]' $related-action) {
+    ui:dim "Related updates skipped" > /dev/tty
+    ui:divider-end > /dev/tty
+    return
+  }
+
+  # Apply related updates
+  var to-apply = []
+  if (or (re:match '^[aA]' $related-action) (eq $related-action "apply")) {
+    # Apply all
+    set to-apply = $related-updates
+  } elif (re:match '^[rR]' $related-action) {
+    # Review individually
+    for update $related-updates {
+      var parts = [(str:split "|" $update)]
+      var uid = $parts[0]
+      var ureason = $parts[1]
+      var utitle = (prd:get-story-title $uid)
+
+      echo "" > /dev/tty
+      echo "Update "$uid"?" > /dev/tty
+      echo "  "$uid": "$utitle > /dev/tty
+      echo "  Reason: "$ureason > /dev/tty
+      echo "\e[33m[y]es / [n]o\e[0m" > /dev/tty
+
+      var uanswer = ""
+      try {
+        set uanswer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
+      } catch _ { }
+      echo "" > /dev/tty
+
+      if (re:match '^[yY]' $uanswer) {
+        set to-apply = [$@to-apply $update]
+      }
+    }
+  }
+
+  # Apply selected updates
+  if (> (count $to-apply) 0) {
+    ui:status "Applying related updates..." > /dev/tty
+    for update $to-apply {
+      var parts = [(str:split "|" $update)]
+      var sid = $parts[0]
+
+      var update-obj = ""
+      try {
+        set update-obj = (echo $related-json | jq -c '.updates[] | select(.id == "'$sid'")')
+      } catch _ { continue }
+
+      var fields = [&]
+      var new-acceptance = (echo $update-obj | jq -c '.acceptance // null')
+      var new-tags = (echo $update-obj | jq -c '.tags // null')
+
+      if (and (not (eq $new-acceptance "null")) (not (eq $new-acceptance ""))) {
+        set fields[acceptance] = $new-acceptance
+      }
+      if (and (not (eq $new-tags "null")) (not (eq $new-tags ""))) {
+        set fields[tags] = $new-tags
+      }
+
+      if (> (count $fields) 0) {
+        var fields-json = (put $fields | to-json)
+        prd:update-story $sid $fields-json
+        ui:success "  ✓ Updated "$sid > /dev/tty
+      }
+    }
+  }
+
+  echo "" > /dev/tty
+  ui:divider-end > /dev/tty
+  ui:success "Phase B: Related stories updated" > /dev/tty
 }
