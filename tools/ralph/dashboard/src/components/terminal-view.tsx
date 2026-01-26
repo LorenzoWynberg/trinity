@@ -54,37 +54,56 @@ export function TerminalView() {
     terminalRef.current = term
     fitAddonRef.current = fitAddon
 
-    // Connect WebSocket
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:4001'
-    const ws = new WebSocket(wsUrl)
-    wsRef.current = ws
+    // Determine WebSocket URL
+    async function connectWebSocket() {
+      let wsUrl = 'ws://localhost:4001'
 
-    ws.onopen = () => {
-      setConnected(true)
-      // Send initial size
-      ws.send(JSON.stringify({
-        type: 'resize',
-        cols: term.cols,
-        rows: term.rows
-      }))
+      // If not on localhost, try to get ngrok tunnel URL
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      if (!isLocalhost) {
+        try {
+          const res = await fetch('/api/tunnels')
+          const tunnels = await res.json()
+          if (tunnels.terminal) {
+            // Convert https:// to wss://
+            wsUrl = tunnels.terminal.replace('https://', 'wss://').replace('http://', 'ws://')
+          }
+        } catch {
+          // Fall back to localhost
+        }
+      }
+
+      const ws = new WebSocket(wsUrl)
+      wsRef.current = ws
+
+      ws.onopen = () => {
+        setConnected(true)
+        ws.send(JSON.stringify({
+          type: 'resize',
+          cols: term.cols,
+          rows: term.rows
+        }))
+      }
+
+      ws.onmessage = (e) => term.write(e.data)
+      ws.onclose = () => setConnected(false)
+      ws.onerror = () => setConnected(false)
+
+      // Send keystrokes to server
+      term.onData((data) => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'input', data }))
+        }
+      })
     }
 
-    ws.onmessage = (e) => term.write(e.data)
-    ws.onclose = () => setConnected(false)
-    ws.onerror = () => setConnected(false)
-
-    // Send keystrokes to server
-    term.onData((data) => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'input', data }))
-      }
-    })
+    connectWebSocket()
 
     // Handle resize
     const resizeObserver = new ResizeObserver(() => {
       fitAddon.fit()
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({
           type: 'resize',
           cols: term.cols,
           rows: term.rows
@@ -95,7 +114,7 @@ export function TerminalView() {
 
     return () => {
       resizeObserver.disconnect()
-      ws.close()
+      wsRef.current?.close()
       term.dispose()
     }
   }, [])
