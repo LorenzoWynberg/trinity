@@ -278,3 +278,10 @@
 .cyber-light .react-flow__controls button path {
   fill: #0891b2;
 }
+
+/* Mobile: move ReactFlow controls higher */
+@media (max-width: 768px) {
+  .react-flow__controls {
+    bottom: 80px !important;
+  }
+}

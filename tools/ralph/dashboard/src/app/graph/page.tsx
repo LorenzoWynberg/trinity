@@ -19,7 +19,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useTheme } from 'next-themes'
-import { ArrowRight, ArrowDown, Save, Trash2, Loader2, Star, Maximize, Minimize } from 'lucide-react'
+import { ArrowRight, ArrowDown, Save, Trash2, Loader2, Star, Maximize, Minimize, SlidersHorizontal } from 'lucide-react'
 import { StoryNode } from '@/components/story-node'
 import { VersionNode } from '@/components/version-node'
 import { StoryModal } from '@/components/story-modal'
@@ -96,6 +96,7 @@ function GraphContent() {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showDeadEnds, setShowDeadEnds] = useState(false)
   const [showExternalDeps, setShowExternalDeps] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   // Load settings on mount
   useEffect(() => {
@@ -677,8 +678,9 @@ function GraphContent() {
           </div>
         )}
 
-        {/* Layout Selector - Right */}
-        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        {/* Layout Controls - Right */}
+        {/* Desktop: full controls */}
+        <div className="absolute top-4 right-4 z-10 hidden md:flex items-center gap-2">
           <Select
             value={layoutData.active}
             onValueChange={handleLayoutChange}
@@ -801,6 +803,96 @@ function GraphContent() {
           >
             {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
           </Button>
+        </div>
+
+        {/* Mobile: dropdown menu */}
+        <div className="absolute top-4 right-4 z-10 md:hidden">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 bg-background"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+          </Button>
+
+          {mobileMenuOpen && (
+            <div className="absolute top-12 right-0 w-64 bg-background border rounded-lg shadow-lg p-3 space-y-3">
+              {/* Layout selector */}
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Layout</label>
+                <Select
+                  value={layoutData.active}
+                  onValueChange={(v) => {
+                    handleLayoutChange(v)
+                    if (v !== '__create__') setMobileMenuOpen(false)
+                  }}
+                  disabled={isVersionLoading || isLayoutLoading}
+                >
+                  <SelectTrigger className="w-full h-9 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="horizontal">Horizontal</SelectItem>
+                    <SelectItem value="horizontal-compact">Horizontal Compact</SelectItem>
+                    <SelectItem value="vertical">Vertical</SelectItem>
+                    <SelectItem value="vertical-compact">Vertical Compact</SelectItem>
+                    {customLayoutNames.length > 0 && <div className="border-t my-1" />}
+                    {customLayoutNames.map(name => (
+                      <SelectItem key={name} value={name}>{name}</SelectItem>
+                    ))}
+                    <div className="border-t my-1" />
+                    <SelectItem value="__create__">Create view...</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Toggles */}
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn("w-full justify-start gap-2", showDeadEnds && "bg-orange-500/20 border-orange-500")}
+                  onClick={toggleDeadEnds}
+                >
+                  <div className={cn("w-2 h-2 rounded-full", showDeadEnds ? "bg-orange-500" : "bg-muted-foreground")} />
+                  Dead ends
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn("w-full justify-start gap-2", showExternalDeps && "bg-amber-500/20 border-amber-500")}
+                  onClick={toggleExternalDeps}
+                >
+                  <div className={cn("w-2 h-2 rounded-full", showExternalDeps ? "bg-amber-500" : "bg-muted-foreground")} />
+                  External deps
+                </Button>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-2 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 gap-1"
+                  onClick={handleSetDefault}
+                  disabled={layoutData.active === layoutData.defaultLayout}
+                >
+                  <Star className={cn("h-3 w-3", layoutData.active === layoutData.defaultLayout && "fill-yellow-500 text-yellow-500")} />
+                  Default
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 gap-1"
+                  onClick={handleFullscreen}
+                >
+                  {isFullscreen ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
+                  {isFullscreen ? 'Exit' : 'Full'}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         <ReactFlow

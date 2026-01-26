@@ -183,14 +183,16 @@ function StoriesListInner({ prd, currentStoryId, versions, currentVersion, versi
       </div>
 
       <Tabs defaultValue="all">
-        <TabsList>
-          <TabsTrigger value="all">All ({storiesByStatus.all.length})</TabsTrigger>
-          <TabsTrigger value="pending">Pending ({storiesByStatus.pending.length})</TabsTrigger>
-          <TabsTrigger value="in_progress">In Progress ({storiesByStatus.in_progress.length})</TabsTrigger>
-          <TabsTrigger value="passed">Passed ({storiesByStatus.passed.length})</TabsTrigger>
-          <TabsTrigger value="merged">Merged ({storiesByStatus.merged.length})</TabsTrigger>
-          <TabsTrigger value="skipped">Skipped ({storiesByStatus.skipped.length})</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-2 px-2 pb-2">
+          <TabsList className="inline-flex w-max md:w-auto">
+            <TabsTrigger value="all">All ({storiesByStatus.all.length})</TabsTrigger>
+            <TabsTrigger value="pending">Pending ({storiesByStatus.pending.length})</TabsTrigger>
+            <TabsTrigger value="in_progress">In Progress ({storiesByStatus.in_progress.length})</TabsTrigger>
+            <TabsTrigger value="passed">Passed ({storiesByStatus.passed.length})</TabsTrigger>
+            <TabsTrigger value="merged">Merged ({storiesByStatus.merged.length})</TabsTrigger>
+            <TabsTrigger value="skipped">Skipped ({storiesByStatus.skipped.length})</TabsTrigger>
+          </TabsList>
+        </div>
 
         {Object.entries(storiesByStatus).map(([status, statusStories]) => (
           <TabsContent key={status} value={status} className="mt-6">
