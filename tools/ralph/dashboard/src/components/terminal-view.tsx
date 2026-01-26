@@ -134,9 +134,9 @@ export function TerminalView() {
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 h-full">
       {/* Quick commands */}
-      <div className="flex gap-2 flex-wrap items-center">
+      <div className="flex gap-2 flex-wrap items-center flex-shrink-0">
         <Button size="sm" onClick={() => runRalph()}>
           <Play className="h-4 w-4 mr-1" /> Run
         </Button>
@@ -149,16 +149,15 @@ export function TerminalView() {
         <Button size="sm" variant="outline" onClick={() => runRalph('--stats')}>
           <BarChart2 className="h-4 w-4 mr-1" /> Stats
         </Button>
-      </div>
-      <div className={`text-xs px-2 py-1 rounded w-fit ${connected ? 'text-green-500 bg-green-500/10' : 'text-red-500 bg-red-500/10'}`}>
-        {connected ? '● Connected' : '○ Disconnected'}
+        <span className={`text-xs px-2 py-1 rounded ${connected ? 'text-green-500 bg-green-500/10' : 'text-red-500 bg-red-500/10'}`}>
+          {connected ? '● Connected' : '○ Disconnected'}
+        </span>
       </div>
 
       {/* Terminal */}
       <div
         ref={termRef}
-        className="rounded-lg border overflow-hidden bg-[#1a1025] p-2 touch-pan-y"
-        style={{ height: 'calc(100vh - 280px)', minHeight: 300 }}
+        className="rounded-lg border overflow-hidden bg-[#1a1025] p-2 flex-1 min-h-0"
       />
     </div>
   )
