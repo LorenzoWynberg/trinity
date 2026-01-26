@@ -3,16 +3,18 @@ const pty = require('node-pty')
 const path = require('path')
 
 const PORT = process.env.WS_PORT || 4001
+const SESSION_NAME = process.env.TMUX_SESSION || 'ralph'
 const wss = new WebSocketServer({ port: PORT })
 
 const cliDir = path.join(__dirname, '..', 'cli')
-const shell = '/bin/zsh'  // Use explicit path
 
 wss.on('connection', (ws) => {
   console.log(`[${new Date().toISOString()}] Client connected`)
 
-  // Spawn a real PTY shell
-  const ptyProcess = pty.spawn(shell, [], {
+  // Spawn tmux - creates new session or attaches to existing one
+  // -A: attach to session if it exists, create if not
+  // -s: session name
+  const ptyProcess = pty.spawn('tmux', ['new-session', '-A', '-s', SESSION_NAME], {
     name: 'xterm-256color',
     cols: 120,
     rows: 30,
@@ -23,10 +25,6 @@ wss.on('connection', (ws) => {
       COLORTERM: 'truecolor',
     }
   })
-
-  // Send welcome message then shell prompt will appear
-  ws.send('\x1b[36mRalph Terminal\x1b[0m - Full PTY shell\r\n')
-  ws.send('\x1b[90mWorking directory: ' + cliDir + '\x1b[0m\r\n\r\n')
 
   // PTY output -> WebSocket
   ptyProcess.onData((data) => {
@@ -49,17 +47,18 @@ wss.on('connection', (ws) => {
   })
 
   ws.on('close', () => {
-    console.log(`[${new Date().toISOString()}] Client disconnected`)
+    console.log(`[${new Date().toISOString()}] Client disconnected (tmux session "${SESSION_NAME}" persists)`)
+    // Kill the PTY process (detaches from tmux) but tmux session survives
     ptyProcess.kill()
   })
 
   ptyProcess.onExit(({ exitCode }) => {
-    console.log(`[${new Date().toISOString()}] Shell exited with code ${exitCode}`)
+    console.log(`[${new Date().toISOString()}] PTY exited with code ${exitCode}`)
     ws.close()
   })
 })
 
 console.log(`Terminal WebSocket server running on ws://localhost:${PORT}`)
 console.log(`Working directory: ${cliDir}`)
-console.log(`Shell: ${shell}`)
-console.log(`\nThis is a full PTY - interactive programs like 'claude' should work`)
+console.log(`tmux session: ${SESSION_NAME}`)
+console.log(`\nSessions persist across page refresh/reconnect`)
