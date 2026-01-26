@@ -3,6 +3,7 @@ export interface Story {
   id: string
   title: string
   intent?: string
+  description?: string
   acceptance: string[]
   phase: number
   epic: number

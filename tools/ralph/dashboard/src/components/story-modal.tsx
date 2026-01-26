@@ -403,6 +403,13 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
                 </div>
               )}
 
+              {story.description && (
+                <div>
+                  <h4 className="text-sm font-medium mb-1">Description</h4>
+                  <p className="text-sm text-muted-foreground">{story.description}</p>
+                </div>
+              )}
+
               <div>
                 <h4 className="text-sm font-medium mb-2">Acceptance Criteria</h4>
                 <ul className="space-y-1">

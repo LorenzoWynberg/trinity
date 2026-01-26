@@ -112,6 +112,17 @@ export default async function StoryDetailPage({
         </Card>
       )}
 
+      {story.description && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Description</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">{story.description}</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Acceptance Criteria */}
       <Card>
         <CardHeader className="pb-2">
