@@ -157,7 +157,7 @@ export function TerminalView() {
       {/* Terminal */}
       <div
         ref={termRef}
-        className="rounded-lg border overflow-hidden bg-[#1a1025] p-2 h-[500px]"
+        className="rounded-lg border overflow-hidden bg-[#1a1025] p-2 h-[700px] md:h-[500px]"
       />
     </div>
   )
