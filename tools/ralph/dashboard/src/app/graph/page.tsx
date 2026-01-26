@@ -58,8 +58,6 @@ function GraphContent() {
     setMounted(true)
   }, [])
 
-  const isDark = mounted ? (resolvedTheme === 'dark' || resolvedTheme === 'cyber-dark') : true
-  const isCyber = mounted ? (resolvedTheme === 'cyber-dark' || resolvedTheme === 'cyber-light') : false
   const {
     nodes: initialNodes,
     edges: initialEdges,
@@ -613,7 +611,7 @@ function GraphContent() {
   }
 
   // Apply highlighting styles to edges
-  const defaultEdgeColor = isDark ? '#6b7280' : '#9ca3af'
+  const defaultEdgeColor = 'var(--graph-edge-default)'
   const hasHighlighting = highlightedEdges.size > 0
 
   // Build node position map for edge length calculation
@@ -1016,30 +1014,30 @@ function GraphContent() {
           fitViewOptions={{ padding: 0.1 }}
           minZoom={0.1}
           maxZoom={2}
-          style={{ background: isCyber ? (isDark ? '#1a1025' : '#f0fdfa') : (isDark ? '#0a0a0a' : '#f8fafc') }}
+          style={{ background: 'var(--graph-bg)' }}
         >
           <Background
             variant={BackgroundVariant.Dots}
             gap={20}
             size={1}
-            color={isCyber ? (isDark ? '#ff2d9580' : '#06b6d460') : (isDark ? '#333' : '#ccc')}
+            color="var(--graph-dots)"
           />
           <Controls showInteractive={!isAutoLayout} />
           <MiniMap
             nodeColor={(node) => {
-              if (node.type === 'version') return isCyber ? (isDark ? '#ff2d95' : '#06b6d4') : (isDark ? '#a855f7' : '#9333ea')
+              if (node.type === 'version') return 'var(--graph-node-version)'
               const status = node.data?.status as string
               switch (status) {
                 case 'merged': return '#22c55e'
                 case 'passed': return '#eab308'
-                case 'in_progress': return isCyber ? '#0ff' : '#3b82f6'
+                case 'in_progress': return 'var(--graph-node-in-progress)'
                 case 'skipped': return '#a855f7'
                 case 'blocked': return '#ef4444'
-                default: return isCyber ? (isDark ? '#6b4f7a' : '#67e8f9') : (isDark ? '#6b7280' : '#9ca3af')
+                default: return 'var(--graph-node-default)'
               }
             }}
-            maskColor={isCyber ? (isDark ? 'rgba(26, 16, 37, 0.8)' : 'rgba(240, 253, 250, 0.8)') : (isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)')}
-            style={{ background: isCyber ? (isDark ? '#120a1a' : '#ecfeff') : (isDark ? '#1a1a1a' : '#f1f5f9') }}
+            maskColor="var(--graph-minimap-mask)"
+            style={{ background: 'var(--graph-minimap-bg)' }}
           />
         </ReactFlow>
       </div>
