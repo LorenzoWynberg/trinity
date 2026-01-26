@@ -1,4 +1,4 @@
-import { getPRD, getState, getVersions, getSettings } from '@/lib/data'
+import { getPRD, getState, getVersions, getSettings, getVersionsWithMetadata } from '@/lib/data'
 import { StoriesList } from '@/components/stories-list'
 import { StoriesHeader } from '@/components/stories-header'
 
@@ -11,9 +11,10 @@ interface PageProps {
 export default async function StoriesPage({ searchParams }: PageProps) {
   const { version: selectedVersion } = await searchParams
 
-  const [settings, versions] = await Promise.all([
+  const [settings, versions, versionMetadata] = await Promise.all([
     getSettings(),
-    getVersions()
+    getVersions(),
+    getVersionsWithMetadata()
   ])
 
   // Resolve the current version: URL param > settings default > first available
@@ -51,7 +52,7 @@ export default async function StoriesPage({ searchParams }: PageProps) {
         version={currentVersion}
       />
 
-      <StoriesList prd={prd} currentStoryId={currentStoryId} versions={versions} currentVersion={currentVersion} />
+      <StoriesList prd={prd} currentStoryId={currentStoryId} versions={versions} currentVersion={currentVersion} versionMetadata={versionMetadata} />
     </div>
   )
 }

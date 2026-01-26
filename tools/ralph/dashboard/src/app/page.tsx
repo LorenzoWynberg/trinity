@@ -1,4 +1,4 @@
-import { getPRD, getState, getMetrics, getPhaseProgress, getTotalStats, getStoryById, getVersions, getBlockedStories, getUnmergedPassed, getSettings } from '@/lib/data'
+import { getPRD, getState, getMetrics, getPhaseProgress, getTotalStats, getStoryById, getVersions, getBlockedStories, getUnmergedPassed, getSettings, getVersionsWithMetadata } from '@/lib/data'
 import { StatsCard } from '@/components/stats-card'
 import { ProgressBar } from '@/components/progress-bar'
 import { CurrentWork } from '@/components/current-work'
@@ -35,9 +35,10 @@ interface PageProps {
 export default async function DashboardPage({ searchParams }: PageProps) {
   const { version: selectedVersion } = await searchParams
 
-  const [settings, versions] = await Promise.all([
+  const [settings, versions, versionMetadata] = await Promise.all([
     getSettings(),
-    getVersions()
+    getVersions(),
+    getVersionsWithMetadata()
   ])
 
   // Resolve the current version: URL param > settings default > first available
@@ -82,7 +83,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">PRD:</span>
-          <VersionSelector versions={versions} currentVersion={currentVersion} />
+          <VersionSelector versions={versions} currentVersion={currentVersion} versionMetadata={versionMetadata} />
         </div>
       </div>
 

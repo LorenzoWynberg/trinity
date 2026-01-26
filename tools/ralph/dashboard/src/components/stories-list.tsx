@@ -14,11 +14,19 @@ import {
 import type { PRD, Story, StoryStatus } from '@/lib/types'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
+type VersionMetadata = {
+  version: string
+  title?: string
+  shortTitle?: string
+  description?: string
+}
+
 type StoriesListProps = {
   prd: PRD
   currentStoryId: string | null
   versions: string[]
   currentVersion: string
+  versionMetadata?: VersionMetadata[]
 }
 
 // Wrapper with Suspense to avoid hydration mismatch from useSearchParams + Radix Select
@@ -38,7 +46,7 @@ function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatu
   return 'pending'
 }
 
-function StoriesListInner({ prd, currentStoryId, versions, currentVersion }: StoriesListProps) {
+function StoriesListInner({ prd, currentStoryId, versions, currentVersion, versionMetadata }: StoriesListProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [selectedPhase, setSelectedPhase] = useState<string>('all')
@@ -132,15 +140,24 @@ function StoriesListInner({ prd, currentStoryId, versions, currentVersion }: Sto
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium">PRD:</label>
             <Select value={currentVersion} onValueChange={handleVersionChange}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue />
+              <SelectTrigger className="w-[160px]">
+                <SelectValue>
+                  {(() => {
+                    const meta = versionMetadata?.find(m => m.version === currentVersion)
+                    return meta?.shortTitle ? `${currentVersion} - ${meta.shortTitle}` : currentVersion
+                  })()}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {versions.map(version => (
-                  <SelectItem key={version} value={version}>
-                    {version}
-                  </SelectItem>
-                ))}
+                {versions.map(version => {
+                  const meta = versionMetadata?.find(m => m.version === version)
+                  const label = meta?.shortTitle ? `${version} - ${meta.shortTitle}` : version
+                  return (
+                    <SelectItem key={version} value={version}>
+                      {label}
+                    </SelectItem>
+                  )
+                })}
               </SelectContent>
             </Select>
           </div>

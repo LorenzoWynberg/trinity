@@ -153,6 +153,9 @@ export async function getVersionProgress(): Promise<VersionInfo[]> {
       const skipped = prd.stories.filter(s => s.skipped).length
       progress.push({
         version,
+        title: prd.title,
+        shortTitle: prd.shortTitle,
+        description: prd.description,
         total,
         merged,
         passed,
@@ -163,6 +166,26 @@ export async function getVersionProgress(): Promise<VersionInfo[]> {
   }
 
   return progress
+}
+
+// Get version metadata only (for dropdowns, etc.)
+export async function getVersionsWithMetadata(): Promise<{ version: string; title?: string; shortTitle?: string; description?: string }[]> {
+  const versions = await getVersions()
+  const metadata: { version: string; title?: string; shortTitle?: string; description?: string }[] = []
+
+  for (const version of versions) {
+    const prd = await getPRDForVersion(version)
+    if (prd) {
+      metadata.push({
+        version,
+        title: prd.title,
+        shortTitle: prd.shortTitle,
+        description: prd.description
+      })
+    }
+  }
+
+  return metadata
 }
 
 export async function getState(): Promise<State | null> {

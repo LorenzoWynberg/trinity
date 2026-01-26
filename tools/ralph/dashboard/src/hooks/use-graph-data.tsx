@@ -554,6 +554,9 @@ export function useGraphData(version: string = 'all'): GraphData {
               draggable: !isAutoLayout,
               data: {
                 label: progress.version,
+                title: progress.title,
+                shortTitle: progress.shortTitle,
+                description: progress.description,
                 total: progress.total,
                 merged: progress.merged,
                 percentage: progress.percentage,

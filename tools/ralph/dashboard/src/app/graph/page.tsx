@@ -645,23 +645,32 @@ function GraphContent() {
               }}
               disabled={isVersionLoading || isLayoutLoading}
             >
-              <SelectTrigger className="w-[140px] h-9 bg-background">
+              <SelectTrigger className="w-[180px] h-9 bg-background">
                 {isVersionLoading ? (
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     <span>Loading...</span>
                   </div>
                 ) : (
-                  <SelectValue placeholder="All versions" />
+                  <SelectValue placeholder="All versions">
+                    {selectedVersion === 'all' ? 'All versions' : (() => {
+                      const meta = versionProgress.find(v => v.version === selectedVersion)
+                      return meta?.shortTitle ? `${selectedVersion} - ${meta.shortTitle}` : selectedVersion
+                    })()}
+                  </SelectValue>
                 )}
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All versions</SelectItem>
-                {versions.map(version => (
-                  <SelectItem key={version} value={version}>
-                    {version}
-                  </SelectItem>
-                ))}
+                {versions.map(version => {
+                  const meta = versionProgress.find(v => v.version === version)
+                  const label = meta?.shortTitle ? `${version} - ${meta.shortTitle}` : version
+                  return (
+                    <SelectItem key={version} value={version}>
+                      {label}
+                    </SelectItem>
+                  )
+                })}
               </SelectContent>
             </Select>
           </div>

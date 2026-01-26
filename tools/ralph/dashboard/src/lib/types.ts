@@ -46,6 +46,9 @@ export interface PRD {
 // Version info for multi-version support
 export interface VersionInfo {
   version: string
+  title?: string
+  shortTitle?: string
+  description?: string
   total: number
   merged: number
   passed: number

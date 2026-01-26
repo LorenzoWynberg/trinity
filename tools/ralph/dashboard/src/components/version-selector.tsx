@@ -10,12 +10,20 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
+interface VersionMetadata {
+  version: string
+  title?: string
+  shortTitle?: string
+  description?: string
+}
+
 interface VersionSelectorProps {
   versions: string[]
   currentVersion: string
+  versionMetadata?: VersionMetadata[]
 }
 
-function VersionSelectorInner({ versions, currentVersion }: VersionSelectorProps) {
+function VersionSelectorInner({ versions, currentVersion, versionMetadata }: VersionSelectorProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -30,15 +38,24 @@ function VersionSelectorInner({ versions, currentVersion }: VersionSelectorProps
     return null
   }
 
+  // Helper to get display label for a version
+  const getLabel = (version: string) => {
+    const meta = versionMetadata?.find(m => m.version === version)
+    if (meta?.shortTitle) {
+      return `${version} - ${meta.shortTitle}`
+    }
+    return version
+  }
+
   return (
     <Select value={currentVersion} onValueChange={handleVersionChange}>
-      <SelectTrigger className="w-[120px] h-8">
-        <SelectValue />
+      <SelectTrigger className="w-[160px] h-8">
+        <SelectValue>{getLabel(currentVersion)}</SelectValue>
       </SelectTrigger>
       <SelectContent>
         {versions.map((version) => (
           <SelectItem key={version} value={version}>
-            {version}
+            {getLabel(version)}
           </SelectItem>
         ))}
       </SelectContent>
@@ -48,7 +65,7 @@ function VersionSelectorInner({ versions, currentVersion }: VersionSelectorProps
 
 export function VersionSelector(props: VersionSelectorProps) {
   return (
-    <Suspense fallback={<div className="w-[120px] h-8 bg-muted animate-pulse rounded-md" />}>
+    <Suspense fallback={<div className="w-[160px] h-8 bg-muted animate-pulse rounded-md" />}>
       <VersionSelectorInner {...props} />
     </Suspense>
   )

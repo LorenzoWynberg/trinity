@@ -6,6 +6,9 @@ import { cn } from '@/lib/utils'
 
 type VersionNodeData = {
   label: string
+  title?: string
+  shortTitle?: string
+  description?: string
   total: number
   merged: number
   percentage: number
@@ -29,7 +32,7 @@ export const VersionNode = memo(({ data }: NodeProps) => {
           'px-4 py-3 rounded-xl border-2 cursor-default',
           'bg-purple-50 border-purple-300 dark:bg-purple-950 dark:border-purple-700',
           'cyber-dark:bg-yellow-900/60 cyber-dark:border-yellow-400',
-          'min-w-[180px]'
+          'min-w-[180px] max-w-[240px]'
         )}
       >
         <div className={cn('flex items-center gap-3', isVertical && 'justify-center')}>
@@ -40,6 +43,16 @@ export const VersionNode = memo(({ data }: NodeProps) => {
             {nodeData.merged}/{nodeData.total}
           </span>
         </div>
+        {nodeData.title && (
+          <div className={cn('mt-1 text-sm font-medium text-purple-700 dark:text-purple-200 cyber-dark:text-fuchsia-200', isVertical && 'text-center')}>
+            {nodeData.title}
+          </div>
+        )}
+        {nodeData.description && (
+          <div className={cn('mt-1 text-xs text-purple-500 dark:text-purple-400 cyber-dark:text-fuchsia-300 line-clamp-2', isVertical && 'text-center')}>
+            {nodeData.description}
+          </div>
+        )}
         <div className="mt-2 h-1.5 bg-purple-200 dark:bg-purple-800 cyber-dark:bg-yellow-950 rounded-full overflow-hidden">
           <div
             className="h-full bg-green-500 dark:bg-green-400 rounded-full transition-all"
