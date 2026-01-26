@@ -320,7 +320,7 @@ export function calculateAutoPositions(
   const NODE_WIDTH = 170
   const NODE_HEIGHT = 70
   const VERSION_HEADER_WIDTH = 180
-  const VERSION_HEADER_HEIGHT = 160
+  const VERSION_HEADER_HEIGHT = 140
   const VERSION_GAP = 100
   const isVertical = direction === 'vertical' || direction === 'vertical-compact'
   const H_GAP = isVertical ? 80 : 60
