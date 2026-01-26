@@ -37,10 +37,11 @@ type StoryModalProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   version?: string
+  startInEditMode?: boolean
 }
 
-export function StoryModal({ story, status, open, onOpenChange, version }: StoryModalProps) {
-  const [editStep, setEditStep] = useState<'view' | 'input' | 'review' | 'complete'>('view')
+export function StoryModal({ story, status, open, onOpenChange, version, startInEditMode = false }: StoryModalProps) {
+  const [editStep, setEditStep] = useState<'view' | 'input' | 'review' | 'complete'>(startInEditMode ? 'input' : 'view')
   const [requestedChanges, setRequestedChanges] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -64,7 +65,7 @@ export function StoryModal({ story, status, open, onOpenChange, version }: Story
   const storyVersion = version || story.target_version || 'v0.1'
 
   const resetEdit = () => {
-    setEditStep('view')
+    setEditStep(startInEditMode ? 'input' : 'view')
     setRequestedChanges('')
     setUpdatedAcceptance([])
     setUpdatedIntent('')

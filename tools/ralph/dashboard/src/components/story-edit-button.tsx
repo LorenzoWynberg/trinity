@@ -29,6 +29,7 @@ export function StoryEditButton({ story, status, version }: StoryEditButtonProps
         open={open}
         onOpenChange={setOpen}
         version={version}
+        startInEditMode
       />
     </>
   )
