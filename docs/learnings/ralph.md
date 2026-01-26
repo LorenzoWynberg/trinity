@@ -326,9 +326,15 @@ const isCyber = resolvedTheme === 'cyber-dark' || resolvedTheme === 'cyber-light
 Interactive terminal for running Ralph from the dashboard.
 
 **Architecture:**
-- `ws-server.js` - WebSocket server that executes commands
+- `ws-server.js` - WebSocket server using node-pty for full PTY
 - `terminal-view.tsx` - xterm.js client component
-- Commands run via `child_process.spawn` (node-pty had compatibility issues with Node 22)
+- Full PTY support enables interactive programs like `claude`
+
+**node-pty fix:** If you get `posix_spawnp failed` error, rebuild from source:
+```bash
+rm -rf node_modules/node-pty && npm install node-pty --build-from-source
+```
+The prebuilt binary may be compiled for a different Node ABI version. Building from source compiles it for your exact Node version. Works on Node 20 and 22.
 
 **Running locally:**
 ```bash
@@ -370,10 +376,11 @@ tunnels:
 - Ctrl+C support for stopping processes
 - Commands execute in `tools/ralph/cli` directory
 
-**Limitations:**
-- Not a full PTY - simple command executor
-- No tab completion or command history
-- Interactive prompts (y/n) work but require typing + Enter
+**Features:**
+- Full PTY shell (zsh) - supports interactive programs
+- Tab completion and command history work
+- TUI apps like `claude` work properly
+- Quick command buttons: Run, Stop, Status, Stats
 
 ### PRD Tools (Wizard Modals)
 
