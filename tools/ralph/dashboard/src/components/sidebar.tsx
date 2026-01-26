@@ -9,7 +9,8 @@ import {
   Clock,
   BookOpen,
   Settings,
-  GitBranch
+  GitBranch,
+  Wand2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -17,6 +18,7 @@ const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/stories', label: 'Stories', icon: ListTodo },
   { href: '/graph', label: 'Graph', icon: GitBranch },
+  { href: '/prd-tools', label: 'PRD Tools', icon: Wand2 },
   { href: '/metrics', label: 'Metrics', icon: BarChart3 },
   { href: '/activity', label: 'Activity', icon: Clock },
   { href: '/learnings', label: 'Learnings', icon: BookOpen },

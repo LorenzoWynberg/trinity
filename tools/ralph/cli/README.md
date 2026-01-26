@@ -53,6 +53,24 @@ Ralph is an autonomous development loop that builds Trinity v0.1 by working thro
 ./ralph.elv -q                        # Quiet mode (no Claude output)
 ```
 
+## PRD Management
+
+Ralph can use Claude to help manage PRD stories:
+
+```bash
+# Review and refine stories (suggest clearer acceptance criteria)
+./ralph.elv --refine-prd --target-version v0.1        # All pending stories
+./ralph.elv --refine-prd 1.2.3 --target-version v1.0  # Specific story
+
+# Generate new stories from a description
+./ralph.elv --add-stories "Add OAuth support" --target-version v1.0
+```
+
+Both commands:
+- Show Claude's suggestions interactively
+- Ask for confirmation before applying changes
+- Auto-sort the PRD file after modifications
+
 ## PRD Structure
 
 The PRD has 83 stories across 7 phases:
