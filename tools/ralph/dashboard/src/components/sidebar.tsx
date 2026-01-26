@@ -30,6 +30,12 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  // Wait for mount to avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Close sidebar when route changes on mobile
   useEffect(() => {
@@ -98,31 +104,35 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile hamburger button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-background border rounded-md shadow-lg"
-      >
-        <Menu className="h-5 w-5" />
-      </button>
+      {/* Mobile hamburger button - only render after mount */}
+      {mounted && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="md:hidden fixed top-4 left-4 z-50 p-2 bg-background border rounded-md shadow-lg"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+      )}
 
       {/* Mobile overlay */}
-      {isOpen && (
+      {mounted && isOpen && (
         <div
           className="md:hidden fixed inset-0 bg-black/50 z-40"
           onClick={() => setIsOpen(false)}
         />
       )}
 
-      {/* Mobile sidebar drawer */}
-      <aside
-        className={cn(
-          'md:hidden fixed inset-y-0 left-0 z-50 w-64 bg-background border-r flex flex-col transform transition-transform duration-200 ease-in-out',
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        )}
-      >
-        {sidebarContent}
-      </aside>
+      {/* Mobile sidebar drawer - only render after mount */}
+      {mounted && (
+        <aside
+          className={cn(
+            'md:hidden fixed inset-y-0 left-0 z-50 w-64 bg-background border-r flex flex-col transform transition-transform duration-200 ease-in-out',
+            isOpen ? 'translate-x-0' : '-translate-x-full'
+          )}
+        >
+          {sidebarContent}
+        </aside>
+      )}
 
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-64 border-r bg-muted/30 flex-col">
