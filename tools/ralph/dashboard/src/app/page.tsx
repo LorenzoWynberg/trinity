@@ -75,12 +75,15 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   return (
     <div className="p-8 space-y-8">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">{prd.project}</p>
         </div>
-        <VersionSelector versions={versions} currentVersion={currentVersion} />
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">PRD:</span>
+          <VersionSelector versions={versions} currentVersion={currentVersion} />
+        </div>
       </div>
 
       {/* Stats Cards */}

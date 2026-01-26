@@ -130,7 +130,7 @@ function StoriesListInner({ prd, currentStoryId, versions, currentVersion }: Sto
         {/* Version Filter */}
         {versions.length > 1 && (
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">Version:</label>
+            <label className="text-sm font-medium">PRD:</label>
             <Select value={currentVersion} onValueChange={handleVersionChange}>
               <SelectTrigger className="w-[120px]">
                 <SelectValue />
