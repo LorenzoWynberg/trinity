@@ -54,7 +54,7 @@
       ],
       "passes": false,
       "depends_on": [
-        "v0.1:1.1.1"
+        "v0.1"
       ],
       "phase": 1,
       "epic": 1,

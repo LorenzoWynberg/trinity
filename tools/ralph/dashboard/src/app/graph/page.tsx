@@ -93,14 +93,18 @@ function GraphContent() {
   const [newLayoutName, setNewLayoutName] = useState('')
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showDeadEnds, setShowDeadEnds] = useState(false)
+  const [showExternalDeps, setShowExternalDeps] = useState(false)
 
-  // Load showDeadEnds setting on mount
+  // Load settings on mount
   useEffect(() => {
     fetch('/api/settings')
       .then(res => res.json())
       .then(data => {
         if (data.showDeadEnds !== undefined) {
           setShowDeadEnds(data.showDeadEnds)
+        }
+        if (data.showExternalDeps !== undefined) {
+          setShowExternalDeps(data.showExternalDeps)
         }
       })
       .catch(() => {})
@@ -116,6 +120,17 @@ function GraphContent() {
       body: JSON.stringify({ showDeadEnds: newValue })
     }).catch(() => {})
   }, [showDeadEnds])
+
+  // Save showExternalDeps setting when toggled
+  const toggleExternalDeps = useCallback(() => {
+    const newValue = !showExternalDeps
+    setShowExternalDeps(newValue)
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ showExternalDeps: newValue })
+    }).catch(() => {})
+  }, [showExternalDeps])
 
   // Track fullscreen changes
   useEffect(() => {
@@ -232,7 +247,9 @@ function GraphContent() {
 
   // Delete a custom layout
   const handleDeleteLayout = useCallback(async (name: string) => {
+    setIsLayoutLoading(true)
     await deleteCustomLayout(name)
+    setIsLayoutLoading(false)
   }, [deleteCustomLayout])
 
   // Set current layout as default for this version
@@ -557,7 +574,10 @@ function GraphContent() {
     return Math.sqrt(dx * dx + dy * dy)
   }
 
-  const styledEdges: Edge[] = edges.map(edge => {
+  // Filter out cross-version edges if showExternalDeps is false
+  const filteredEdges = showExternalDeps ? edges : edges.filter(edge => !edge.data?.crossVersion)
+
+  const styledEdges: Edge[] = filteredEdges.map(edge => {
     const isHighlighted = highlightedEdges.has(edge.id)
     const edgeInfo = highlightedEdges.get(edge.id)
     const depth = edgeInfo?.depth ?? 0
@@ -718,6 +738,18 @@ function GraphContent() {
           >
             <div className={cn("w-2 h-2 rounded-full", showDeadEnds ? "bg-orange-500" : "bg-muted-foreground")} />
             <span className="text-xs">Dead ends</span>
+          </Button>
+
+          {/* External deps toggle */}
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn("h-9 gap-2", showExternalDeps && "bg-amber-500/20 border-amber-500")}
+            onClick={toggleExternalDeps}
+            title="Show cross-version dependency lines"
+          >
+            <div className={cn("w-2 h-2 rounded-full", showExternalDeps ? "bg-amber-500" : "bg-muted-foreground")} />
+            <span className="text-xs">External</span>
           </Button>
 
           {/* Set as default button */}

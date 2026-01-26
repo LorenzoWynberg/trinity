@@ -668,6 +668,7 @@ export function useGraphData(version: string = 'all'): GraphData {
                       stroke: '#f59e0b',
                       strokeDasharray: '5,5',
                     },
+                    data: { crossVersion: true },
                   })
                 }
                 continue // Don't create individual story edges for version deps
@@ -703,6 +704,7 @@ export function useGraphData(version: string = 'all'): GraphData {
                       stroke: isCrossVersionStoryEdge ? '#f59e0b' : (isDepMerged ? '#22c55e' : '#6b7280'),
                       strokeDasharray: isCrossVersionStoryEdge ? '5,5' : undefined,
                     },
+                    data: { crossVersion: isCrossVersionStoryEdge },
                     animated: getStoryStatus(story, currentStoryId) === 'in_progress',
                   })
                 }
