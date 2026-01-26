@@ -299,7 +299,7 @@ npm run dev  # Starts both Next.js and ws-server via concurrently
 ```
 
 **Features:**
-- Quick command buttons: Run, Status, Stats, Stop
+- Quick command buttons: Run, Stop, Status, Stats
 - Command reference modal (top-right info button)
 - Ctrl+C support for stopping processes
 - Commands execute in `tools/ralph/cli` directory

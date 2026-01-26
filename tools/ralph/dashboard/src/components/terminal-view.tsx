@@ -121,14 +121,14 @@ export function TerminalView() {
         <Button size="sm" onClick={() => runRalph()}>
           <Play className="h-4 w-4 mr-1" /> Run
         </Button>
+        <Button size="sm" variant="outline" onClick={sendCtrlC}>
+          <Square className="h-4 w-4 mr-1" /> Stop
+        </Button>
         <Button size="sm" variant="outline" onClick={() => runRalph('--status')}>
           <Info className="h-4 w-4 mr-1" /> Status
         </Button>
         <Button size="sm" variant="outline" onClick={() => runRalph('--stats')}>
           <BarChart2 className="h-4 w-4 mr-1" /> Stats
-        </Button>
-        <Button size="sm" variant="outline" onClick={sendCtrlC}>
-          <Square className="h-4 w-4 mr-1" /> Stop
         </Button>
         <div className="flex-1" />
         <span className={`text-xs self-center px-2 py-1 rounded ${connected ? 'text-green-500 bg-green-500/10' : 'text-red-500 bg-red-500/10'}`}>
