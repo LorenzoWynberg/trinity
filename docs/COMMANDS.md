@@ -230,12 +230,12 @@ Files:   347 changed (+12,456 / -1,234)
 
 Release tag: v1.0
 
-[Y]es release  [n]o cancel  [e]dit tag  [f]eedback
+[y]es release  [n]o cancel  [e]dit tag  [f]eedback
 > _
 ```
 
 **Approval options:**
-- `[Y]es` - Proceed with release (create PR, merge, tag on main, push)
+- `[y]es` - Proceed with release (create PR, merge, tag on main, push)
 - `[n]o` - Cancel release
 - `[e]dit tag` - Change the version tag
 - `[f]eedback` - Provide feedback, run hotfix, then return to prompt

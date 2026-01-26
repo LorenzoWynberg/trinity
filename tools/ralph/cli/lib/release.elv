@@ -71,7 +71,7 @@ fn show-summary {|version|
 fn prompt-approval {|default-tag|
   echo "Release tag: "$default-tag" (press 'e' to edit)"
   echo ""
-  echo "[Y]es release  [n]o cancel  [e]dit tag  [f]eedback"
+  echo "[y]es release  [n]o cancel  [e]dit tag  [f]eedback"
 
   var tag = $default-tag
 

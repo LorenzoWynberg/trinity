@@ -59,7 +59,7 @@ Based on learnings from Ralph, here's a full review of stories that need updates
 **Replace with:**
 - Interactive release with human approval gate
 - Shows release summary (stories, commits, files changed)
-- Approval prompt: [Y]es / [n]o / [e]dit tag / [f]eedback
+- Approval prompt: [y]es / [n]o / [e]dit tag / [f]eedback
 - Feedback option runs hotfix and returns to prompt
 - Creates PR (dev → main), merges, then tags ON MAIN
 - `--auto` flag skips approval (for CI/CD)

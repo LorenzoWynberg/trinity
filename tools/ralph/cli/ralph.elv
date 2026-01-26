@@ -151,7 +151,7 @@ try {
 }
 if (not $preflight-ok) {
   ui:warn "Pre-flight checks failed. Fix issues above or proceed with caution."
-  echo "\e[33mContinue anyway? [y/N]\e[0m"
+  echo "\e[33mContinue anyway? [y/n]\e[0m"
   try {
     var answer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
     if (not (re:match '^[yY]' $answer)) {
@@ -325,7 +325,7 @@ while (< $current-iteration $config[max-iterations]) {
           set pending-clarification = "Auto-clarify mode: Make reasonable assumptions based on the codebase context and existing patterns. If unsure, choose the simpler implementation."
         } else {
           ui:warn "Story "$story-id" needs clarification before implementation." > /dev/tty
-          echo "\e[33m[Y]es skip / [n]o stop / [c]larify / [a]uto-proceed\e[0m" > /dev/tty
+          echo "\e[33m[y]es skip / [n]o stop / [c]larify / [a]uto-proceed\e[0m" > /dev/tty
           try {
             var answer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
             echo "" > /dev/tty
@@ -648,7 +648,7 @@ while (< $current-iteration $config[max-iterations]) {
       # Pause before next story
       echo ""
       ui:status "Story "$story-id" done. Continue to next story?"
-      echo "\e[33mStop loop? [y/N]\e[0m \e[2m(continues in 120s)\e[0m"
+      echo "\e[33mStop loop? [y/n]\e[0m \e[2m(continues in 120s)\e[0m"
       try {
         var answer = (bash -c 'read -t 120 -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
         if (re:match '^[yY]' $answer) {

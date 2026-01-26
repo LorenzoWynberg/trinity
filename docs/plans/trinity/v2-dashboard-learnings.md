@@ -85,7 +85,7 @@ All stories complete
 Show release summary (stories, commits, files)
     ↓
 Human approval prompt
-  [Y]es - proceed with release
+  [y]es - proceed with release
   [n]o - cancel
   [e]dit tag - change version tag
   [f]eedback - run hotfix, loop back
@@ -105,7 +105,7 @@ Ralph's merge prompt has feedback option:
 
 ```
 PR #123 ready for merge
-[y]es merge  [N]o leave open  [f]eedback
+[y]es merge  [n]o leave open  [f]eedback
 > f
 
 Enter feedback (blank line to finish):

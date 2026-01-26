@@ -90,7 +90,7 @@ The PRD has 83 stories across 7 phases:
 When prompted for PR creation or merge, you can provide text feedback instead of just y/n:
 
 ```
-Create PR? [Y]es / [n]o / or type feedback for changes
+Create PR? [y]es / [n]o / or type feedback for changes
 > fix the error handling in config.go
 
 Received feedback, running refinement...

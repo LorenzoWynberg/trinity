@@ -667,7 +667,7 @@ If a story is fine, set status to "ok" with empty issues/suggestions.'
       ui:warn "Stories needing refinement:"
       echo $needs-work
       echo ""
-      echo "\e[33mApply suggested acceptance criteria? [y/N]\e[0m" > /dev/tty
+      echo "\e[33mApply suggested acceptance criteria? [y/n]\e[0m" > /dev/tty
       var response = ""
       try {
         set response = (head -n1 </dev/tty | str:trim-space (slurp))
@@ -785,7 +785,7 @@ Be specific in acceptance criteria - avoid vague terms.'
       echo ""
       ui:status "Generated "$story-count" stories"
       echo ""
-      echo "\e[33mAdd these stories to PRD? [y/N]\e[0m" > /dev/tty
+      echo "\e[33mAdd these stories to PRD? [y/n]\e[0m" > /dev/tty
       var response = ""
       try {
         set response = (head -n1 </dev/tty | str:trim-space (slurp))

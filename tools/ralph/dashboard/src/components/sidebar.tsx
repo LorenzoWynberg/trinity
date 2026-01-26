@@ -10,6 +10,7 @@ import {
   BookOpen,
   Settings,
   GitBranch,
+  TerminalSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -20,6 +21,7 @@ const navItems = [
   { href: '/metrics', label: 'Metrics', icon: BarChart3 },
   { href: '/activity', label: 'Activity', icon: Clock },
   { href: '/learnings', label: 'Learnings', icon: BookOpen },
+  { href: '/terminal', label: 'Terminal', icon: TerminalSquare },
 ]
 
 export function Sidebar() {

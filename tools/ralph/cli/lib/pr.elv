@@ -399,7 +399,7 @@ fn run-flow {|story-id branch-name story-title current-iteration &state-pr-url="
   # === CREATE PR PROMPT (skip if PR already exists or auto-pr) ===
   if (and (not $auto-pr) (not $pr-exists)) {
     ui:status "Create PR to "$base-branch"?" > /dev/tty
-    echo "\e[33m[Y]es / [n]o / [f]eedback\e[0m" > /dev/tty
+    echo "\e[33m[y]es / [n]o / [f]eedback\e[0m" > /dev/tty
 
     var answer = (prompt-user 0)
     if (re:match '^[nN]$' $answer) {
@@ -428,7 +428,7 @@ fn run-flow {|story-id branch-name story-title current-iteration &state-pr-url="
   if (and $pr-exists $feedback-pending (not $auto-pr)) {
     ui:status "PR exists: "$pr-url > /dev/tty
     ui:status "Update PR with changes?" > /dev/tty
-    echo "\e[33m[Y]es / [n]o / [f]eedback\e[0m" > /dev/tty
+    echo "\e[33m[y]es / [n]o / [f]eedback\e[0m" > /dev/tty
 
     var answer = (prompt-user 0)
     if (re:match '^[nN]$' $answer) {
@@ -467,7 +467,7 @@ fn run-flow {|story-id branch-name story-title current-iteration &state-pr-url="
   if (and $pr-exists (not $auto-merge)) {
     echo "" > /dev/tty
     ui:status "What would you like to do?" > /dev/tty
-    echo "\e[33m[y]es merge / [N]o leave open / [f]eedback request changes\e[0m" > /dev/tty
+    echo "\e[33m[y]es merge / [n]o leave open / [f]eedback request changes\e[0m" > /dev/tty
 
     var answer = (prompt-user 0)
     if (re:match '^[yY]$' $answer) {

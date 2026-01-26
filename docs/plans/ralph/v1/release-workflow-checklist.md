@@ -28,7 +28,7 @@
   - [x] Format and display summary
 
 - [x] Implement `release:prompt-approval`
-  - [x] Display options: [Y]es / [n]o / [e]dit tag / [f]eedback
+  - [x] Display options: [y]es / [n]o / [e]dit tag / [f]eedback
   - [x] Handle tag editing
   - [x] Return action map with choice and tag
 

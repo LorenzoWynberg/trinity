@@ -38,7 +38,7 @@ fn show-summary {|version|}
 
 # Human approval gate
 fn prompt-approval {|}
-  # [Y]es release / [n]o cancel / [e]dit tag / [f]eedback
+  # [y]es release / [n]o cancel / [e]dit tag / [f]eedback
   # Returns: [&action=string &tag=string &feedback=string]
 
 # Run hotfix directly (not a story)
@@ -146,8 +146,8 @@ if (and (prd:all-stories-complete) (not $config[skip-release])) {
 
 ```
 1. Show release summary (stories, commits, files)
-2. Human approval prompt (Y/n/e/f)
-   - [Y]es - proceed with release
+2. Human approval prompt (y/n/e/f)
+   - [y]es - proceed with release
    - [n]o - cancel release
    - [e]dit tag - change tag name
    - [f]eedback - run hotfix and loop back
@@ -215,7 +215,7 @@ Files:   347 changed (+12,456 / -1,234)
 ───────────────────────────────────────────────────────
 Release tag: v1.0
 
-[Y]es release  [n]o cancel  [e]dit tag  [f]eedback
+[y]es release  [n]o cancel  [e]dit tag  [f]eedback
 > y
 
 ► Creating release PR (dev → main)...
@@ -247,7 +247,7 @@ Release tag: v1.0
 ### Feedback Flow Example
 
 ```
-[Y]es release  [n]o cancel  [e]dit tag  [f]eedback
+[y]es release  [n]o cancel  [e]dit tag  [f]eedback
 > f
 
 # Editor opens with template:

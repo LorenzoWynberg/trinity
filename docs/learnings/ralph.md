@@ -82,11 +82,11 @@ Story needs clarification:
 - What Go version should be used?
 - What module path format?
 
-[Y]es skip / [n]o stop / [c]larify / [a]uto-proceed
+[y]es skip / [n]o stop / [c]larify / [a]uto-proceed
 ```
 
 Options:
-- `[Y]` - Skip this story, try the next one (default)
+- `[y]` - Skip this story, try the next one (default)
 - `[n]` - Stop execution entirely
 - `[c]` - Open editor to provide clarification answers
 - `[a]` - Auto-proceed with reasonable assumptions
@@ -117,10 +117,10 @@ Story STORY-X.Y.Z has external dependencies:
 
 ### PR Flow
 
-**Prompts with defaults:**
-- PR creation: `[Y]es / [n]o / [f]eedback` - defaults to yes
-- PR update (after feedback): `[Y]es / [n]o / [f]eedback` - defaults to yes
-- Merge: `[y]es merge / [N]o leave open / [f]eedback` - defaults to no (leave for review)
+**Prompts:**
+- PR creation: `[y]es / [n]o / [f]eedback`
+- PR update (after feedback): `[y]es / [n]o / [f]eedback`
+- Merge: `[y]es merge / [n]o leave open / [f]eedback`
 
 All prompts support `[f]eedback` which restarts the Claude loop with user feedback.
 
@@ -142,7 +142,7 @@ All three checkpoints (create PR, update PR, merge) support `[f]eedback`:
 ### Release Workflow
 
 When all stories complete, prompt for release approval:
-- `[Y]es` - proceed with release
+- `[y]es` - proceed with release
 - `[n]o` - cancel
 - `[e]dit tag` - change version tag
 - `[f]eedback` - run hotfix, then return to prompt
@@ -283,6 +283,31 @@ const isCyber = resolvedTheme === 'cyber-dark' || resolvedTheme === 'cyber-light
 - Story nodes: Cyan backgrounds, purple text
 - Version nodes: Yellow backgrounds, cyan text
 - Use Tailwind custom variants: `cyber-dark:bg-cyan-900/80 cyber-dark:text-purple-200`
+
+### Terminal Page
+
+Interactive terminal for running Ralph from the dashboard.
+
+**Architecture:**
+- `ws-server.js` - WebSocket server that executes commands
+- `terminal-view.tsx` - xterm.js client component
+- Commands run via `child_process.spawn` (node-pty had compatibility issues with Node 22)
+
+**Running:**
+```bash
+npm run dev  # Starts both Next.js and ws-server via concurrently
+```
+
+**Features:**
+- Quick command buttons: Run, Status, Stats, Stop
+- Command reference modal (top-right info button)
+- Ctrl+C support for stopping processes
+- Commands execute in `tools/ralph/cli` directory
+
+**Limitations:**
+- Not a full PTY - simple command executor
+- No tab completion or command history
+- Interactive prompts (y/n) work but require typing + Enter
 
 ### PRD Tools (Wizard Modals)
 
