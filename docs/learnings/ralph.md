@@ -282,7 +282,7 @@ const isDark = resolvedTheme === 'dark' || resolvedTheme === 'cyber-dark'
 
 Three Claude-powered PRD editing flows on the Stories page (no standalone page):
 
-**1. Story Edit** (pencil icon on story modal)
+**1. Story Edit** (pencil icon on story modal, or "Edit Story" button on detail page)
 - Input → Review → Complete
 - Describe changes, Claude suggests updated acceptance criteria
 - Finds related stories (tag overlap ≥2 or dependency relationship)
