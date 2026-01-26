@@ -42,6 +42,174 @@
   ],
   "stories": [
     {
+      "id": "1.1.1",
+      "title": "Create auth package structure",
+      "intent": "Establish authentication module for license validation",
+      "acceptance": [
+        "core/auth/auth.go exists with Auth struct",
+        "Auth struct holds API endpoint URL and cached validation result",
+        "Uses ~/.trinity/auth.json for storing cached license key",
+        "Load() reads cached key from disk if exists",
+        "Save(key) persists key to disk"
+      ],
+      "passes": false,
+      "depends_on": [
+        "v0.1:1.1.1"
+      ],
+      "phase": 1,
+      "epic": 1,
+      "story_number": 1,
+      "target_version": "v1.0",
+      "tags": [
+        "api",
+        "auth",
+        "core",
+        "validation"
+      ]
+    },
+    {
+      "id": "1.1.2",
+      "title": "Implement license key validation",
+      "intent": "Validate license key against auth API before running operations",
+      "acceptance": [
+        "Validate(key) calls auth API endpoint to verify license",
+        "API endpoint provided via external deps report (e.g., POST /api/licenses/validate)",
+        "Returns LicenseInfo struct with: valid (bool), tier (string), expires_at (time.Time), features ([]string)",
+        "Handles network errors gracefully with offline mode fallback",
+        "Caches successful validation for 24 hours to reduce API calls",
+        "Returns clear error for invalid/expired licenses"
+      ],
+      "passes": false,
+      "depends_on": [
+        "1.1.1"
+      ],
+      "phase": 1,
+      "epic": 1,
+      "story_number": 2,
+      "target_version": "v1.0",
+      "external_deps": [
+        {
+          "name": "License API",
+          "description": "API endpoint for validating license keys. Should accept POST with {key: string} and return {valid: bool, tier: string, expires_at: timestamp, features: [string]}"
+        }
+      ],
+      "tags": [
+        "api",
+        "auth",
+        "validation"
+      ]
+    },
+    {
+      "id": "1.1.3",
+      "title": "Implement offline validation fallback",
+      "intent": "Allow Trinity to work offline when API is unreachable",
+      "acceptance": [
+        "If API unreachable and cached validation < 7 days old, allow operation",
+        "If API unreachable and cached validation > 7 days old, require online validation",
+        "Show warning when running in offline mode: \"Running in offline mode (last validated X days ago)\"",
+        "--offline flag forces offline mode without attempting API call",
+        "Log offline validation events for debugging"
+      ],
+      "passes": false,
+      "depends_on": [
+        "1.1.2"
+      ],
+      "phase": 1,
+      "epic": 1,
+      "story_number": 3,
+      "target_version": "v1.0",
+      "tags": [
+        "api",
+        "auth",
+        "validation"
+      ]
+    },
+    {
+      "id": "1.1.4",
+      "title": "Implement trinity auth login command",
+      "intent": "Allow users to enter their license key",
+      "acceptance": [
+        "trinity auth login prompts for license key",
+        "Validates key immediately against API",
+        "On success: saves key, shows license info (tier, expiration)",
+        "On failure: shows clear error, does not save key",
+        "trinity auth login --key <key> accepts key as flag (for CI/automation)"
+      ],
+      "passes": false,
+      "depends_on": [
+        "1.1.2",
+        "v0.1:1.1.2"
+      ],
+      "phase": 1,
+      "epic": 1,
+      "story_number": 4,
+      "target_version": "v1.0",
+      "human_testing": {
+        "required": true,
+        "instructions": "Test trinity auth login with valid and invalid keys. Verify: prompts correctly, validates against API, saves on success, shows clear errors on failure",
+        "url": null
+      },
+      "tags": [
+        "api",
+        "auth",
+        "claude",
+        "cli",
+        "testing",
+        "validation"
+      ]
+    },
+    {
+      "id": "1.1.5",
+      "title": "Implement trinity auth logout and status commands",
+      "intent": "Allow users to check auth status and logout",
+      "acceptance": [
+        "trinity auth status shows: logged in/out, license tier, expiration, features",
+        "If offline, shows cached info with warning",
+        "trinity auth logout removes saved key from ~/.trinity/auth.json",
+        "Confirms logout before removing",
+        "Shows helpful message after logout"
+      ],
+      "passes": false,
+      "depends_on": [
+        "1.1.4"
+      ],
+      "phase": 1,
+      "epic": 1,
+      "story_number": 5,
+      "target_version": "v1.0",
+      "tags": [
+        "auth",
+        "cli"
+      ]
+    },
+    {
+      "id": "1.1.6",
+      "title": "Integrate license check into run command",
+      "intent": "Gate trinity run behind valid license",
+      "acceptance": [
+        "Before trinity run executes, check for valid license",
+        "If no saved key, prompt: \"No license found. Run trinity auth login or enter key now:\"",
+        "If key invalid/expired, show error and exit",
+        "If valid, proceed with run",
+        "--skip-auth flag bypasses check (for development/testing only)",
+        "Free tier may have limitations (e.g., max stories per day) based on license.features"
+      ],
+      "passes": false,
+      "depends_on": [
+        "1.1.3",
+        "v0.1:6.3.1"
+      ],
+      "phase": 1,
+      "epic": 1,
+      "story_number": 6,
+      "target_version": "v1.0",
+      "tags": [
+        "auth",
+        "claude",
+        "loop"
+      ]
+    },
+    {
       "id": "2.1.1",
       "title": "Add comprehensive error messages",
       "intent": "Provide helpful error messages for common issues",
@@ -337,174 +505,6 @@
         "claude",
         "testing",
         "validation"
-      ]
-    },
-    {
-      "id": "1.1.1",
-      "title": "Create auth package structure",
-      "intent": "Establish authentication module for license validation",
-      "acceptance": [
-        "core/auth/auth.go exists with Auth struct",
-        "Auth struct holds API endpoint URL and cached validation result",
-        "Uses ~/.trinity/auth.json for storing cached license key",
-        "Load() reads cached key from disk if exists",
-        "Save(key) persists key to disk"
-      ],
-      "passes": false,
-      "depends_on": [
-        "v0.1:1.1.1"
-      ],
-      "phase": 1,
-      "epic": 1,
-      "story_number": 1,
-      "target_version": "v1.0",
-      "tags": [
-        "api",
-        "auth",
-        "core",
-        "validation"
-      ]
-    },
-    {
-      "id": "1.1.2",
-      "title": "Implement license key validation",
-      "intent": "Validate license key against auth API before running operations",
-      "acceptance": [
-        "Validate(key) calls auth API endpoint to verify license",
-        "API endpoint provided via external deps report (e.g., POST /api/licenses/validate)",
-        "Returns LicenseInfo struct with: valid (bool), tier (string), expires_at (time.Time), features ([]string)",
-        "Handles network errors gracefully with offline mode fallback",
-        "Caches successful validation for 24 hours to reduce API calls",
-        "Returns clear error for invalid/expired licenses"
-      ],
-      "passes": false,
-      "depends_on": [
-        "1.1.1"
-      ],
-      "phase": 1,
-      "epic": 1,
-      "story_number": 2,
-      "target_version": "v1.0",
-      "external_deps": [
-        {
-          "name": "License API",
-          "description": "API endpoint for validating license keys. Should accept POST with {key: string} and return {valid: bool, tier: string, expires_at: timestamp, features: [string]}"
-        }
-      ],
-      "tags": [
-        "api",
-        "auth",
-        "validation"
-      ]
-    },
-    {
-      "id": "1.1.3",
-      "title": "Implement offline validation fallback",
-      "intent": "Allow Trinity to work offline when API is unreachable",
-      "acceptance": [
-        "If API unreachable and cached validation < 7 days old, allow operation",
-        "If API unreachable and cached validation > 7 days old, require online validation",
-        "Show warning when running in offline mode: \"Running in offline mode (last validated X days ago)\"",
-        "--offline flag forces offline mode without attempting API call",
-        "Log offline validation events for debugging"
-      ],
-      "passes": false,
-      "depends_on": [
-        "1.1.2"
-      ],
-      "phase": 1,
-      "epic": 1,
-      "story_number": 3,
-      "target_version": "v1.0",
-      "tags": [
-        "api",
-        "auth",
-        "validation"
-      ]
-    },
-    {
-      "id": "1.1.4",
-      "title": "Implement trinity auth login command",
-      "intent": "Allow users to enter their license key",
-      "acceptance": [
-        "trinity auth login prompts for license key",
-        "Validates key immediately against API",
-        "On success: saves key, shows license info (tier, expiration)",
-        "On failure: shows clear error, does not save key",
-        "trinity auth login --key <key> accepts key as flag (for CI/automation)"
-      ],
-      "passes": false,
-      "depends_on": [
-        "1.1.2",
-        "v0.1:1.1.2"
-      ],
-      "phase": 1,
-      "epic": 1,
-      "story_number": 4,
-      "target_version": "v1.0",
-      "human_testing": {
-        "required": true,
-        "instructions": "Test trinity auth login with valid and invalid keys. Verify: prompts correctly, validates against API, saves on success, shows clear errors on failure",
-        "url": null
-      },
-      "tags": [
-        "api",
-        "auth",
-        "claude",
-        "cli",
-        "testing",
-        "validation"
-      ]
-    },
-    {
-      "id": "1.1.5",
-      "title": "Implement trinity auth logout and status commands",
-      "intent": "Allow users to check auth status and logout",
-      "acceptance": [
-        "trinity auth status shows: logged in/out, license tier, expiration, features",
-        "If offline, shows cached info with warning",
-        "trinity auth logout removes saved key from ~/.trinity/auth.json",
-        "Confirms logout before removing",
-        "Shows helpful message after logout"
-      ],
-      "passes": false,
-      "depends_on": [
-        "1.1.4"
-      ],
-      "phase": 1,
-      "epic": 1,
-      "story_number": 5,
-      "target_version": "v1.0",
-      "tags": [
-        "auth",
-        "cli"
-      ]
-    },
-    {
-      "id": "1.1.6",
-      "title": "Integrate license check into run command",
-      "intent": "Gate trinity run behind valid license",
-      "acceptance": [
-        "Before trinity run executes, check for valid license",
-        "If no saved key, prompt: \"No license found. Run trinity auth login or enter key now:\"",
-        "If key invalid/expired, show error and exit",
-        "If valid, proceed with run",
-        "--skip-auth flag bypasses check (for development/testing only)",
-        "Free tier may have limitations (e.g., max stories per day) based on license.features"
-      ],
-      "passes": false,
-      "depends_on": [
-        "1.1.3",
-        "v0.1:6.3.1"
-      ],
-      "phase": 1,
-      "epic": 1,
-      "story_number": 6,
-      "target_version": "v1.0",
-      "tags": [
-        "auth",
-        "claude",
-        "loop"
       ]
     }
   ]
