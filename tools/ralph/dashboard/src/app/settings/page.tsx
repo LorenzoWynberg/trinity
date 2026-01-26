@@ -73,7 +73,8 @@ export default function SettingsPage() {
   const themes = [
     { value: 'light', label: 'Light', icon: Sun },
     { value: 'dark', label: 'Dark', icon: Moon },
-    { value: 'cyberpunk', label: 'Cyber', icon: Zap },
+    { value: 'cyber-light', label: 'Cyber Light', icon: Zap },
+    { value: 'cyber-dark', label: 'Cyber Dark', icon: Zap },
     { value: 'system', label: 'System', icon: Monitor },
   ]
 

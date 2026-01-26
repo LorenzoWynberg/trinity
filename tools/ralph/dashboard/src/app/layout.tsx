@@ -34,7 +34,7 @@ export default function RootLayout({
           defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
-          themes={['light', 'dark', 'cyberpunk', 'system']}
+          themes={['light', 'dark', 'cyber-light', 'cyber-dark', 'system']}
         >
           <div className="flex h-screen bg-background text-foreground">
             <Sidebar />

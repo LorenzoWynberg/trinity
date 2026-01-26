@@ -2,7 +2,8 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
-@custom-variant cyberpunk (&:is(.cyberpunk *));
+@custom-variant cyber-dark (&:is(.cyber-dark *));
+@custom-variant cyber-light (&:is(.cyber-light *));
 
 @theme inline {
   --color-background: var(--background);
@@ -116,7 +117,7 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-.cyberpunk {
+.cyber-dark {
   --background: oklch(0.1 0.02 280);
   --foreground: oklch(0.95 0.15 180);
   --card: oklch(0.15 0.03 280);
@@ -148,6 +149,40 @@
   --sidebar-accent-foreground: oklch(0.95 0.15 180);
   --sidebar-border: oklch(0.75 0.25 330 / 30%);
   --sidebar-ring: oklch(0.75 0.25 330);
+}
+
+.cyber-light {
+  --background: oklch(0.97 0.02 280);
+  --foreground: oklch(0.2 0.1 280);
+  --card: oklch(0.99 0.01 280);
+  --card-foreground: oklch(0.2 0.1 280);
+  --popover: oklch(0.99 0.01 280);
+  --popover-foreground: oklch(0.2 0.1 280);
+  --primary: oklch(0.55 0.25 330);
+  --primary-foreground: oklch(0.98 0.02 280);
+  --secondary: oklch(0.92 0.03 280);
+  --secondary-foreground: oklch(0.2 0.1 280);
+  --muted: oklch(0.94 0.02 280);
+  --muted-foreground: oklch(0.45 0.08 280);
+  --accent: oklch(0.45 0.2 180);
+  --accent-foreground: oklch(0.98 0.02 280);
+  --destructive: oklch(0.55 0.25 25);
+  --border: oklch(0.55 0.25 330 / 30%);
+  --input: oklch(0.55 0.25 330 / 15%);
+  --ring: oklch(0.55 0.25 330);
+  --chart-1: oklch(0.55 0.25 330);
+  --chart-2: oklch(0.45 0.2 180);
+  --chart-3: oklch(0.6 0.2 60);
+  --chart-4: oklch(0.5 0.2 280);
+  --chart-5: oklch(0.5 0.18 120);
+  --sidebar: oklch(0.95 0.02 280);
+  --sidebar-foreground: oklch(0.2 0.1 280);
+  --sidebar-primary: oklch(0.55 0.25 330);
+  --sidebar-primary-foreground: oklch(0.98 0.02 280);
+  --sidebar-accent: oklch(0.92 0.03 280);
+  --sidebar-accent-foreground: oklch(0.2 0.1 280);
+  --sidebar-border: oklch(0.55 0.25 330 / 25%);
+  --sidebar-ring: oklch(0.55 0.25 330);
 }
 
 @layer base {
@@ -204,22 +239,42 @@
   fill: #1f2937;
 }
 
-/* React Flow Controls - Cyberpunk */
-.cyberpunk .react-flow__controls {
+/* React Flow Controls - Cyber Dark */
+.cyber-dark .react-flow__controls {
   background: #1a1025;
   border-color: #ff2d95;
 }
 
-.cyberpunk .react-flow__controls button {
+.cyber-dark .react-flow__controls button {
   background: #1a1025;
   border-color: #ff2d95;
   fill: #0ff;
 }
 
-.cyberpunk .react-flow__controls button:hover {
+.cyber-dark .react-flow__controls button:hover {
   background: #2a1a35;
 }
 
-.cyberpunk .react-flow__controls button path {
+.cyber-dark .react-flow__controls button path {
   fill: #0ff;
+}
+
+/* React Flow Controls - Cyber Light */
+.cyber-light .react-flow__controls {
+  background: #f8f0ff;
+  border-color: #d946ef;
+}
+
+.cyber-light .react-flow__controls button {
+  background: #f8f0ff;
+  border-color: #d946ef;
+  fill: #0891b2;
+}
+
+.cyber-light .react-flow__controls button:hover {
+  background: #f0e4ff;
+}
+
+.cyber-light .react-flow__controls button path {
+  fill: #0891b2;
 }

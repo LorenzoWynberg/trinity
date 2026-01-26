@@ -58,7 +58,7 @@ function GraphContent() {
     setMounted(true)
   }, [])
 
-  const isDark = mounted ? resolvedTheme === 'dark' : true
+  const isDark = mounted ? (resolvedTheme === 'dark' || resolvedTheme === 'cyber-dark') : true
   const {
     nodes: initialNodes,
     edges: initialEdges,
