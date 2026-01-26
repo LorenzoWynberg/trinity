@@ -61,10 +61,10 @@ export const StoryNode = memo(({ data, selected }: NodeProps) => {
               e.stopPropagation()
               nodeData.onInfoClick?.()
             }}
-            className="absolute top-1 right-1 p-1 rounded-md bg-background/80 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity hover:bg-background"
+            className="absolute top-1 right-1 p-1 rounded-md bg-background/80 cyber-dark:bg-cyan-950/90 cyber-light:bg-purple-100/90 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity hover:bg-background cyber-dark:hover:bg-cyan-900 cyber-light:hover:bg-purple-200"
             title="View details"
           >
-            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+            <Info className="h-3.5 w-3.5 text-muted-foreground cyber-dark:text-pink-400 cyber-light:text-pink-500" />
           </button>
         )}
         <div className="px-3 py-2">
