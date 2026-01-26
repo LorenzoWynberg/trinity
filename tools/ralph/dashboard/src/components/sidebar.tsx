@@ -61,7 +61,7 @@ export function Sidebar() {
         {/* Close button - mobile only */}
         <button
           onClick={() => setIsOpen(false)}
-          className="md:hidden p-2 -mr-2 hover:bg-muted rounded-md"
+          className="lg:hidden p-2 -mr-2 hover:bg-muted rounded-md"
         >
           <X className="h-5 w-5" />
         </button>
@@ -108,7 +108,7 @@ export function Sidebar() {
       {mounted && (
         <button
           onClick={() => setIsOpen(true)}
-          className="md:hidden fixed top-4 left-4 z-50 p-2 bg-background border rounded-md shadow-lg"
+          className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-background border rounded-md shadow-lg"
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -117,7 +117,7 @@ export function Sidebar() {
       {/* Mobile overlay */}
       {mounted && isOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black/50 z-40"
+          className="lg:hidden fixed inset-0 bg-black/50 z-40"
           onClick={() => setIsOpen(false)}
         />
       )}
@@ -126,7 +126,7 @@ export function Sidebar() {
       {mounted && (
         <aside
           className={cn(
-            'md:hidden fixed inset-y-0 left-0 z-50 w-64 bg-background border-r flex flex-col transform transition-transform duration-200 ease-in-out',
+            'lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-background border-r flex flex-col transform transition-transform duration-200 ease-in-out',
             isOpen ? 'translate-x-0' : '-translate-x-full'
           )}
         >
@@ -135,7 +135,7 @@ export function Sidebar() {
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-64 border-r bg-muted/30 flex-col">
+      <aside className="hidden lg:flex w-64 border-r bg-muted/30 flex-col">
         {sidebarContent}
       </aside>
     </>

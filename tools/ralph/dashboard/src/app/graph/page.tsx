@@ -696,9 +696,9 @@ function GraphContent() {
           </div>
         )}
 
-        {/* Version Selector - Left */}
+        {/* Version Selector - Left (desktop only) */}
         {versions.length >= 1 && (
-          <div className="absolute top-4 left-4 z-10">
+          <div className="absolute top-4 left-4 z-10 hidden lg:block">
             <Select
               value={selectedVersion}
               onValueChange={(v) => {
@@ -740,7 +740,7 @@ function GraphContent() {
 
         {/* Layout Controls - Right */}
         {/* Desktop: full controls */}
-        <div className="absolute top-4 right-4 z-10 hidden md:flex items-center gap-2">
+        <div className="absolute top-4 right-4 z-10 hidden lg:flex items-center gap-2">
           <Select
             value={layoutData.active}
             onValueChange={handleLayoutChange}
@@ -866,7 +866,7 @@ function GraphContent() {
         </div>
 
         {/* Mobile: dropdown menu */}
-        <div className="absolute top-4 right-4 z-10 md:hidden">
+        <div className="absolute top-4 right-4 z-10 lg:hidden">
           <Button
             variant="outline"
             size="icon"
@@ -878,6 +878,51 @@ function GraphContent() {
 
           {mobileMenuOpen && (
             <div className="absolute top-12 right-0 w-64 bg-background border rounded-lg shadow-lg p-3 space-y-3">
+              {/* Version selector (mobile) */}
+              {versions.length >= 1 && (
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Version</label>
+                  <Select
+                    value={selectedVersion}
+                    onValueChange={(v) => {
+                      setIsVersionLoading(true)
+                      setSelectedVersion(v)
+                    }}
+                    disabled={isVersionLoading || isLayoutLoading}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-background">
+                      {isVersionLoading ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Loading...</span>
+                        </div>
+                      ) : (
+                        <SelectValue placeholder="All versions">
+                          {selectedVersion === 'all' ? 'All versions' : (() => {
+                            const meta = versionProgress.find(v => v.version === selectedVersion)
+                            return meta?.shortTitle ? `${selectedVersion} - ${meta.shortTitle}` : selectedVersion
+                          })()}
+                        </SelectValue>
+                      )}
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All versions</SelectItem>
+                      {versions.map(version => {
+                        const meta = versionProgress.find(v => v.version === version)
+                        const label = meta?.shortTitle ? `${version} - ${meta.shortTitle}` : version
+                        return (
+                          <SelectItem key={version} value={version}>
+                            {label}
+                          </SelectItem>
+                        )
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {versions.length >= 1 && <div className="border-t" />}
+
               {/* Layout selector */}
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Layout</label>
