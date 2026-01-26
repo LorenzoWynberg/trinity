@@ -5,7 +5,7 @@ import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
 import { Button } from '@/components/ui/button'
-import { Play, Square, BarChart2, Info } from 'lucide-react'
+import { Play, Square, BarChart2, Info, Plus, RotateCcw } from 'lucide-react'
 
 export function TerminalView() {
   const termRef = useRef<HTMLDivElement>(null)
@@ -13,6 +13,8 @@ export function TerminalView() {
   const wsRef = useRef<WebSocket | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
   const [connected, setConnected] = useState(false)
+  const [terminalHeight, setTerminalHeight] = useState(500)
+  const defaultHeight = 500
 
   useEffect(() => {
     if (!termRef.current) return
@@ -133,6 +135,35 @@ export function TerminalView() {
     sendInput('\x03')
   }
 
+  const increaseHeight = () => {
+    setTerminalHeight(h => h + 100)
+    // Refit terminal after height change
+    setTimeout(() => {
+      fitAddonRef.current?.fit()
+      if (wsRef.current?.readyState === WebSocket.OPEN && terminalRef.current) {
+        wsRef.current.send(JSON.stringify({
+          type: 'resize',
+          cols: terminalRef.current.cols,
+          rows: terminalRef.current.rows
+        }))
+      }
+    }, 50)
+  }
+
+  const resetHeight = () => {
+    setTerminalHeight(defaultHeight)
+    setTimeout(() => {
+      fitAddonRef.current?.fit()
+      if (wsRef.current?.readyState === WebSocket.OPEN && terminalRef.current) {
+        wsRef.current.send(JSON.stringify({
+          type: 'resize',
+          cols: terminalRef.current.cols,
+          rows: terminalRef.current.rows
+        }))
+      }
+    }, 50)
+  }
+
   return (
     <div className="space-y-2">
       {/* Quick commands */}
@@ -149,6 +180,17 @@ export function TerminalView() {
         <Button size="sm" variant="outline" onClick={() => runRalph('--stats')}>
           <BarChart2 className="h-4 w-4 mr-1" /> Stats
         </Button>
+        <div className="border-l pl-2 ml-1 flex gap-1 items-center">
+          <Button size="sm" variant="outline" onClick={increaseHeight} title="Increase height by 100px">
+            <Plus className="h-4 w-4 mr-1" /> Height
+          </Button>
+          {terminalHeight !== defaultHeight && (
+            <Button size="sm" variant="ghost" onClick={resetHeight} title="Reset to default height">
+              <RotateCcw className="h-4 w-4" />
+            </Button>
+          )}
+          <span className="text-xs text-muted-foreground">{terminalHeight}px</span>
+        </div>
         <span className={`text-xs px-2 py-1 rounded ${connected ? 'text-green-500 bg-green-500/10' : 'text-red-500 bg-red-500/10'}`}>
           {connected ? '● Connected' : '○ Disconnected'}
         </span>
@@ -157,7 +199,8 @@ export function TerminalView() {
       {/* Terminal */}
       <div
         ref={termRef}
-        className="rounded-lg border overflow-hidden bg-[#1a1025] p-2 h-[700px] md:h-[500px]"
+        className="rounded-lg border overflow-hidden bg-[#1a1025] p-2"
+        style={{ height: `${terminalHeight}px` }}
       />
     </div>
   )
