@@ -1,0 +1,19 @@
+version: 3
+agent:
+  authtoken: YOUR_NGROK_AUTHTOKEN
+
+# Ralph Dashboard tunnels
+# Copy to ngrok.yml and fill in your values
+# Get authtoken from: https://dashboard.ngrok.com/get-started/your-authtoken
+# Reserve domains at: https://dashboard.ngrok.com/domains
+
+tunnels:
+  dashboard:
+    addr: 4000
+    proto: http
+    domain: your-dashboard-domain.ngrok.app  # or remove for random URL
+
+  terminal:
+    addr: 4001
+    proto: http
+    domain: your-terminal-domain.ngrok.app   # or remove for random URL
