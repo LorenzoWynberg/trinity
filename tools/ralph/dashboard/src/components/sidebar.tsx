@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -11,6 +12,8 @@ import {
   Settings,
   GitBranch,
   TerminalSquare,
+  Menu,
+  X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -26,12 +29,36 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const [isOpen, setIsOpen] = useState(false)
 
-  return (
-    <aside className="w-64 border-r bg-muted/30 flex flex-col">
-      <div className="p-6 border-b">
-        <h1 className="text-xl font-bold">Ralph Dashboard</h1>
-        <p className="text-sm text-muted-foreground">PRD Viewer</p>
+  // Close sidebar when route changes on mobile
+  useEffect(() => {
+    setIsOpen(false)
+  }, [pathname])
+
+  // Close sidebar on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false)
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [])
+
+  const sidebarContent = (
+    <>
+      <div className="p-6 border-b flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold">Ralph Dashboard</h1>
+          <p className="text-sm text-muted-foreground">PRD Viewer</p>
+        </div>
+        {/* Close button - mobile only */}
+        <button
+          onClick={() => setIsOpen(false)}
+          className="md:hidden p-2 -mr-2 hover:bg-muted rounded-md"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
 
       <nav className="flex-1 p-4 space-y-1">
@@ -66,6 +93,41 @@ export function Sidebar() {
           Settings
         </Link>
       </div>
-    </aside>
+    </>
+  )
+
+  return (
+    <>
+      {/* Mobile hamburger button */}
+      <button
+        onClick={() => setIsOpen(true)}
+        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-background border rounded-md shadow-lg"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
+      {/* Mobile overlay */}
+      {isOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Mobile sidebar drawer */}
+      <aside
+        className={cn(
+          'md:hidden fixed inset-y-0 left-0 z-50 w-64 bg-background border-r flex flex-col transform transition-transform duration-200 ease-in-out',
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        {sidebarContent}
+      </aside>
+
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-64 border-r bg-muted/30 flex-col">
+        {sidebarContent}
+      </aside>
+    </>
   )
 }
