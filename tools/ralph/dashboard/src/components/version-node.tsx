@@ -28,7 +28,7 @@ export const VersionNode = memo(({ data }: NodeProps) => {
         className={cn(
           'px-4 py-3 rounded-xl border-2 cursor-default',
           'bg-purple-50 border-purple-300 dark:bg-purple-950 dark:border-purple-700',
-          'cyber-dark:bg-yellow-900/80 cyber-dark:border-yellow-400',
+          'cyber-dark:bg-yellow-900/40 cyber-dark:border-yellow-400',
           'min-w-[180px]'
         )}
       >
