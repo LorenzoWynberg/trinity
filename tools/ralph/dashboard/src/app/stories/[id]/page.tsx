@@ -1,8 +1,8 @@
-import { getPRD, getState, getStoryById } from '@/lib/data'
+import { getPRD, getState, getStoryById, getVersions, getSettings } from '@/lib/data'
 import { getStoryStatus } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
+import { StoryEditButton } from '@/components/story-edit-button'
 import Link from 'next/link'
 import { ArrowLeft, GitBranch, ExternalLink, CheckCircle2, Circle } from 'lucide-react'
 
@@ -23,10 +23,21 @@ export default async function StoryDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [prd, state] = await Promise.all([
-    getPRD(),
+  const [settings, versions, state] = await Promise.all([
+    getSettings(),
+    getVersions(),
     getState()
   ])
+
+  // Resolve current version
+  let currentVersion: string
+  if (settings.defaultVersion !== 'first' && versions.includes(settings.defaultVersion)) {
+    currentVersion = settings.defaultVersion
+  } else {
+    currentVersion = versions.length > 0 ? versions[0] : 'v0.1'
+  }
+
+  const prd = await getPRD(currentVersion)
 
   if (!prd) {
     return (
@@ -75,6 +86,7 @@ export default async function StoryDetailPage({
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold font-mono">{story.id}</h1>
           <Badge className={config.className}>{config.label}</Badge>
+          <StoryEditButton story={story} status={status} version={currentVersion} />
         </div>
         <p className="text-xl">{story.title}</p>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
