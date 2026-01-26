@@ -297,6 +297,18 @@ useEffect(() => setMounted(true), [])
 }
 ```
 
+**iOS fullscreen fallback:** iOS Safari doesn't support Fullscreen API. Use CSS-based fallback:
+```tsx
+const [fullscreenSupported, setFullscreenSupported] = useState(true)
+useEffect(() => {
+  const doc = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => void }
+  setFullscreenSupported(!!(doc.requestFullscreen || doc.webkitRequestFullscreen))
+}, [])
+
+// In handler: if !fullscreenSupported, use CSS instead of native
+<div className={isPseudoFullscreen ? "fixed inset-0 z-[9999] h-screen" : "h-[calc(100vh-2rem)]"}>
+```
+
 ### UI Components (shadcn)
 Always use shadcn CLI to add components - never create them manually:
 ```bash
@@ -381,6 +393,17 @@ tunnels:
 - Tab completion and command history work
 - TUI apps like `claude` work properly
 - Quick command buttons: Run, Stop, Status, Stats
+- tmux session persistence - survives page refresh
+
+**tmux persistence:** Sessions persist across page refresh, network disconnects, and browser restarts:
+```javascript
+// ws-server.js spawns tmux instead of raw shell
+const ptyProcess = pty.spawn('tmux', ['new-session', '-A', '-s', 'ralph'], {
+  // -A: attach if exists, create if not
+  // -s: session name
+})
+```
+Requires `brew install tmux`. Session named "ralph" persists until manually killed (`tmux kill-session -t ralph`).
 
 ### PRD Tools (Wizard Modals)
 
@@ -450,5 +473,5 @@ claude --output-format stream-json < prompt.md 2>&1 | \
 Key flags: `--line-buffered` on grep, `--unbuffered` on jq, `-rj` for raw output.
 
 ---
-<!-- updatedAt: 2026-01-25 -->
+<!-- updatedAt: 2026-01-26 -->
 <!-- lastCompactedAt: 2026-01-25 -->

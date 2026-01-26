@@ -135,13 +135,33 @@ function GraphContent() {
     }).catch(() => {})
   }, [showExternalDeps])
 
+  // Check for fullscreen API support (not available on iOS Safari)
+  const [fullscreenSupported, setFullscreenSupported] = useState(true)
+
+  useEffect(() => {
+    // Detect fullscreen API support
+    const doc = document.documentElement as HTMLElement & {
+      webkitRequestFullscreen?: () => Promise<void>
+    }
+    const hasFullscreen = !!(
+      doc.requestFullscreen ||
+      doc.webkitRequestFullscreen
+    )
+    setFullscreenSupported(hasFullscreen)
+  }, [])
+
   // Track fullscreen changes
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
+      const doc = document as Document & { webkitFullscreenElement?: Element }
+      setIsFullscreen(!!(document.fullscreenElement || doc.webkitFullscreenElement))
     }
     document.addEventListener('fullscreenchange', handleFullscreenChange)
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
+    }
   }, [])
 
   // Track version/layout changes to trigger fitView
@@ -264,14 +284,46 @@ function GraphContent() {
     await saveLayoutData(newData)
   }, [layoutData, saveLayoutData])
 
-  // Toggle fullscreen mode
+  // Toggle fullscreen mode (with vendor prefix support and CSS fallback)
   const handleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen()
-    } else {
-      document.exitFullscreen()
+    const doc = document as Document & {
+      webkitFullscreenElement?: Element
+      webkitExitFullscreen?: () => Promise<void>
     }
-  }, [])
+    const docEl = document.documentElement as HTMLElement & {
+      webkitRequestFullscreen?: () => Promise<void>
+    }
+
+    const isNativeFullscreen = !!(document.fullscreenElement || doc.webkitFullscreenElement)
+
+    if (!isFullscreen && !isNativeFullscreen) {
+      // Try to enter fullscreen
+      if (fullscreenSupported) {
+        if (docEl.requestFullscreen) {
+          docEl.requestFullscreen().catch(() => {
+            // If native fails, fall back to CSS-based
+            setIsFullscreen(true)
+          })
+        } else if (docEl.webkitRequestFullscreen) {
+          docEl.webkitRequestFullscreen()
+        }
+      } else {
+        // No native support (iOS), use CSS-based fullscreen
+        setIsFullscreen(true)
+      }
+    } else {
+      // Exit fullscreen
+      if (isNativeFullscreen) {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {})
+        } else if (doc.webkitExitFullscreen) {
+          doc.webkitExitFullscreen()
+        }
+      }
+      // Always clear state for CSS-based fullscreen
+      setIsFullscreen(false)
+    }
+  }, [isFullscreen, fullscreenSupported])
 
   // Extract storyId from versioned nodeId (e.g., "v1.0:1.1.1" -> "1.1.1")
   const extractStoryId = useCallback((nodeId: string): string => {
@@ -623,9 +675,17 @@ function GraphContent() {
   // Determine if we're in auto-layout mode (no manual positioning allowed)
   const isAutoLayout = layoutData.active === 'horizontal' || layoutData.active === 'vertical' || layoutData.active === 'horizontal-compact' || layoutData.active === 'vertical-compact'
 
+  // When using CSS-based fullscreen, track it separately from native fullscreen
+  const isPseudoFullscreen = isFullscreen && !fullscreenSupported
+
   return (
     <>
-      <div className="h-[calc(100vh-2rem)] w-full relative">
+      <div className={cn(
+        "w-full relative",
+        isPseudoFullscreen
+          ? "fixed inset-0 z-[9999] h-screen bg-background"
+          : "h-[calc(100vh-2rem)]"
+      )}>
         {/* Initial loading overlay */}
         {(!mounted || loading) && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
