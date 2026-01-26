@@ -66,6 +66,7 @@ function GraphContent() {
     loading,
     stories,
     versions,
+    versionProgress,
     layoutData,
     saveLayoutData,
     deleteCustomLayout,
