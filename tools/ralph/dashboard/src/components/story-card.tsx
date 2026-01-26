@@ -23,10 +23,10 @@ export function StoryCard({ story, status }: StoryCardProps) {
 
   return (
     <Link href={`/stories/${story.id}`}>
-      <Card className="hover:border-primary transition-colors cursor-pointer h-full">
+      <Card className="hover:border-primary transition-colors cursor-pointer h-full cyber-light:border-l-4 cyber-light:border-l-cyan-400">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
-            <CardTitle className="text-sm font-mono">Story {story.id}</CardTitle>
+            <CardTitle className="text-sm font-mono cyber-light:text-pink-600">Story {story.id}</CardTitle>
             <Badge className={cn('text-xs', config.className)}>{config.label}</Badge>
           </div>
           <p className="text-sm font-medium leading-snug">{story.title}</p>
@@ -34,7 +34,7 @@ export function StoryCard({ story, status }: StoryCardProps) {
         <CardContent className="pt-0">
           <div className="text-xs text-muted-foreground space-y-1">
             <div className="flex items-center gap-2">
-              <span>
+              <span className="cyber-light:text-cyan-600">
                 {story.phase_name || `Phase ${story.phase}`} • {story.epic_name || `Epic ${story.epic}`}
               </span>
               {story.target_version && (
@@ -52,10 +52,10 @@ export function StoryCard({ story, status }: StoryCardProps) {
           {story.acceptance && story.acceptance.length > 0 && (
             <ul className="mt-2 text-xs text-muted-foreground space-y-0.5">
               {story.acceptance.slice(0, 3).map((ac, i) => (
-                <li key={i} className="truncate">• {ac}</li>
+                <li key={i} className="truncate"><span className="cyber-light:text-pink-400">•</span> {ac}</li>
               ))}
               {story.acceptance.length > 3 && (
-                <li className="text-muted-foreground/50">+{story.acceptance.length - 3} more</li>
+                <li className="text-muted-foreground/50 cyber-light:text-cyan-400/70">+{story.acceptance.length - 3} more</li>
               )}
             </ul>
           )}

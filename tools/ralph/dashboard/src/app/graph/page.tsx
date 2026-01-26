@@ -804,11 +804,11 @@ function GraphContent() {
           <Button
             variant="outline"
             size="sm"
-            className={cn("h-9 gap-2", showDeadEnds && "bg-orange-500/20 border-orange-500")}
+            className={cn("h-9 gap-2", showDeadEnds && "border-accent")}
             onClick={toggleDeadEnds}
             title="Show dead-end nodes"
           >
-            <div className={cn("w-2 h-2 rounded-full", showDeadEnds ? "bg-orange-500" : "bg-muted-foreground")} />
+            <div className={cn("w-2 h-2 rounded-full", showDeadEnds ? "bg-accent" : "bg-muted-foreground")} />
             <span className="text-xs">Dead ends</span>
           </Button>
 
@@ -956,10 +956,10 @@ function GraphContent() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className={cn("w-full justify-start gap-2", showDeadEnds && "bg-orange-500/20 border-orange-500")}
+                  className={cn("w-full justify-start gap-2", showDeadEnds && "border-accent")}
                   onClick={toggleDeadEnds}
                 >
-                  <div className={cn("w-2 h-2 rounded-full", showDeadEnds ? "bg-orange-500" : "bg-muted-foreground")} />
+                  <div className={cn("w-2 h-2 rounded-full", showDeadEnds ? "bg-accent" : "bg-muted-foreground")} />
                   Dead ends
                 </Button>
                 <Button

@@ -79,8 +79,8 @@ export function Sidebar() {
               className={cn(
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground cyber-light:hover:text-primary cyber-dark:hover:text-primary'
+                  ? 'bg-primary text-primary-foreground cyber-light:bg-accent cyber-light:text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground cyber-light:hover:text-accent cyber-dark:hover:text-primary'
               )}
             >
               <item.icon className="h-4 w-4" />

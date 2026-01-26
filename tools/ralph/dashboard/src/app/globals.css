@@ -185,31 +185,31 @@
   --card-foreground: oklch(0.2 0.02 330);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.2 0.02 330);
-  --primary: oklch(0.65 0.28 330);
+  --primary: oklch(0.65 0.2 195);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.92 0.03 190);
-  --secondary-foreground: oklch(0.35 0.15 190);
+  --secondary: oklch(0.9 0.15 90);
+  --secondary-foreground: oklch(0.3 0.1 90);
   --muted: oklch(0.96 0.01 190);
   --muted-foreground: oklch(0.4 0.05 330);
-  --accent: oklch(0.7 0.18 190);
-  --accent-foreground: oklch(0.15 0.05 190);
+  --accent: oklch(0.65 0.28 330);
+  --accent-foreground: oklch(1 0 0);
   --destructive: oklch(0.55 0.25 25);
-  --border: oklch(0.7 0.2 330 / 50%);
-  --input: oklch(0.7 0.18 190 / 30%);
-  --ring: oklch(0.65 0.28 330);
+  --border: oklch(0.6 0.2 190 / 50%);
+  --input: oklch(0.6 0.2 190 / 30%);
+  --ring: oklch(0.6 0.2 190);
   --chart-1: oklch(0.65 0.28 330);
-  --chart-2: oklch(0.7 0.18 190);
+  --chart-2: oklch(0.6 0.2 190);
   --chart-3: oklch(0.8 0.18 90);
   --chart-4: oklch(0.6 0.2 280);
   --chart-5: oklch(0.65 0.22 30);
-  --sidebar: oklch(0.99 0.005 330);
+  --sidebar: oklch(0.99 0.005 190);
   --sidebar-foreground: oklch(0.2 0.02 330);
-  --sidebar-primary: oklch(0.65 0.28 330);
+  --sidebar-primary: oklch(0.65 0.2 195);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.92 0.05 190);
-  --sidebar-accent-foreground: oklch(0.35 0.15 190);
-  --sidebar-border: oklch(0.7 0.2 330 / 40%);
-  --sidebar-ring: oklch(0.65 0.28 330);
+  --sidebar-accent: oklch(0.92 0.05 330);
+  --sidebar-accent-foreground: oklch(0.35 0.15 330);
+  --sidebar-border: oklch(0.6 0.2 190 / 40%);
+  --sidebar-ring: oklch(0.6 0.2 190);
   /* Graph colors */
   --graph-bg: #fefefe;
   --graph-dots: rgba(236, 72, 153, 0.3);
@@ -298,21 +298,21 @@
 /* React Flow Controls - Cyber Light */
 .cyber-light .react-flow__controls {
   background: #fff;
-  border-color: #ec4899;
+  border-color: #06b6d4;
 }
 
 .cyber-light .react-flow__controls button {
   background: #fff;
-  border-color: #ec4899;
-  fill: #db2777;
+  border-color: #06b6d4;
+  fill: #0891b2;
 }
 
 .cyber-light .react-flow__controls button:hover {
-  background: #fdf2f8;
+  background: #ecfeff;
 }
 
 .cyber-light .react-flow__controls button path {
-  fill: #db2777;
+  fill: #0891b2;
 }
 
 /* Mobile: move ReactFlow controls higher */

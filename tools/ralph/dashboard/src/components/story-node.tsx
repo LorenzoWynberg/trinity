@@ -18,7 +18,7 @@ type StoryNodeData = {
 }
 
 const statusColors: Record<string, string> = {
-  pending: 'bg-zinc-100 border-zinc-400 dark:bg-zinc-800 dark:border-zinc-600 cyber-dark:bg-cyan-900/60 cyber-dark:border-cyan-400 cyber-light:bg-white cyber-light:border-pink-400',
+  pending: 'bg-zinc-100 border-zinc-400 dark:bg-zinc-800 dark:border-zinc-600 cyber-dark:bg-cyan-900/60 cyber-dark:border-cyan-400 cyber-light:bg-white cyber-light:border-cyan-400',
   in_progress: 'bg-blue-100 border-blue-500 dark:bg-blue-950 dark:border-blue-500 cyber-dark:bg-cyan-800/60 cyber-dark:border-cyan-300 cyber-light:bg-white cyber-light:border-cyan-500',
   passed: 'bg-yellow-100 border-yellow-500 dark:bg-yellow-950 dark:border-yellow-500 cyber-dark:bg-cyan-900/60 cyber-dark:border-yellow-400 cyber-light:bg-white cyber-light:border-yellow-400',
   merged: 'bg-green-100 border-green-500 dark:bg-green-950 dark:border-green-500 cyber-dark:bg-cyan-900/60 cyber-dark:border-green-400 cyber-light:bg-white cyber-light:border-emerald-500',
@@ -61,10 +61,10 @@ export const StoryNode = memo(({ data, selected }: NodeProps) => {
               e.stopPropagation()
               nodeData.onInfoClick?.()
             }}
-            className="absolute top-1 right-1 p-1 rounded-md bg-background/80 cyber-dark:bg-cyan-950/90 cyber-light:bg-white/90 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity hover:bg-background cyber-dark:hover:bg-cyan-900 cyber-light:hover:bg-pink-50"
+            className="absolute top-1 right-1 p-1 rounded-md bg-background/80 cyber-dark:bg-cyan-950/90 cyber-light:bg-white/90 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity hover:bg-background cyber-dark:hover:bg-cyan-900 cyber-light:hover:bg-cyan-50"
             title="View details"
           >
-            <Info className="h-3.5 w-3.5 text-muted-foreground cyber-dark:text-pink-400 cyber-light:text-pink-500" />
+            <Info className="h-3.5 w-3.5 text-muted-foreground cyber-dark:text-pink-400 cyber-light:text-cyan-600" />
           </button>
         )}
         <div className="px-3 py-2">
@@ -75,7 +75,7 @@ export const StoryNode = memo(({ data, selected }: NodeProps) => {
           <p className={cn('text-xs text-zinc-600 dark:text-zinc-400 cyber-dark:text-pink-300 line-clamp-2', isVertical && 'text-center')}>{nodeData.title}</p>
         </div>
         {nodeData.showDeadEnd && (
-          <div className="h-1.5 bg-orange-500" />
+          <div className="h-1.5 bg-accent" />
         )}
       </div>
       <Handle

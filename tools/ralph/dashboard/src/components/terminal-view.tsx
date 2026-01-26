@@ -198,7 +198,7 @@ export function TerminalView() {
 
       {/* Terminal */}
       <div
-        className="rounded-lg border overflow-hidden bg-[#1a1025]"
+        className="rounded-lg border overflow-hidden bg-[#1a1025] p-3"
         style={{ height: `${terminalHeight}px` }}
       >
         <div

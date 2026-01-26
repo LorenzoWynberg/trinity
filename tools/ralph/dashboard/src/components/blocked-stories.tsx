@@ -18,7 +18,7 @@ export function BlockedStories({ blocked, unmergedPassed }: BlockedStoriesProps)
   }
 
   return (
-    <Card className="border-yellow-500/50">
+    <Card className="border-yellow-500/50 cyber-light:border-yellow-400">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-yellow-500">
           <AlertCircle className="h-5 w-5" />

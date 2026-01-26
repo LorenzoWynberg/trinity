@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { SplitButton } from '@/components/ui/split-button'
 import { Sparkles, Wand2 } from 'lucide-react'
 import { RefineStoriesModal, GenerateStoriesModal } from '@/components/prd-tools-modals'
 
@@ -25,14 +25,12 @@ export function StoriesHeader({ totalStories, phaseCount, version }: StoriesHead
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setRefineOpen(true)}>
-            <Sparkles className="h-4 w-4 mr-2" />
+          <SplitButton size="sm" icon={<Sparkles className="h-4 w-4" />} onClick={() => setRefineOpen(true)}>
             Refine
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setGenerateOpen(true)}>
-            <Wand2 className="h-4 w-4 mr-2" />
+          </SplitButton>
+          <SplitButton size="sm" icon={<Wand2 className="h-4 w-4" />} onClick={() => setGenerateOpen(true)}>
             Generate
-          </Button>
+          </SplitButton>
         </div>
       </div>
 

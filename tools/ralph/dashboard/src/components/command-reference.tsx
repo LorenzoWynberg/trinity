@@ -82,33 +82,64 @@ const commandSections: CommandSection[] = [
 ]
 
 function CopyableCommand({ command }: { command: string }) {
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState<'flag' | 'full' | null>(null)
+  const [showOptions, setShowOptions] = useState(false)
 
-  const handleCopy = async () => {
-    // Extract just the flag part for copying (without placeholder values)
-    const flagOnly = command.split(' ')[0]
-    await navigator.clipboard.writeText(flagOnly)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+  const flagOnly = command.split(' ')[0]
+  const fullCommand = `./ralph.elv ${command}`
+
+  const handleCopy = async (type: 'flag' | 'full') => {
+    const textToCopy = type === 'flag' ? flagOnly : fullCommand
+    await navigator.clipboard.writeText(textToCopy)
+    setCopied(type)
+    setShowOptions(false)
+    setTimeout(() => setCopied(null), 1500)
   }
 
   return (
-    <button
-      onClick={handleCopy}
-      className={cn(
-        'group flex items-center gap-1.5 font-mono text-sm px-2 py-1 rounded',
-        'bg-muted/50 hover:bg-muted transition-colors cursor-pointer',
-        'text-cyan-600 dark:text-cyan-400'
+    <div className="relative">
+      <button
+        onClick={() => setShowOptions(!showOptions)}
+        className={cn(
+          'group flex items-center gap-1.5 font-mono text-sm px-2 py-1 rounded',
+          'bg-muted/50 hover:bg-muted transition-colors cursor-pointer',
+          'text-cyan-600 dark:text-cyan-400 cyber-light:text-cyan-600 cyber-dark:text-cyan-400'
+        )}
+        title="Click to copy"
+      >
+        <code>{command}</code>
+        {copied ? (
+          <Check className="h-3 w-3 text-green-500" />
+        ) : (
+          <Copy className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+        )}
+      </button>
+
+      {showOptions && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setShowOptions(false)}
+          />
+          <div className="absolute left-0 top-full mt-1 z-50 bg-popover border rounded-md shadow-lg overflow-hidden min-w-[160px]">
+            <button
+              onClick={() => handleCopy('full')}
+              className="w-full px-3 py-2 text-left text-xs hover:bg-muted transition-colors flex items-center gap-2"
+            >
+              <Copy className="h-3 w-3" />
+              <span>Copy full command</span>
+            </button>
+            <button
+              onClick={() => handleCopy('flag')}
+              className="w-full px-3 py-2 text-left text-xs hover:bg-muted transition-colors flex items-center gap-2 border-t"
+            >
+              <Copy className="h-3 w-3" />
+              <span>Copy flag only</span>
+            </button>
+          </div>
+        </>
       )}
-      title="Click to copy"
-    >
-      <code>{command}</code>
-      {copied ? (
-        <Check className="h-3 w-3 text-green-500" />
-      ) : (
-        <Copy className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
-      )}
-    </button>
+    </div>
   )
 }
 

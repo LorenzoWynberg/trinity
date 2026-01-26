@@ -32,7 +32,7 @@ export const VersionNode = memo(({ data }: NodeProps) => {
           'px-4 py-3 rounded-xl border-2 cursor-default',
           'bg-purple-50 border-purple-300 dark:bg-purple-950 dark:border-purple-700',
           'cyber-dark:bg-yellow-900/60 cyber-dark:border-yellow-400',
-          'cyber-light:bg-white cyber-light:border-pink-500',
+          'cyber-light:bg-white cyber-light:border-cyan-500',
           'min-w-[180px] max-w-[240px]'
         )}
       >
@@ -52,7 +52,7 @@ export const VersionNode = memo(({ data }: NodeProps) => {
         <div className={cn('mt-2 text-sm text-purple-600 dark:text-purple-300 cyber-dark:text-cyan-200 cyber-light:text-cyan-600', isVertical && 'text-center')}>
           {nodeData.merged}/{nodeData.total}
         </div>
-        <div className="mt-2 h-1.5 bg-purple-200 dark:bg-purple-800 cyber-dark:bg-yellow-950 cyber-light:bg-pink-100 rounded-full overflow-hidden">
+        <div className="mt-2 h-1.5 bg-purple-200 dark:bg-purple-800 cyber-dark:bg-yellow-950 cyber-light:bg-cyan-100 rounded-full overflow-hidden">
           <div
             className="h-full bg-green-500 dark:bg-green-400 rounded-full transition-all"
             style={{ width: `${nodeData.percentage}%` }}

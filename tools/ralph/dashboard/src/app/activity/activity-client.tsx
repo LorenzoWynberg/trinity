@@ -54,7 +54,7 @@ export function ActivityClient({ initialLogs, initialProject, projects }: Activi
         </div>
 
         {/* Project selector */}
-        <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+        <div className="flex items-center gap-1 bg-muted cyber-light:bg-cyan-50 cyber-light:border cyber-light:border-cyan-300 rounded-lg p-1">
           {projects.map(project => (
             <button
               key={project}
