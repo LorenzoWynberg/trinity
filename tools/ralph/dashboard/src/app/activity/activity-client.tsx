@@ -47,8 +47,8 @@ export function ActivityClient({ initialLogs, initialProject, projects }: Activi
     <div className="p-8 space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Activity</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold cyber-light:text-pink-600 cyber-dark:text-cyan-400">Activity</h1>
+          <p className="text-muted-foreground cyber-light:text-cyan-600">
             {recentLogs.length} recent, {archivedLogs.length} archived
           </p>
         </div>

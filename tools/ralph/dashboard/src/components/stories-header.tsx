@@ -19,8 +19,8 @@ export function StoriesHeader({ totalStories, phaseCount, version }: StoriesHead
     <>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Stories</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold cyber-light:text-pink-600 cyber-dark:text-cyan-400">Stories</h1>
+          <p className="text-muted-foreground cyber-light:text-cyan-600">
             {totalStories} stories across {phaseCount} phases
           </p>
         </div>

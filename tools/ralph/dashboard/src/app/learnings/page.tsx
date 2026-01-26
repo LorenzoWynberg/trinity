@@ -9,7 +9,7 @@ export default async function LearningsPage() {
   if (learnings.length === 0) {
     return (
       <div className="p-8">
-        <h1 className="text-2xl font-bold mb-4">Learnings</h1>
+        <h1 className="text-2xl font-bold mb-4 cyber-light:text-pink-600 cyber-dark:text-cyan-400">Learnings</h1>
         <p className="text-muted-foreground">
           No learnings found in docs/learnings/
         </p>
@@ -20,7 +20,7 @@ export default async function LearningsPage() {
   return (
     <div className="p-8 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Learnings</h1>
+        <h1 className="text-2xl font-bold cyber-light:text-pink-600 cyber-dark:text-cyan-400">Learnings</h1>
         <p className="text-muted-foreground">Knowledge extracted from completed stories</p>
       </div>
 

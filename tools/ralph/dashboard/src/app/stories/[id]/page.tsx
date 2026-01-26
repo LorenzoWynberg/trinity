@@ -84,7 +84,7 @@ export default async function StoryDetailPage({
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold font-mono">{story.id}</h1>
+          <h1 className="text-2xl font-bold font-mono cyber-light:text-pink-600 cyber-dark:text-cyan-400">{story.id}</h1>
           <Badge className={config.className}>{config.label}</Badge>
           <StoryEditButton story={story} status={status} version={currentVersion} />
         </div>
