@@ -3,8 +3,8 @@
 ## On SUCCESS
 
 Update these files:
-- `docs/learnings/*.md`: Add any NEW learnings to the appropriate topic file
-- `tools/ralph/cli/progress.txt`: APPEND entry with date, changes, learnings
+- `docs/gotchas/*.md`: Add any NEW gotchas to the appropriate topic file
+- `tools/ralph/cli/progress.txt`: APPEND entry with date, changes, gotchas
 - `tools/ralph/cli/prd.json`: Set `"passes": true` for {{CURRENT_STORY}}
   - NOTE: Do NOT set `merged` - Ralph handles that after PR is merged
 - `logs/activity/trinity/YYYY-MM-DD.md`: Update with completed work, files modified, decisions made
@@ -34,8 +34,8 @@ Output: `<story-complete>{{CURRENT_STORY}}</story-complete>`
 
 Don't commit. Don't update prd.json.
 
-**Still capture learnings from failure:**
-- `docs/learnings/*.md`: Add what you learned to the appropriate file's **Gotchas** section
+**Still capture gotchas from failure:**
+- `docs/gotchas/*.md`: Add what you learned to the appropriate file
 - `tools/ralph/cli/progress.txt`: APPEND what was tried and why blocked
 - `logs/activity/trinity/YYYY-MM-DD.md`: Detailed blocker info and what was attempted
 

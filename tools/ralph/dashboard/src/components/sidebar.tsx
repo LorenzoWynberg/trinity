@@ -9,6 +9,7 @@ import {
   BarChart3,
   Clock,
   BookOpen,
+  AlertTriangle,
   Settings,
   GitBranch,
   TerminalSquare,
@@ -24,7 +25,8 @@ const navItems = [
   { href: '/terminal', label: 'Terminal', icon: TerminalSquare },
   { href: '/metrics', label: 'Metrics', icon: BarChart3 },
   { href: '/activity', label: 'Activity', icon: Clock },
-  { href: '/learnings', label: 'Learnings', icon: BookOpen },
+  { href: '/knowledge', label: 'Knowledge', icon: BookOpen },
+  { href: '/gotchas', label: 'Gotchas', icon: AlertTriangle },
 ]
 
 export function Sidebar() {

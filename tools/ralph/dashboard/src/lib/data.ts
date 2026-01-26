@@ -275,15 +275,15 @@ export async function getActivityProjects(): Promise<ActivityProject[]> {
   }
 }
 
-export async function getLearnings(): Promise<{ category: string; content: string }[]> {
+export async function getKnowledge(): Promise<{ category: string; content: string }[]> {
   try {
-    const learningsDir = path.join(DOCS_DIR, 'learnings')
-    const files = await fs.readdir(learningsDir)
-    const mdFiles = files.filter(f => f.endsWith('.md'))
+    const knowledgeDir = path.join(DOCS_DIR, 'knowledge')
+    const files = await fs.readdir(knowledgeDir)
+    const mdFiles = files.filter(f => f.endsWith('.md') && f !== 'README.md')
 
-    const learnings = await Promise.all(
+    const knowledge = await Promise.all(
       mdFiles.map(async (file) => {
-        const content = await fs.readFile(path.join(learningsDir, file), 'utf-8')
+        const content = await fs.readFile(path.join(knowledgeDir, file), 'utf-8')
         return {
           category: file.replace('.md', ''),
           content
@@ -291,7 +291,29 @@ export async function getLearnings(): Promise<{ category: string; content: strin
       })
     )
 
-    return learnings
+    return knowledge
+  } catch {
+    return []
+  }
+}
+
+export async function getGotchas(): Promise<{ category: string; content: string }[]> {
+  try {
+    const gotchasDir = path.join(DOCS_DIR, 'gotchas')
+    const files = await fs.readdir(gotchasDir)
+    const mdFiles = files.filter(f => f.endsWith('.md') && f !== 'README.md')
+
+    const gotchas = await Promise.all(
+      mdFiles.map(async (file) => {
+        const content = await fs.readFile(path.join(gotchasDir, file), 'utf-8')
+        return {
+          category: file.replace('.md', ''),
+          content
+        }
+      })
+    )
+
+    return gotchas
   } catch {
     return []
   }

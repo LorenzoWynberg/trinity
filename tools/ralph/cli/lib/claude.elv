@@ -5,7 +5,7 @@ use path
 use re
 use ./ui
 use ./prd
-use ./learnings
+use ./gotchas
 
 # Configuration (set by init)
 var project-root = ""
@@ -346,7 +346,7 @@ fn cleanup {|output-file|
 
 # Extract learnings from completed story (delegates to learnings module)
 fn extract-learnings {|story-id branch-name|
-  learnings:extract $story-id $branch-name
+  gotchas:extract $story-id $branch-name
 }
 
 # Generate plan-only prompt for a story (no file changes)
@@ -389,7 +389,8 @@ Output a detailed plan that includes:
 Read the following for context:
 - `tools/ralph/cli/prd/'$version'.json` - full story details
 - `docs/ARCHITECTURE.md` - system design
-- `docs/learnings/` - existing learnings
+- `docs/knowledge/` - product documentation
+- `docs/gotchas/` - common pitfalls to avoid
 
 Format your response as a clear, actionable plan.
 
