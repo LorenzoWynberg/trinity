@@ -253,11 +253,48 @@ Shows only "first generation" blocked - stories whose blocker is NOT itself bloc
 URL param based: `?version=v1.0`. Phases are per-version.
 
 ### Hydration Issues
-Radix Select + useSearchParams needs Suspense boundary:
+Radix components generate unique IDs at runtime. Server/client mismatch causes hydration errors.
+
+**Fix 1: Suspense boundary** (for useSearchParams):
 ```tsx
 <Suspense fallback={<div className="..." />}>
   <VersionSelectorInner {...props} />
 </Suspense>
+```
+
+**Fix 2: Extract to client component** (for Tabs in server components):
+```tsx
+// learnings-tabs.tsx - 'use client'
+export function LearningsTabs({ learnings }) { ... }
+
+// page.tsx - server component
+<LearningsTabs learnings={learnings} />
+```
+
+### Mobile Responsiveness
+
+**Scrollable tabs:** Wrap TabsList for horizontal scroll on mobile:
+```tsx
+<div className="overflow-x-auto -mx-2 px-2 pb-2">
+  <TabsList className="inline-flex w-max md:w-auto">
+    {/* triggers */}
+  </TabsList>
+</div>
+```
+
+**Hamburger menu:** Use `mounted` state to avoid hydration mismatch:
+```tsx
+const [mounted, setMounted] = useState(false)
+useEffect(() => setMounted(true), [])
+
+{mounted && <MobileMenu />}  // Only render after hydration
+```
+
+**ReactFlow controls:** Position higher on mobile via CSS:
+```css
+@media (max-width: 768px) {
+  .react-flow__controls { bottom: 80px !important; }
+}
 ```
 
 ### UI Components (shadcn)
@@ -293,10 +330,39 @@ Interactive terminal for running Ralph from the dashboard.
 - `terminal-view.tsx` - xterm.js client component
 - Commands run via `child_process.spawn` (node-pty had compatibility issues with Node 22)
 
-**Running:**
+**Running locally:**
 ```bash
-npm run dev  # Starts both Next.js and ws-server via concurrently
+npm run dev        # Next.js + WebSocket + ngrok (if configured)
+npm run dev:local  # Next.js + WebSocket only (no ngrok)
 ```
+
+### ngrok Setup (Remote Access)
+
+For accessing dashboard from phone/remote:
+
+**Config file:** `tools/ralph/dashboard/ngrok.yml` (gitignored - contains authtoken)
+
+```yaml
+version: 3
+agent:
+  authtoken: YOUR_TOKEN
+tunnels:
+  dashboard:
+    addr: 4000
+    proto: http
+    domain: your-domain.ngrok.app  # Custom domain (no interstitial)
+  terminal:
+    addr: 4001
+    proto: http  # Random URL (shows interstitial once)
+```
+
+**Key points:**
+- Hobby plan ($10/mo): 3 endpoints, 1 custom domain
+- Custom domain = no "Visit Site" interstitial page
+- Random URLs still work but show interstitial
+- Terminal WebSocket auto-detected via `/api/tunnels` endpoint
+- Get authtoken from https://dashboard.ngrok.com/get-started/your-authtoken
+- Reserve domains at https://dashboard.ngrok.com/domains
 
 **Features:**
 - Quick command buttons: Run, Stop, Status, Stats
