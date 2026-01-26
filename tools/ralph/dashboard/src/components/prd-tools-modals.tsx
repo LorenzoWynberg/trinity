@@ -11,7 +11,8 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Loader2, Sparkles, Wand2, CheckCircle, AlertCircle, ChevronRight, ChevronLeft } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Loader2, Sparkles, Wand2, CheckCircle, AlertCircle, ChevronRight, ChevronLeft, Pencil, X, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Refinement = {
@@ -46,6 +47,8 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
   const [summary, setSummary] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [appliedCount, setAppliedCount] = useState(0)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
 
   const reset = () => {
     setStep('analyze')
@@ -55,6 +58,29 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
     setSummary('')
     setSelectedIds(new Set())
     setAppliedCount(0)
+    setEditingId(null)
+    setEditText('')
+  }
+
+  const startEdit = (ref: Refinement, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingId(ref.id)
+    setEditText(ref.suggested_acceptance.join('\n'))
+  }
+
+  const cancelEdit = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingId(null)
+    setEditText('')
+  }
+
+  const saveEdit = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setRefinements(prev => prev.map(r =>
+      r.id === id ? { ...r, suggested_acceptance: editText.split('\n').filter(l => l.trim()) } : r
+    ))
+    setEditingId(null)
+    setEditText('')
   }
 
   const handleClose = () => {
@@ -201,29 +227,57 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
                     <div
                       key={ref.id}
                       className={cn(
-                        "p-3 rounded-md border cursor-pointer transition-all",
-                        "bg-amber-500/10 border-amber-500/30 hover:border-amber-500",
+                        "p-3 rounded-md border transition-all",
+                        "bg-amber-500/10 border-amber-500/30",
+                        editingId !== ref.id && "cursor-pointer hover:border-amber-500",
                         selectedIds.has(ref.id) && "ring-2 ring-primary"
                       )}
-                      onClick={() => toggleId(ref.id)}
+                      onClick={() => editingId !== ref.id && toggleId(ref.id)}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-mono font-medium">{ref.id}</span>
-                        <div className={cn(
-                          "w-5 h-5 rounded border-2 flex items-center justify-center",
-                          selectedIds.has(ref.id) ? "bg-primary border-primary" : "border-muted-foreground"
-                        )}>
-                          {selectedIds.has(ref.id) && <CheckCircle className="h-3 w-3 text-primary-foreground" />}
+                        <div className="flex items-center gap-2">
+                          {editingId === ref.id ? (
+                            <>
+                              <Button variant="ghost" size="sm" onClick={(e) => cancelEdit(e)}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={(e) => saveEdit(ref.id, e)}>
+                                <Check className="h-3 w-3" />
+                              </Button>
+                            </>
+                          ) : (
+                            <Button variant="ghost" size="sm" onClick={(e) => startEdit(ref, e)}>
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          )}
+                          <div className={cn(
+                            "w-5 h-5 rounded border-2 flex items-center justify-center",
+                            selectedIds.has(ref.id) ? "bg-primary border-primary" : "border-muted-foreground"
+                          )}>
+                            {selectedIds.has(ref.id) && <CheckCircle className="h-3 w-3 text-primary-foreground" />}
+                          </div>
                         </div>
                       </div>
                       {ref.issues.length > 0 && (
                         <p className="text-xs text-muted-foreground mb-2">Issues: {ref.issues.join(', ')}</p>
                       )}
-                      <ul className="list-disc list-inside">
-                        {ref.suggested_acceptance.map((a, i) => (
-                          <li key={i} className="text-xs">{a}</li>
-                        ))}
-                      </ul>
+                      {editingId === ref.id ? (
+                        <Textarea
+                          value={editText}
+                          onChange={e => setEditText(e.target.value)}
+                          rows={4}
+                          className="text-xs"
+                          placeholder="One acceptance criterion per line"
+                          onClick={e => e.stopPropagation()}
+                        />
+                      ) : (
+                        <ul className="list-disc list-inside">
+                          {ref.suggested_acceptance.map((a, i) => (
+                            <li key={i} className="text-xs">{a}</li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -277,6 +331,8 @@ export function GenerateStoriesModal({ open, onOpenChange, version }: GenerateMo
   const [reasoning, setReasoning] = useState('')
   const [selectedIdxs, setSelectedIdxs] = useState<Set<number>>(new Set())
   const [addedCount, setAddedCount] = useState(0)
+  const [editingIdx, setEditingIdx] = useState<number | null>(null)
+  const [editStory, setEditStory] = useState<GeneratedStory | null>(null)
 
   const reset = () => {
     setStep('input')
@@ -287,6 +343,33 @@ export function GenerateStoriesModal({ open, onOpenChange, version }: GenerateMo
     setReasoning('')
     setSelectedIdxs(new Set())
     setAddedCount(0)
+    setEditingIdx(null)
+    setEditStory(null)
+  }
+
+  const startEditStory = (idx: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingIdx(idx)
+    setEditStory({ ...stories[idx] })
+  }
+
+  const cancelEditStory = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingIdx(null)
+    setEditStory(null)
+  }
+
+  const saveEditStory = (idx: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!editStory) return
+    setStories(prev => prev.map((s, i) => i === idx ? editStory : s))
+    setEditingIdx(null)
+    setEditStory(null)
+  }
+
+  const updateEditStory = (field: keyof GeneratedStory, value: any) => {
+    if (!editStory) return
+    setEditStory({ ...editStory, [field]: value })
   }
 
   const handleClose = () => {
@@ -424,30 +507,99 @@ export function GenerateStoriesModal({ open, onOpenChange, version }: GenerateMo
                   <div
                     key={i}
                     className={cn(
-                      "p-3 rounded-md border cursor-pointer transition-all hover:border-primary",
+                      "p-3 rounded-md border transition-all",
+                      editingIdx !== i && "cursor-pointer hover:border-primary",
                       selectedIdxs.has(i) && "ring-2 ring-primary"
                     )}
-                    onClick={() => toggleIdx(i)}
+                    onClick={() => editingIdx !== i && toggleIdx(i)}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium">{story.title}</span>
-                      <div className={cn(
-                        "w-5 h-5 rounded border-2 flex items-center justify-center",
-                        selectedIdxs.has(i) ? "bg-primary border-primary" : "border-muted-foreground"
-                      )}>
-                        {selectedIdxs.has(i) && <CheckCircle className="h-3 w-3 text-primary-foreground" />}
+                      {editingIdx === i && editStory ? (
+                        <Input
+                          value={editStory.title}
+                          onChange={e => updateEditStory('title', e.target.value)}
+                          className="font-medium text-sm h-7"
+                          onClick={e => e.stopPropagation()}
+                        />
+                      ) : (
+                        <span className="font-medium">{story.title}</span>
+                      )}
+                      <div className="flex items-center gap-2">
+                        {editingIdx === i ? (
+                          <>
+                            <Button variant="ghost" size="sm" onClick={(e) => cancelEditStory(e)}>
+                              <X className="h-3 w-3" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={(e) => saveEditStory(i, e)}>
+                              <Check className="h-3 w-3" />
+                            </Button>
+                          </>
+                        ) : (
+                          <Button variant="ghost" size="sm" onClick={(e) => startEditStory(i, e)}>
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        )}
+                        <div className={cn(
+                          "w-5 h-5 rounded border-2 flex items-center justify-center",
+                          selectedIdxs.has(i) ? "bg-primary border-primary" : "border-muted-foreground"
+                        )}>
+                          {selectedIdxs.has(i) && <CheckCircle className="h-3 w-3 text-primary-foreground" />}
+                        </div>
                       </div>
                     </div>
-                    <div className="text-xs text-muted-foreground mb-2">
-                      Phase {story.phase} / Epic {story.epic}
-                      {story.tags?.length > 0 && ` · ${story.tags.join(', ')}`}
-                    </div>
-                    {story.intent && <p className="text-sm mb-2">{story.intent}</p>}
-                    <ul className="list-disc list-inside">
-                      {story.acceptance?.map((a, j) => (
-                        <li key={j} className="text-xs">{a}</li>
-                      ))}
-                    </ul>
+
+                    {editingIdx === i && editStory ? (
+                      <div className="space-y-2" onClick={e => e.stopPropagation()}>
+                        <div className="flex gap-2">
+                          <Input
+                            value={editStory.phase}
+                            onChange={e => updateEditStory('phase', parseInt(e.target.value) || 1)}
+                            className="w-20 h-7 text-xs"
+                            placeholder="Phase"
+                            type="number"
+                          />
+                          <Input
+                            value={editStory.epic}
+                            onChange={e => updateEditStory('epic', parseInt(e.target.value) || 1)}
+                            className="w-20 h-7 text-xs"
+                            placeholder="Epic"
+                            type="number"
+                          />
+                          <Input
+                            value={editStory.tags?.join(', ') || ''}
+                            onChange={e => updateEditStory('tags', e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
+                            className="flex-1 h-7 text-xs"
+                            placeholder="Tags (comma-separated)"
+                          />
+                        </div>
+                        <Input
+                          value={editStory.intent || ''}
+                          onChange={e => updateEditStory('intent', e.target.value)}
+                          className="h-7 text-xs"
+                          placeholder="Intent"
+                        />
+                        <Textarea
+                          value={editStory.acceptance?.join('\n') || ''}
+                          onChange={e => updateEditStory('acceptance', e.target.value.split('\n').filter(l => l.trim()))}
+                          rows={3}
+                          className="text-xs"
+                          placeholder="Acceptance criteria (one per line)"
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="text-xs text-muted-foreground mb-2">
+                          Phase {story.phase} / Epic {story.epic}
+                          {story.tags?.length > 0 && ` · ${story.tags.join(', ')}`}
+                        </div>
+                        {story.intent && <p className="text-sm mb-2">{story.intent}</p>}
+                        <ul className="list-disc list-inside">
+                          {story.acceptance?.map((a, j) => (
+                            <li key={j} className="text-xs">{a}</li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>

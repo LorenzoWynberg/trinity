@@ -11,7 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { ExternalLink, GitBranch, CheckCircle2, Circle, Pencil, Loader2, AlertCircle, ChevronRight, CheckCircle } from 'lucide-react'
+import { ExternalLink, GitBranch, CheckCircle2, Circle, Pencil, Loader2, AlertCircle, ChevronRight, CheckCircle, X, Check } from 'lucide-react'
 import Link from 'next/link'
 import type { Story, StoryStatus } from '@/lib/types'
 import { cn } from '@/lib/utils'
@@ -53,6 +53,10 @@ export function StoryModal({ story, status, open, onOpenChange, version }: Story
   const [selectedUpdates, setSelectedUpdates] = useState<Set<string>>(new Set())
   const [appliedCount, setAppliedCount] = useState(0)
 
+  // Inline editing state
+  const [editingCardId, setEditingCardId] = useState<string | null>(null)
+  const [editCardText, setEditCardText] = useState('')
+
   if (!story) return null
 
   const config = statusConfig[status]
@@ -69,6 +73,34 @@ export function StoryModal({ story, status, open, onOpenChange, version }: Story
     setSelectedUpdates(new Set())
     setAppliedCount(0)
     setError(null)
+    setEditingCardId(null)
+    setEditCardText('')
+  }
+
+  const startEditCard = (id: string, acceptance: string[], e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingCardId(id)
+    setEditCardText(acceptance.join('\n'))
+  }
+
+  const cancelEditCard = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingCardId(null)
+    setEditCardText('')
+  }
+
+  const saveEditCard = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newAcceptance = editCardText.split('\n').filter(l => l.trim())
+    if (id === story?.id) {
+      setUpdatedAcceptance(newAcceptance)
+    } else {
+      setRelatedUpdates(prev => prev.map(r =>
+        r.id === id ? { ...r, suggestedAcceptance: newAcceptance } : r
+      ))
+    }
+    setEditingCardId(null)
+    setEditCardText('')
   }
 
   const handleAnalyze = async () => {
@@ -244,25 +276,53 @@ export function StoryModal({ story, status, open, onOpenChange, version }: Story
               {/* Main story update */}
               <div
                 className={cn(
-                  "p-3 rounded-md border cursor-pointer transition-all hover:border-primary",
+                  "p-3 rounded-md border transition-all",
+                  editingCardId !== story.id && "cursor-pointer hover:border-primary",
                   selectedUpdates.has(story.id) && "ring-2 ring-primary"
                 )}
-                onClick={() => toggleUpdate(story.id)}
+                onClick={() => editingCardId !== story.id && toggleUpdate(story.id)}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-mono text-sm">{story.id} (this story)</span>
-                  <div className={cn(
-                    "w-4 h-4 rounded border flex items-center justify-center",
-                    selectedUpdates.has(story.id) ? "bg-primary border-primary" : "border-muted-foreground"
-                  )}>
-                    {selectedUpdates.has(story.id) && <CheckCircle className="h-3 w-3 text-primary-foreground" />}
+                  <div className="flex items-center gap-2">
+                    {editingCardId === story.id ? (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={(e) => cancelEditCard(e)}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={(e) => saveEditCard(story.id, e)}>
+                          <Check className="h-3 w-3" />
+                        </Button>
+                      </>
+                    ) : (
+                      <Button variant="ghost" size="sm" onClick={(e) => startEditCard(story.id, updatedAcceptance, e)}>
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    )}
+                    <div className={cn(
+                      "w-4 h-4 rounded border flex items-center justify-center",
+                      selectedUpdates.has(story.id) ? "bg-primary border-primary" : "border-muted-foreground"
+                    )}>
+                      {selectedUpdates.has(story.id) && <CheckCircle className="h-3 w-3 text-primary-foreground" />}
+                    </div>
                   </div>
                 </div>
-                <ul className="list-disc list-inside">
-                  {updatedAcceptance.map((a, i) => (
-                    <li key={i} className="text-xs">{a}</li>
-                  ))}
-                </ul>
+                {editingCardId === story.id ? (
+                  <Textarea
+                    value={editCardText}
+                    onChange={e => setEditCardText(e.target.value)}
+                    rows={4}
+                    className="text-xs"
+                    placeholder="One acceptance criterion per line"
+                    onClick={e => e.stopPropagation()}
+                  />
+                ) : (
+                  <ul className="list-disc list-inside">
+                    {updatedAcceptance.map((a, i) => (
+                      <li key={i} className="text-xs">{a}</li>
+                    ))}
+                  </ul>
+                )}
               </div>
 
               {/* Related updates */}
@@ -270,26 +330,54 @@ export function StoryModal({ story, status, open, onOpenChange, version }: Story
                 <div
                   key={rel.id}
                   className={cn(
-                    "p-3 rounded-md border cursor-pointer transition-all bg-amber-500/10 hover:border-amber-500",
+                    "p-3 rounded-md border transition-all bg-amber-500/10",
+                    editingCardId !== rel.id && "cursor-pointer hover:border-amber-500",
                     selectedUpdates.has(rel.id) && "ring-2 ring-primary"
                   )}
-                  onClick={() => toggleUpdate(rel.id)}
+                  onClick={() => editingCardId !== rel.id && toggleUpdate(rel.id)}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-mono text-sm">{rel.id}</span>
-                    <div className={cn(
-                      "w-4 h-4 rounded border flex items-center justify-center",
-                      selectedUpdates.has(rel.id) ? "bg-primary border-primary" : "border-muted-foreground"
-                    )}>
-                      {selectedUpdates.has(rel.id) && <CheckCircle className="h-3 w-3 text-primary-foreground" />}
+                    <div className="flex items-center gap-2">
+                      {editingCardId === rel.id ? (
+                        <>
+                          <Button variant="ghost" size="sm" onClick={(e) => cancelEditCard(e)}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={(e) => saveEditCard(rel.id, e)}>
+                            <Check className="h-3 w-3" />
+                          </Button>
+                        </>
+                      ) : (
+                        <Button variant="ghost" size="sm" onClick={(e) => startEditCard(rel.id, rel.suggestedAcceptance, e)}>
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      )}
+                      <div className={cn(
+                        "w-4 h-4 rounded border flex items-center justify-center",
+                        selectedUpdates.has(rel.id) ? "bg-primary border-primary" : "border-muted-foreground"
+                      )}>
+                        {selectedUpdates.has(rel.id) && <CheckCircle className="h-3 w-3 text-primary-foreground" />}
+                      </div>
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground mb-2">{rel.reason}</p>
-                  <ul className="list-disc list-inside">
-                    {rel.suggestedAcceptance.map((a, i) => (
-                      <li key={i} className="text-xs">{a}</li>
-                    ))}
-                  </ul>
+                  {editingCardId === rel.id ? (
+                    <Textarea
+                      value={editCardText}
+                      onChange={e => setEditCardText(e.target.value)}
+                      rows={3}
+                      className="text-xs"
+                      placeholder="One acceptance criterion per line"
+                      onClick={e => e.stopPropagation()}
+                    />
+                  ) : (
+                    <ul className="list-disc list-inside">
+                      {rel.suggestedAcceptance.map((a, i) => (
+                        <li key={i} className="text-xs">{a}</li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               ))}
             </div>
