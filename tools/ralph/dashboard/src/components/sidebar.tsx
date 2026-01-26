@@ -80,7 +80,7 @@ export function Sidebar() {
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                 isActive
                   ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground cyber-light:hover:text-pink-600 cyber-dark:hover:text-cyan-400'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground cyber-light:hover:text-primary cyber-dark:hover:text-primary'
               )}
             >
               <item.icon className="h-4 w-4" />
@@ -93,7 +93,7 @@ export function Sidebar() {
       <div className="p-4 border-t">
         <Link
           href="/settings"
-          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground cyber-light:hover:text-pink-600 cyber-dark:hover:text-cyan-400 transition-colors"
+          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground cyber-light:hover:text-primary cyber-dark:hover:text-primary transition-colors"
         >
           <Settings className="h-4 w-4" />
           Settings
