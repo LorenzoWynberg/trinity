@@ -77,8 +77,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     <div className="p-8 space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">{prd.project}</p>
+          <h1 className="text-2xl font-bold">{prd.title || 'Dashboard'}</h1>
+          <p className="text-muted-foreground">{prd.description || prd.project}</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">PRD:</span>

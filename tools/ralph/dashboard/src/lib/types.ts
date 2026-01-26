@@ -35,6 +35,9 @@ export interface Epic {
 export interface PRD {
   project: string
   version: string
+  title?: string
+  shortTitle?: string
+  description?: string
   phases?: Phase[]
   epics?: Epic[]
   stories: Story[]

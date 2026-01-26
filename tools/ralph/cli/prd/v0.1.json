@@ -1,4 +1,7 @@
 {
+  "title": "Trinity MVP",
+  "shortTitle": "MVP",
+  "description": "Core CLI infrastructure, database layer, and autonomous development loop foundation",
   "phases": [
     {
       "id": 1,

@@ -1,4 +1,7 @@
 {
+  "title": "Trinity 1.0 Release",
+  "shortTitle": "Release",
+  "description": "Authentication, polish, and production-ready release",
   "phases": [
     {
       "id": 1,

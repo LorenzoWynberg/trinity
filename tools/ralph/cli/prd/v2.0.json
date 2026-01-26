@@ -1,4 +1,7 @@
 {
+  "title": "Trinity 2.0",
+  "shortTitle": "Teams",
+  "description": "API layer, team collaboration, and advanced features",
   "stories": [
     {
       "id": "1.1.1",
