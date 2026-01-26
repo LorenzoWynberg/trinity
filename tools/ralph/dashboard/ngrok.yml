@@ -1,8 +1,0 @@
-version: "2"
-tunnels:
-  dashboard:
-    addr: 4000
-    proto: http
-  terminal:
-    addr: 4001
-    proto: http
