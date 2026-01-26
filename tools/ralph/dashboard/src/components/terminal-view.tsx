@@ -134,9 +134,9 @@ export function TerminalView() {
   }
 
   return (
-    <div className="flex flex-col gap-2 h-full">
+    <div className="space-y-2">
       {/* Quick commands */}
-      <div className="flex gap-2 flex-wrap items-center flex-shrink-0">
+      <div className="flex gap-2 flex-wrap items-center">
         <Button size="sm" onClick={() => runRalph()}>
           <Play className="h-4 w-4 mr-1" /> Run
         </Button>
@@ -157,7 +157,7 @@ export function TerminalView() {
       {/* Terminal */}
       <div
         ref={termRef}
-        className="rounded-lg border overflow-hidden bg-[#1a1025] p-2 flex-1 min-h-0"
+        className="rounded-lg border overflow-hidden bg-[#1a1025] p-2 h-[400px] md:h-[500px]"
       />
     </div>
   )
