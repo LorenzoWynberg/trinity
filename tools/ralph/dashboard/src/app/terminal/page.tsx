@@ -13,7 +13,7 @@ export default function TerminalPage() {
         </div>
         <CommandReference />
       </div>
-      <div className="h-[60vh] md:h-[75vh]">
+      <div className="h-[50vh] md:h-[75vh]">
         <TerminalView />
       </div>
     </div>
