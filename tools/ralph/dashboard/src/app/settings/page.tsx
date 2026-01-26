@@ -93,13 +93,13 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-3 block">Theme</label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {themes.map(({ value, label, icon: Icon }) => (
                   <Button
                     key={value}
                     variant={theme === value ? 'default' : 'outline'}
                     className={cn(
-                      'flex-1 gap-2',
+                      'gap-2',
                       theme === value && 'bg-primary'
                     )}
                     onClick={() => saveTheme(value)}
