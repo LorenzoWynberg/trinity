@@ -28,18 +28,19 @@ export const VersionNode = memo(({ data }: NodeProps) => {
         className={cn(
           'px-4 py-3 rounded-xl border-2 cursor-default',
           'bg-purple-50 border-purple-300 dark:bg-purple-950 dark:border-purple-700',
+          'cyber-dark:bg-yellow-900/80 cyber-dark:border-yellow-400',
           'min-w-[180px]'
         )}
       >
         <div className={cn('flex items-center gap-3', isVertical && 'justify-center')}>
-          <span className="font-bold text-lg text-purple-800 dark:text-purple-100">
+          <span className="font-bold text-lg text-purple-800 dark:text-purple-100 cyber-dark:text-cyan-300">
             {nodeData.label}
           </span>
-          <span className="text-sm text-purple-600 dark:text-purple-300">
+          <span className="text-sm text-purple-600 dark:text-purple-300 cyber-dark:text-cyan-400">
             {nodeData.merged}/{nodeData.total}
           </span>
         </div>
-        <div className="mt-2 h-1.5 bg-purple-200 dark:bg-purple-800 rounded-full overflow-hidden">
+        <div className="mt-2 h-1.5 bg-purple-200 dark:bg-purple-800 cyber-dark:bg-yellow-950 rounded-full overflow-hidden">
           <div
             className="h-full bg-green-500 dark:bg-green-400 rounded-full transition-all"
             style={{ width: `${nodeData.percentage}%` }}

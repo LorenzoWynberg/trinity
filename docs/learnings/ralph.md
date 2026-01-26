@@ -276,7 +276,13 @@ Four themes available: `light`, `dark`, `cyber-light`, `cyber-dark`
 Cyber themes use pink/cyan neon accents. Graph page uses `resolvedTheme` to detect dark mode:
 ```tsx
 const isDark = resolvedTheme === 'dark' || resolvedTheme === 'cyber-dark'
+const isCyber = resolvedTheme === 'cyber-dark' || resolvedTheme === 'cyber-light'
 ```
+
+**Cyber-dark graph colors:**
+- Story nodes: Cyan backgrounds, purple text
+- Version nodes: Yellow backgrounds, cyan text
+- Use Tailwind custom variants: `cyber-dark:bg-cyan-900/80 cyber-dark:text-purple-200`
 
 ### PRD Tools (Wizard Modals)
 
