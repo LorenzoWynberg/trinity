@@ -270,6 +270,14 @@ npx shadcn@latest add button
 
 This ensures proper Radix primitives, cva variants, and consistent styling.
 
+### Themes
+Four themes available: `light`, `dark`, `cyber-light`, `cyber-dark`
+
+Cyber themes use pink/cyan neon accents. Graph page uses `resolvedTheme` to detect dark mode:
+```tsx
+const isDark = resolvedTheme === 'dark' || resolvedTheme === 'cyber-dark'
+```
+
 ### PRD Tools (Wizard Flows)
 
 Three Claude-powered PRD editing flows, all with wizard-style UX:
