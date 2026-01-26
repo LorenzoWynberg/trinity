@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Sun, Moon, Monitor } from 'lucide-react'
+import { Sun, Moon, Monitor, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function SettingsPage() {
@@ -73,6 +73,7 @@ export default function SettingsPage() {
   const themes = [
     { value: 'light', label: 'Light', icon: Sun },
     { value: 'dark', label: 'Dark', icon: Moon },
+    { value: 'cyberpunk', label: 'Cyber', icon: Zap },
     { value: 'system', label: 'System', icon: Monitor },
   ]
 

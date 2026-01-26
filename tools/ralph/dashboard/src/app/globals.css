@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant cyberpunk (&:is(.cyberpunk *));
 
 @theme inline {
   --color-background: var(--background);
@@ -115,6 +116,40 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+.cyberpunk {
+  --background: oklch(0.1 0.02 280);
+  --foreground: oklch(0.95 0.15 180);
+  --card: oklch(0.15 0.03 280);
+  --card-foreground: oklch(0.95 0.15 180);
+  --popover: oklch(0.15 0.03 280);
+  --popover-foreground: oklch(0.95 0.15 180);
+  --primary: oklch(0.75 0.25 330);
+  --primary-foreground: oklch(0.1 0.02 280);
+  --secondary: oklch(0.25 0.05 280);
+  --secondary-foreground: oklch(0.95 0.15 180);
+  --muted: oklch(0.2 0.04 280);
+  --muted-foreground: oklch(0.65 0.1 180);
+  --accent: oklch(0.6 0.25 180);
+  --accent-foreground: oklch(0.1 0.02 280);
+  --destructive: oklch(0.65 0.25 25);
+  --border: oklch(0.75 0.25 330 / 30%);
+  --input: oklch(0.75 0.25 330 / 20%);
+  --ring: oklch(0.75 0.25 330);
+  --chart-1: oklch(0.75 0.25 330);
+  --chart-2: oklch(0.6 0.25 180);
+  --chart-3: oklch(0.7 0.2 60);
+  --chart-4: oklch(0.65 0.25 280);
+  --chart-5: oklch(0.6 0.2 120);
+  --sidebar: oklch(0.12 0.025 280);
+  --sidebar-foreground: oklch(0.95 0.15 180);
+  --sidebar-primary: oklch(0.75 0.25 330);
+  --sidebar-primary-foreground: oklch(0.1 0.02 280);
+  --sidebar-accent: oklch(0.2 0.04 280);
+  --sidebar-accent-foreground: oklch(0.95 0.15 180);
+  --sidebar-border: oklch(0.75 0.25 330 / 30%);
+  --sidebar-ring: oklch(0.75 0.25 330);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -167,4 +202,24 @@
 
 .react-flow__controls button path {
   fill: #1f2937;
+}
+
+/* React Flow Controls - Cyberpunk */
+.cyberpunk .react-flow__controls {
+  background: #1a1025;
+  border-color: #ff2d95;
+}
+
+.cyberpunk .react-flow__controls button {
+  background: #1a1025;
+  border-color: #ff2d95;
+  fill: #0ff;
+}
+
+.cyberpunk .react-flow__controls button:hover {
+  background: #2a1a35;
+}
+
+.cyberpunk .react-flow__controls button path {
+  fill: #0ff;
 }
