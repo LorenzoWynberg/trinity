@@ -632,8 +632,8 @@ Output JSON:
       "issues": ["issue 1", "issue 2"],
       "suggested_acceptance": ["clearer criterion 1", "clearer criterion 2"],
       "suggested_split": [
-        {"title": "Smaller story 1", "acceptance": ["..."]},
-        {"title": "Smaller story 2", "acceptance": ["..."]}
+        {"title": "Smaller story 1", "intent": "...", "description": "...", "acceptance": ["..."]},
+        {"title": "Smaller story 2", "intent": "...", "description": "...", "acceptance": ["..."]}
       ],
       "suggested_tags": ["tag1", "tag2"]
     }
@@ -745,6 +745,7 @@ Output JSON:
     {
       "title": "Clear action-oriented title",
       "intent": "Why this story matters",
+      "description": "Implementation context, patterns, constraints (optional but recommended for complex stories)",
       "acceptance": ["Specific criterion 1", "Specific criterion 2"],
       "phase": 1,
       "epic": 1,
@@ -1191,6 +1192,7 @@ Output format (JSON):
     {
       "id": "X.Y.Z",
       "reason": "Why this needs updating",
+      "description": "Updated implementation context (optional, omit if unchanged)",
       "acceptance": ["Updated criterion 1", "Updated criterion 2"],
       "tags": ["auth", "api"]
     }
@@ -1199,6 +1201,7 @@ Output format (JSON):
     {
       "title": "Story title",
       "intent": "Why this story is needed",
+      "description": "Implementation context, patterns to follow, constraints (optional but recommended for complex stories)",
       "acceptance": ["Criterion 1", "Criterion 2"],
       "tags": ["auth", "api"],
       "phase": '$phase',
@@ -1313,6 +1316,7 @@ Output format (JSON):
     {
       "id": "X.Y.Z",
       "reason": "Why this needs updating",
+      "description": "Updated implementation context (optional, omit if unchanged)",
       "acceptance": ["Updated criterion 1", "Updated criterion 2"],
       "tags": ["auth", "api"]
     }
@@ -1321,6 +1325,7 @@ Output format (JSON):
     {
       "title": "Story title",
       "intent": "Why this story is needed",
+      "description": "Implementation context, patterns to follow, constraints (optional but recommended for complex stories)",
       "acceptance": ["Criterion 1", "Criterion 2"],
       "tags": ["auth", "api"],
       "phase": '$phase',
@@ -1486,12 +1491,16 @@ Rules:
       var fields = [&]
       var new-acceptance = (echo $update-obj | jq -c '.acceptance // null')
       var new-tags = (echo $update-obj | jq -c '.tags // null')
+      var new-description = (echo $update-obj | jq -r '.description // null')
 
       if (and (not (eq $new-acceptance "null")) (not (eq $new-acceptance ""))) {
         set fields[acceptance] = $new-acceptance
       }
       if (and (not (eq $new-tags "null")) (not (eq $new-tags ""))) {
         set fields[tags] = $new-tags
+      }
+      if (and (not (eq $new-description "null")) (not (eq $new-description ""))) {
+        set fields[description] = $new-description
       }
 
       if (> (count $fields) 0) {
@@ -1536,7 +1545,12 @@ Rules:
             # Update existing story instead of creating
             var existing-acceptance = (echo $item | jq -c '.acceptance // []')
             var existing-tags = $cr-tags
-            var fields-json = (put [&acceptance=$existing-acceptance &tags=$existing-tags] | to-json)
+            var existing-description = (echo $item | jq -r '.description // ""')
+            var fields = [&acceptance=$existing-acceptance &tags=$existing-tags]
+            if (not (eq $existing-description "")) {
+              set fields[description] = $existing-description
+            }
+            var fields-json = (put $fields | to-json)
             prd:update-story $dup-check[duplicate] $fields-json
             ui:success "  ✓ Updated existing "$dup-check[duplicate] > /dev/tty
             continue
@@ -1688,6 +1702,7 @@ Output format (JSON):
     {
       "id": "X.Y.Z",
       "reason": "Why this clearly needs updating",
+      "description": "Updated implementation context (optional, omit if unchanged)",
       "acceptance": ["Updated criterion 1", "Updated criterion 2"],
       "tags": ["auth", "api"]
     }
@@ -1832,12 +1847,16 @@ Rules:
       var fields = [&]
       var new-acceptance = (echo $update-obj | jq -c '.acceptance // null')
       var new-tags = (echo $update-obj | jq -c '.tags // null')
+      var new-description = (echo $update-obj | jq -r '.description // null')
 
       if (and (not (eq $new-acceptance "null")) (not (eq $new-acceptance ""))) {
         set fields[acceptance] = $new-acceptance
       }
       if (and (not (eq $new-tags "null")) (not (eq $new-tags ""))) {
         set fields[tags] = $new-tags
+      }
+      if (and (not (eq $new-description "null")) (not (eq $new-description ""))) {
+        set fields[description] = $new-description
       }
 
       if (> (count $fields) 0) {

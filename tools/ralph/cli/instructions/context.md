@@ -2,7 +2,11 @@
 
 **Always read first:**
 - `CLAUDE.md` - project rules and conventions (required)
-- `tools/ralph/cli/prd/{{VERSION}}.json` - acceptance criteria for {{CURRENT_STORY}} (required)
+- `tools/ralph/cli/prd/{{VERSION}}.json` - find your story ({{CURRENT_STORY}}) and read:
+  - `title` - what to do
+  - `intent` - why it matters
+  - `description` - implementation context, patterns, constraints (if present)
+  - `acceptance` - done when all criteria met
 
 **Then pick relevant docs based on the task:**
 | Doc | When to read |

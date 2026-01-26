@@ -48,6 +48,7 @@
       "id": "1.1.1",
       "title": "Create auth package structure",
       "intent": "Establish authentication module for license validation",
+      "description": "Create the foundational auth package in core/auth/. This follows the same pattern as other core packages (config, db, etc). The Auth struct should be the main entry point, handling both in-memory state and disk persistence. Use ~/.trinity/auth.json for storage to keep user projects clean.",
       "acceptance": [
         "core/auth/auth.go exists with Auth struct",
         "Auth struct holds API endpoint URL and cached validation result",
@@ -74,6 +75,7 @@
       "id": "1.1.2",
       "title": "Implement license key validation",
       "intent": "Validate license key against auth API before running operations",
+      "description": "The validation flow: Auth.Validate(key) makes a POST to the license API, parses the response into LicenseInfo, and caches the result. Use context.WithTimeout for the HTTP call (10s default). The external_deps_report will provide the actual API endpoint and response schema. Don't hardcode URLs—read from config or the report.",
       "acceptance": [
         "Validate(key) calls auth API endpoint to verify license",
         "API endpoint provided via external deps report (e.g., POST /api/licenses/validate)",
@@ -106,6 +108,7 @@
       "id": "1.1.3",
       "title": "Implement offline validation fallback",
       "intent": "Allow Trinity to work offline when API is unreachable",
+      "description": "Offline mode is critical for developer experience—users shouldn't be blocked by network issues. The cached validation in auth.json includes a timestamp. Compare against 7-day threshold. The --offline flag is a CLI flag that skips the network call entirely, useful for airplane mode or CI environments without network access.",
       "acceptance": [
         "If API unreachable and cached validation < 7 days old, allow operation",
         "If API unreachable and cached validation > 7 days old, require online validation",
@@ -131,6 +134,7 @@
       "id": "1.1.4",
       "title": "Implement trinity auth login command",
       "intent": "Allow users to enter their license key",
+      "description": "This is the main entry point for authentication. Use terminal.ReadPassword() for secure key input (hides typing). The --key flag is for CI/automation where interactive prompts don't work. Display license info nicely after successful login—users want to see what tier they have and when it expires.",
       "acceptance": [
         "trinity auth login prompts for license key",
         "Validates key immediately against API",
@@ -189,6 +193,7 @@
       "id": "1.1.6",
       "title": "Integrate license check into run command",
       "intent": "Gate trinity run behind valid license",
+      "description": "License check happens early in the run command, before any expensive operations. The --skip-auth flag is for development only—consider hiding it from help output or requiring an environment variable. The inline key prompt is a UX convenience so users don't need to run two commands.",
       "acceptance": [
         "Before trinity run executes, check for valid license",
         "If no saved key, prompt: \"No license found. Run trinity auth login or enter key now:\"",
@@ -216,6 +221,7 @@
       "id": "2.1.1",
       "title": "Add comprehensive error messages",
       "intent": "Provide helpful error messages for common issues",
+      "description": "Good error messages tell users: what went wrong, why, and how to fix it. Create custom error types (ErrClaudeNotFound, ErrGitDirty, etc.) with Error() methods that include the hint. Use errors.Is() and errors.As() for error handling. The consistent format 'Error: X\\nHint: Y' makes errors parseable and scannable.",
       "acceptance": [
         "ErrClaudeNotFound: 'Claude CLI not found. Install from: https://claude.ai/code'",
         "ErrGitDirty: 'Uncommitted changes detected. Run: git stash or git commit'",
@@ -244,6 +250,7 @@
       "id": "2.1.2",
       "title": "Add colored terminal output",
       "intent": "Improve CLI readability with colors",
+      "description": "fatih/color automatically handles TTY detection—colors are disabled when output is piped or redirected. Create helper functions like ui.Success(), ui.Error(), ui.Warn() that wrap color output. Test in different terminals (iTerm2, VS Code terminal, etc.) to ensure readability.",
       "acceptance": [
         "Uses fatih/color for terminal colors",
         "Success messages in green",
@@ -434,6 +441,7 @@
       "id": "3.1.1",
       "title": "Final human testing and v1.0 sign-off",
       "intent": "Comprehensive manual validation before release - wraps all loose ends",
+      "description": "This is the gatekeeper story—nothing ships without passing this. Test on a fresh machine if possible (or clean environment). Document any issues found. The human_testing instructions are comprehensive; follow them step by step. Only mark this complete when confident Trinity is ready for public use.",
       "acceptance": [
         "Complete workflow test: init → analyze → plan add → run → release",
         "Multi-story execution with dependencies works correctly",

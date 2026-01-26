@@ -7,6 +7,7 @@
       "id": "1.1.1",
       "title": "Create API package structure",
       "intent": "Establish the API layer foundation with router, middleware, and handler patterns",
+      "description": "The API layer sits in core/api/ so both CLI and GUI can use it. Chi is preferred over Gin for its stdlib compatibility. Handlers should be thin—delegate to db package for queries. CORS is needed because the dashboard runs on a different port during development.",
       "acceptance": [
         "core/api/ directory exists with router.go, middleware.go, handlers/ subdirectory",
         "Chi or Gin router configured with JSON middleware",
@@ -86,6 +87,7 @@
       "id": "1.1.5",
       "title": "Implement story detail API",
       "intent": "Expose full story details including dependencies",
+      "description": "The detail endpoint needs to resolve all dependency references. Trinity uses named IDs (mvp:auth:1) not numeric (1.1.1). The depends_on array can contain multiple formats: mvp (whole phase), mvp:auth (whole epic), mvp:auth:1 (specific story), v1.0:mvp:auth:1 (cross-version). Return both depends_on (what this story needs) and dependents (what needs this story).",
       "acceptance": [
         "GET /api/stories/:id returns full story object (id like mvp:auth:1)",
         "Includes: id, title, intent, acceptance criteria array, depends_on array, dependents array",
@@ -239,8 +241,9 @@
       "id": "1.2.1",
       "title": "Initialize Next.js project",
       "intent": "Set up the dashboard frontend with modern React stack",
+      "description": "Use Next.js 16 with app router (not pages router). The dashboard lives in its own directory at the repo root, separate from the Go code. Configure TypeScript strict mode to catch errors early. Tailwind CSS is the styling standard—don't add extra CSS frameworks. The API calls go to the Go backend on a different port during development.",
       "acceptance": [
-        "dashboard/ directory with Next.js 14+ app router",
+        "dashboard/ directory with Next.js 16 app router",
         "TypeScript configured with strict mode",
         "Tailwind CSS configured",
         "npm run dev starts development server",
@@ -496,6 +499,7 @@
       "id": "2.3.1",
       "title": "Create story node component",
       "intent": "Build custom React Flow node for stories with versioned IDs",
+      "description": "React Flow custom nodes use data prop for passing story info. The node ID must be globally unique—use version prefix (v1.0:mvp:auth:1) to prevent collisions when showing multiple versions. Trinity uses named format (mvp:auth:1) not numeric (1.1.1). Size nodes consistently for visual alignment.",
       "acceptance": [
         "StoryNode component for React Flow",
         "Versioned node IDs: v1.0:mvp:auth:1 (prevents conflicts across versions)",
@@ -519,6 +523,7 @@
       "id": "2.3.2",
       "title": "Create version node component",
       "intent": "Build custom node for version headers in graph - positioned at END of dependency chain as deliverable/goal",
+      "description": "The version node represents the release—it's the goal everything flows toward. Position it at the END of the chain (rightmost in horizontal layout). Leaf stories (stories nothing depends on) connect TO the version node. This visualization shows 'work flows toward release' rather than 'release triggers work'.",
       "acceptance": [
         "VersionNode component for React Flow",
         "Shows version name (e.g., v1.0)",
@@ -541,6 +546,7 @@
       "id": "2.3.3",
       "title": "Implement auto-layout",
       "intent": "Calculate node positions automatically",
+      "description": "Layout is a graph traversal problem. Start from root nodes (no dependencies), position by depth level. Horizontal layouts work best for wide shallow graphs; vertical for narrow deep ones. Compact variants wrap to next row/column at 6 nodes to prevent ultra-wide graphs. Use consistent spacing (e.g., 200px horizontal, 150px vertical) for clean visuals.",
       "acceptance": [
         "calculateAutoPositions function",
         "Supports 4 layouts: horizontal, horizontal-compact, vertical, vertical-compact",
@@ -621,6 +627,7 @@
       "id": "2.3.7",
       "title": "Implement click-to-highlight",
       "intent": "Show dependency path when clicking a node",
+      "description": "This is the key UX feature—clicking a story shows everything that must complete before it. Use recursive traversal to find all ancestors (dependencies of dependencies). Apply CSS opacity to fade non-highlighted nodes. Store selection state in React state. Background click clears selection (use onPaneClick callback).",
       "acceptance": [
         "Clicking node highlights all ancestors",
         "Highlighted nodes stay fully opaque",
@@ -989,6 +996,7 @@
       "id": "3.1.1",
       "title": "Add WebSocket support",
       "intent": "Enable real-time server-to-client communication",
+      "description": "Use gorilla/websocket on the backend. Each client gets a unique connection ID. Maintain a map of connections for broadcasting. Handle disconnects gracefully—remove from map, log event. On the frontend, use a custom hook with reconnection logic (exponential backoff). Parse JSON messages by type field.",
       "acceptance": [
         "WebSocket endpoint at /ws",
         "Connection management (connect, disconnect, reconnect)",
