@@ -50,9 +50,12 @@ export function resolveDependency(dep: string, stories: Story[], currentVersion?
       .map(s => ({ storyId: s.id, nodeId: `${version}:${s.id}`, crossVersion: version !== currentVersion }))
   }
 
-  // Cross-version specific story (e.g., "v1.0:1.2.3")
+  // Cross-version specific story (e.g., "v0.1:1.2.3")
   if (/^v[0-9]+\.[0-9]+:[0-9]+\.[0-9]+\.[0-9]+$/.test(dep)) {
-    const [version, storyId] = dep.split(':')
+    // Split carefully - version is "vX.Y", story is the rest after first ":"
+    const colonIndex = dep.indexOf(':')
+    const version = dep.slice(0, colonIndex)
+    const storyId = dep.slice(colonIndex + 1)
     const found = stories.find(s => s.id === storyId && s.target_version === version)
     if (found) {
       return [{ storyId: found.id, nodeId: `${version}:${found.id}`, crossVersion: version !== currentVersion }]
@@ -74,11 +77,12 @@ export function resolveDependency(dep: string, stories: Story[], currentVersion?
     return []
   }
 
-  // Version-scoped phase or epic (e.g., "v1.0:1" or "v1.0:1:2")
+  // Version-scoped phase or epic (e.g., "v0.1:1" or "v0.1:1:2")
   if (/^v[0-9]+\.[0-9]+:[0-9]+/.test(dep)) {
-    const parts = dep.split(':')
-    const version = parts[0]
-    const target = parts.slice(1).join(':')
+    // Split carefully - version is "vX.Y", target is the rest after first ":"
+    const colonIndex = dep.indexOf(':')
+    const version = dep.slice(0, colonIndex)
+    const target = dep.slice(colonIndex + 1)
     const filteredStories = stories.filter(s => s.target_version === version)
     return resolvePhaseEpic(target, filteredStories, version, currentVersion)
   }
