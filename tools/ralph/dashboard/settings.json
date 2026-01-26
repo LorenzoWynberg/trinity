@@ -1,7 +1,7 @@
 {
   "theme": "dark",
   "graphDirection": "vertical",
-  "showDeadEnds": true,
+  "showDeadEnds": false,
   "defaultVersion": "v0.1",
   "showExternalDeps": false
 }
