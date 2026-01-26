@@ -70,7 +70,7 @@ All state lives in the database. Solo mode uses SQLite (`trinity.db`). Teams use
 -- PRD Structure
 phases (id, name, status, depends_on, priority)
 epics (id, phase_id, name, path, status, depends_on, priority)
-stories (id, epic_id, title, intent, acceptance, status, depends_on, priority,
+stories (id, epic_id, title, intent, description, acceptance, status, depends_on, priority,
          human_testing_required, human_testing_instructions, human_testing_url,
          target_version,       -- e.g., "v1.0", "v2.0"
          external_deps,        -- JSON array of external dependencies (see below)
@@ -326,6 +326,7 @@ Stories track completion in two stages:
   "id": "STORY-1.2.3",
   "title": "Story title",
   "intent": "Why this matters",
+  "description": "Implementation context, patterns, constraints (optional)",
   "acceptance": ["Criterion 1", "Criterion 2"],
   "depends_on": ["mvp:auth:STORY-1.1.1"],
   "target_version": "v1.0",
