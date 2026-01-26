@@ -55,7 +55,7 @@ export function TerminalView() {
     fitAddonRef.current = fitAddon
 
     // Connect WebSocket
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001'
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:4001'
     const ws = new WebSocket(wsUrl)
     wsRef.current = ws
 

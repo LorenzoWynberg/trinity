@@ -2,7 +2,7 @@ const { WebSocketServer } = require('ws')
 const { spawn } = require('child_process')
 const path = require('path')
 
-const PORT = process.env.WS_PORT || 3001
+const PORT = process.env.WS_PORT || 4001
 const wss = new WebSocketServer({ port: PORT })
 
 const cliDir = path.join(__dirname, '..', 'cli')
