@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n next,ws,ngrok -c cyan,magenta,yellow \"next dev -p 4000\" \"node ws-server.js\" \"ngrok start --all --config ngrok.yml --log stdout\"",
-    "dev:local": "concurrently -n next,ws -c cyan,magenta \"next dev -p 4000\" \"node ws-server.js\"",
+    "dev": "concurrently -n next,ws -c cyan,magenta \"next dev -p 4000\" \"node ws-server.js\"",
+    "dev:tunnel": "concurrently -n next,ws,ngrok -c cyan,magenta,yellow \"next dev -p 4000\" \"node ws-server.js\" \"ngrok start --all --config ngrok.yml --log stdout\"",
     "dev:next": "next dev -p 4000",
     "dev:terminal": "node ws-server.js",
     "tunnel": "ngrok start --all --config ngrok.yml",
