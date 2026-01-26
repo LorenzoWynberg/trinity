@@ -119,6 +119,26 @@ fn get-story-title {|story-id|
   jq -r ".stories[] | select(.id == \""$story-id"\") | .title" $prd-file
 }
 
+# Get phase name from PRD metadata
+fn get-phase-name {|phase-id|
+  var name = (jq -r '.phases[]? | select(.id == '$phase-id') | .name // ""' $prd-file)
+  if (eq $name "") {
+    put "Phase "$phase-id
+  } else {
+    put $name
+  }
+}
+
+# Get epic name from PRD metadata
+fn get-epic-name {|phase-id epic-id|
+  var name = (jq -r '.epics[]? | select(.phase == '$phase-id' and .id == '$epic-id') | .name // ""' $prd-file)
+  if (eq $name "") {
+    put "Epic "$phase-id"."$epic-id
+  } else {
+    put $name
+  }
+}
+
 # Build branch name from story ID
 fn get-branch-name {|story-id|
   var info = (try { str:trim-space (get-story-info $story-id | slurp) } catch _ { put "" })
@@ -385,18 +405,20 @@ fn show-status {
   var phases = [(jq -r '.stories | map(.phase) | unique | .[]' $prd-file)]
 
   for phase $phases {
-    # Phase header
+    # Phase header with name
+    var phase-name = (get-phase-name $phase)
     var phase-total = (jq '[.stories[] | select(.phase == '$phase')] | length' $prd-file)
     var phase-merged = (jq '[.stories[] | select(.phase == '$phase' and .merged == true)] | length' $prd-file)
-    echo "Phase "$phase" ["$phase-merged"/"$phase-total"]"
+    echo $phase-name" ["$phase-merged"/"$phase-total"]"
 
     # Get unique epics in this phase
     var epics = [(jq -r '.stories | map(select(.phase == '$phase') | .epic) | unique | .[]' $prd-file)]
 
     for epic $epics {
+      var epic-name = (get-epic-name $phase $epic)
       var epic-total = (jq '[.stories[] | select(.phase == '$phase' and .epic == '$epic')] | length' $prd-file)
       var epic-merged = (jq '[.stories[] | select(.phase == '$phase' and .epic == '$epic' and .merged == true)] | length' $prd-file)
-      echo "  Epic "$phase"."$epic" ["$epic-merged"/"$epic-total"]"
+      echo "  "$epic-name" ["$epic-merged"/"$epic-total"]"
 
       # Get stories in this epic
       var stories = [(jq -r '.stories[] | select(.phase == '$phase' and .epic == '$epic') | "\(.id)|\(.title)|\(.passes // false)|\(.merged // false)|\(.skipped // false)"' $prd-file)]
