@@ -126,7 +126,7 @@ export default function MetricsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold cyber-light:text-pink-600 cyber-dark:text-cyan-400">Metrics</h1>
-          <p className="text-muted-foreground">Token usage and timing data</p>
+          <p className="text-muted-foreground cyber-light:text-cyan-600">Token usage and timing data</p>
         </div>
 
         {/* Version Filter */}
