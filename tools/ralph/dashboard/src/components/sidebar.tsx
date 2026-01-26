@@ -18,10 +18,10 @@ const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/stories', label: 'Stories', icon: ListTodo },
   { href: '/graph', label: 'Graph', icon: GitBranch },
+  { href: '/terminal', label: 'Terminal', icon: TerminalSquare },
   { href: '/metrics', label: 'Metrics', icon: BarChart3 },
   { href: '/activity', label: 'Activity', icon: Clock },
   { href: '/learnings', label: 'Learnings', icon: BookOpen },
-  { href: '/terminal', label: 'Terminal', icon: TerminalSquare },
 ]
 
 export function Sidebar() {
