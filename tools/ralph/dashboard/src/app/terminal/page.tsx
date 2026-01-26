@@ -3,8 +3,8 @@ import { CommandReference } from '@/components/command-reference'
 
 export default function TerminalPage() {
   return (
-    <div className="h-full max-h-[calc(100dvh-5rem)] md:max-h-none md:h-[calc(100vh-2rem)] flex flex-col p-3 md:p-6 overflow-hidden">
-      <div className="flex items-center justify-between mb-2 flex-shrink-0">
+    <div className="p-3 md:p-6">
+      <div className="flex items-center justify-between mb-2">
         <div>
           <h1 className="text-xl md:text-2xl font-bold">Terminal</h1>
           <p className="text-xs md:text-sm text-muted-foreground">
@@ -13,7 +13,7 @@ export default function TerminalPage() {
         </div>
         <CommandReference />
       </div>
-      <div className="flex-1 min-h-0">
+      <div className="h-[60vh] md:h-[75vh]">
         <TerminalView />
       </div>
     </div>
