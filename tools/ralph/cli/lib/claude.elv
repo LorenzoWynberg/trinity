@@ -570,6 +570,261 @@ Be pragmatic - minor ambiguity is OK if the intent is clear. Only flag things th
   put [&valid=$true &questions=""]
 }
 
+# Refine PRD stories - review and suggest improvements
+# If story-id is provided, refine just that story; otherwise refine all pending stories
+# Version parameter selects which PRD file to refine
+fn refine-prd {|&story-id="" &version=""|
+  # Select version if specified
+  if (not (eq $version "")) {
+    prd:select-version $version
+  }
+
+  var prd-file = (prd:get-prd-file)
+  var current-version = (prd:get-current-version)
+  var project-name = (jq -r '.project // "Unknown"' $prd-file)
+
+  ui:box "PRD REFINEMENT ("$current-version")" "info"
+  echo ""
+
+  var stories-json = ""
+  var target-desc = ""
+
+  if (not (eq $story-id "")) {
+    # Refine specific story
+    set stories-json = (jq -c '[.stories[] | select(.id == "'$story-id'")]' $prd-file)
+    set target-desc = "story "$story-id
+  } else {
+    # Refine all pending stories (not passed, not merged, not skipped)
+    set stories-json = (jq -c '[.stories[] | select(.passes != true and .merged != true and .skipped != true)]' $prd-file)
+    set target-desc = "all pending stories"
+  }
+
+  var story-count = (echo $stories-json | jq 'length')
+  if (eq $story-count "0") {
+    ui:warn "No stories to refine in "$current-version
+    return
+  }
+
+  ui:status "Reviewing "$story-count" stories in "$current-version"..."
+  echo ""
+
+  var prompt = 'You are reviewing PRD stories for clarity and implementability.
+
+PROJECT: '$project-name'
+
+STORIES TO REVIEW:
+'$stories-json'
+
+For each story, check:
+1. Are acceptance criteria specific and testable?
+2. Are there vague terms that need clarification? ("settings", "improve", "properly", "handle")
+3. Should this story be split into smaller stories?
+4. Are dependencies complete?
+5. Are tags appropriate?
+
+Output JSON:
+```json
+{
+  "refinements": [
+    {
+      "id": "X.Y.Z",
+      "status": "ok" | "needs_work",
+      "issues": ["issue 1", "issue 2"],
+      "suggested_acceptance": ["clearer criterion 1", "clearer criterion 2"],
+      "suggested_split": [
+        {"title": "Smaller story 1", "acceptance": ["..."]},
+        {"title": "Smaller story 2", "acceptance": ["..."]}
+      ],
+      "suggested_tags": ["tag1", "tag2"]
+    }
+  ],
+  "summary": "X of Y stories need refinement"
+}
+```
+
+Be pragmatic - only flag real issues that could lead to wrong implementations.
+If a story is fine, set status to "ok" with empty issues/suggestions.'
+
+  var result = ""
+  try {
+    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
+  } catch e {
+    ui:error "Refinement failed: "(to-string $e[reason])
+    return
+  }
+
+  # Display results
+  echo $result
+  echo ""
+
+  # Try to extract JSON and offer to apply
+  if (str:contains $result "```json") {
+    var json-block = (echo $result | sed -n '/```json/,/```/p' | sed '1d;$d')
+    var needs-work = (echo $json-block | jq -r '.refinements[] | select(.status == "needs_work") | .id' 2>/dev/null | slurp)
+
+    if (not (eq $needs-work "")) {
+      echo ""
+      ui:warn "Stories needing refinement:"
+      echo $needs-work
+      echo ""
+      echo "\e[33mApply suggested acceptance criteria? [y/N]\e[0m" > /dev/tty
+      var response = ""
+      try {
+        set response = (head -n1 </dev/tty | str:trim-space (slurp))
+      } catch _ { }
+
+      if (or (eq $response "y") (eq $response "Y")) {
+        # Apply refinements
+        var refinements = [(echo $json-block | jq -c '.refinements[] | select(.status == "needs_work" and .suggested_acceptance != null and (.suggested_acceptance | length) > 0)' 2>/dev/null)]
+        for ref $refinements {
+          var ref-id = (echo $ref | jq -r '.id')
+          var new-acc = (echo $ref | jq -c '.suggested_acceptance')
+          ui:status "Updating "$ref-id"..."
+          prd:update-story-acceptance $ref-id $new-acc
+        }
+        # Sort stories after modifications
+        prd:sort-stories
+        ui:success "Refinements applied"
+      } else {
+        ui:dim "No changes made"
+      }
+    }
+  }
+
+  ui:divider-end
+}
+
+# Add new stories from a description using Claude
+fn add-stories-from-description {|description &version=""|
+  # Select version if specified
+  if (not (eq $version "")) {
+    prd:select-version $version
+  }
+
+  var prd-file = (prd:get-prd-file)
+  var project-name = (jq -r '.project // "Unknown"' $prd-file)
+  var phases = (jq -c '.phases // []' $prd-file)
+  var epics = (jq -c '.epics // []' $prd-file)
+  var existing-stories = (jq -c '[.stories[] | {id, title, phase, epic, tags}]' $prd-file)
+  var current-version = (prd:get-current-version)
+
+  ui:box "ADD STORIES ("$current-version")" "info"
+  echo ""
+  ui:status "Generating stories from description..."
+  ui:dim "  "$description
+  echo ""
+
+  var prompt = 'You are creating PRD stories for an existing project.
+
+PROJECT: '$project-name'
+TARGET VERSION: '$current-version'
+
+EXISTING PHASES:
+'$phases'
+
+EXISTING EPICS:
+'$epics'
+
+EXISTING STORIES (for context and avoiding duplicates):
+'$existing-stories'
+
+USER REQUEST:
+'$description'
+
+Generate new stories that:
+1. Fit into existing phases/epics OR suggest new epic if needed
+2. Have specific, testable acceptance criteria
+3. Include proper dependencies on existing stories
+4. Avoid duplicating existing functionality
+5. Are small enough to implement in one session
+
+Output JSON:
+```json
+{
+  "stories": [
+    {
+      "title": "Clear action-oriented title",
+      "intent": "Why this story matters",
+      "acceptance": ["Specific criterion 1", "Specific criterion 2"],
+      "phase": 1,
+      "epic": 1,
+      "depends_on": ["X.Y.Z"],
+      "tags": ["relevant", "tags"]
+    }
+  ],
+  "new_epic": {
+    "needed": false,
+    "phase": 1,
+    "name": "Epic Name",
+    "description": "What this epic covers"
+  },
+  "reasoning": "Brief explanation of how stories fit the request"
+}
+```
+
+Be specific in acceptance criteria - avoid vague terms.'
+
+  var result = ""
+  try {
+    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
+  } catch e {
+    ui:error "Story generation failed: "(to-string $e[reason])
+    return
+  }
+
+  # Display results
+  echo $result
+  echo ""
+
+  # Try to extract JSON and offer to apply
+  if (str:contains $result "```json") {
+    var json-block = (echo $result | sed -n '/```json/,/```/p' | sed '1d;$d')
+    var story-count = (echo $json-block | jq '.stories | length' 2>/dev/null)
+
+    if (and (not (eq $story-count "")) (not (eq $story-count "0"))) {
+      echo ""
+      ui:status "Generated "$story-count" stories"
+      echo ""
+      echo "\e[33mAdd these stories to PRD? [y/N]\e[0m" > /dev/tty
+      var response = ""
+      try {
+        set response = (head -n1 </dev/tty | str:trim-space (slurp))
+      } catch _ { }
+
+      if (or (eq $response "y") (eq $response "Y")) {
+        # Add stories
+        var stories = [(echo $json-block | jq -c '.stories[]' 2>/dev/null)]
+        for story-json $stories {
+          var title = (echo $story-json | jq -r '.title')
+          var phase = (echo $story-json | jq -r '.phase')
+          var epic = (echo $story-json | jq -r '.epic')
+
+          # Get next story number for this phase.epic
+          var story-num = (prd:get-next-story-number $phase $epic)
+          var new-id = $phase"."$epic"."$story-num
+
+          # Build full story object
+          var full-story = (echo $story-json | jq -c '. + {
+            "id": "'$new-id'",
+            "story_number": '$story-num',
+            "target_version": "'$current-version'",
+            "passes": false,
+            "merged": false
+          }')
+
+          ui:status "Creating "$new-id": "$title
+          prd:create-story $full-story
+        }
+        ui:success "Stories added to PRD"
+      } else {
+        ui:dim "No changes made"
+      }
+    }
+  }
+
+  ui:divider-end
+}
+
 # Run plan mode for a story (read-only, no file changes)
 fn run-plan-mode {|story-id target-version|
   ui:box "PLAN MODE - Read-Only" "info"

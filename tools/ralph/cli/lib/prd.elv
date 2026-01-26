@@ -944,6 +944,14 @@ fn create-story {|story-json|
   var tmp = (mktemp)
   jq '.stories += ['$story-json']' $prd-file > $tmp
   mv $tmp $prd-file
+  sort-stories
+}
+
+# Sort stories by phase, epic, story_number
+fn sort-stories {
+  var tmp = (mktemp)
+  jq '.stories = (.stories | sort_by(.phase, .epic, .story_number))' $prd-file > $tmp
+  mv $tmp $prd-file
 }
 
 # Get the next available story number for a phase.epic

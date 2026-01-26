@@ -30,6 +30,10 @@ var release-tag = ""
 var auto-handle-duplicates = $false
 var auto-add-reverse-deps = $false
 var auto-update-related = $false
+var refine-prd-mode = $false
+var refine-prd-target = ""
+var add-stories-mode = $false
+var add-stories-description = ""
 
 # Parse command line arguments
 fn parse-args {|arguments|
@@ -160,6 +164,25 @@ fn parse-args {|arguments|
         exit 1
       }
       set release-tag = $arguments[$next-idx]
+      set i = (+ $i 2)
+    } elif (eq $arg "--refine-prd") {
+      set refine-prd-mode = $true
+      # Check if next arg is a story ID (optional)
+      var next-idx = (+ $i 1)
+      if (and (< $next-idx (count $arguments)) (not (str:has-prefix $arguments[$next-idx] "-"))) {
+        set refine-prd-target = $arguments[$next-idx]
+        set i = (+ $i 2)
+      } else {
+        set i = (+ $i 1)
+      }
+    } elif (eq $arg "--add-stories") {
+      set add-stories-mode = $true
+      var next-idx = (+ $i 1)
+      if (>= $next-idx (count $arguments)) {
+        echo "Error: --add-stories requires a description" >&2
+        exit 1
+      }
+      set add-stories-description = $arguments[$next-idx]
       set i = (+ $i 2)
     } else {
       echo "Error: Unknown argument: "$arg >&2

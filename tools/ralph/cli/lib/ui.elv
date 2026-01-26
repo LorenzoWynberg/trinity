@@ -99,6 +99,8 @@ OPTIONS:
   --version-status        Show version progress and exit
   --target-version <ver>  Only work on stories for specific version (e.g., v1.0)
   --plan                  Plan mode - output implementation plan without making changes
+  --refine-prd [ID]       Review stories and suggest improvements (all pending or specific story)
+  --add-stories "desc"    Generate new stories from a description using Claude
   -q, --quiet             Quiet mode - hide Claude output, show only Ralph status
   -v, --verbose           Verbose mode - show full prompts, responses, state transitions
   -h, --help              Show this help message
@@ -130,5 +132,8 @@ EXAMPLES:
   ./ralph.elv --resume                 # Force resume current story
   ./ralph.elv --reset                  # Reset state, start fresh
   ./ralph.elv --max-iterations 5       # Limit iterations
+  ./ralph.elv --refine-prd --target-version v0.1    # Review pending stories in v0.1
+  ./ralph.elv --refine-prd 1.2.3 --target-version v1.0  # Refine specific story
+  ./ralph.elv --add-stories "Add OAuth" --target-version v1.0
 '
 }

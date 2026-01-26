@@ -125,6 +125,20 @@ if $config[plan-mode] {
   exit 0
 }
 
+# Handle refine-prd mode (review stories and suggest improvements)
+if $config[refine-prd-mode] {
+  echo ""
+  claude:refine-prd &story-id=$config[refine-prd-target] &version=$config[target-version]
+  exit 0
+}
+
+# Handle add-stories mode (generate stories from description)
+if $config[add-stories-mode] {
+  echo ""
+  claude:add-stories-from-description $config[add-stories-description] &version=$config[target-version]
+  exit 0
+}
+
 # Archive old activity logs on startup
 claude:archive-old-logs
 
