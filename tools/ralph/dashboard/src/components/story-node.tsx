@@ -2,6 +2,7 @@
 
 import { memo } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
+import { Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type StoryNodeData = {
@@ -13,6 +14,7 @@ type StoryNodeData = {
   direction?: 'horizontal' | 'vertical'
   isDeadEnd?: boolean
   showDeadEnd?: boolean
+  onInfoClick?: () => void
 }
 
 const statusColors: Record<string, string> = {
@@ -48,11 +50,23 @@ export const StoryNode = memo(({ data, selected }: NodeProps) => {
       />
       <div
         className={cn(
-          'rounded-lg border-2 w-[160px] cursor-pointer transition-all overflow-hidden',
+          'rounded-lg border-2 w-[160px] cursor-pointer transition-all overflow-hidden relative group',
           colorClass,
           selected && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
         )}
       >
+        {nodeData.onInfoClick && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              nodeData.onInfoClick?.()
+            }}
+            className="absolute top-1 right-1 p-1 rounded-md bg-background/80 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity hover:bg-background"
+            title="View details"
+          >
+            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
+        )}
         <div className="px-3 py-2">
           <div className={cn('flex items-center gap-2 mb-1', isVertical && 'justify-center')}>
             <div className={cn('w-2 h-2 rounded-full shrink-0', dotClass)} />

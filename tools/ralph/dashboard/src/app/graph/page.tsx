@@ -660,6 +660,7 @@ function GraphContent() {
       data: {
         ...node.data,
         showDeadEnd: showDeadEnds && node.data?.isDeadEnd,
+        onInfoClick: node.type === 'story' ? () => openStoryModal(node.id, node.data?.status as StoryStatus || 'pending') : undefined,
       },
       style: {
         ...node.style,
