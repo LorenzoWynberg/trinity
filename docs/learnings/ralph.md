@@ -278,11 +278,11 @@ Cyber themes use pink/cyan neon accents. Graph page uses `resolvedTheme` to dete
 const isDark = resolvedTheme === 'dark' || resolvedTheme === 'cyber-dark'
 ```
 
-### PRD Tools (Wizard Flows)
+### PRD Tools (Wizard Modals)
 
-Three Claude-powered PRD editing flows, all with wizard-style UX:
+Three Claude-powered PRD editing flows on the Stories page (no standalone page):
 
-**1. Story Edit Modal** (pencil icon on story modal)
+**1. Story Edit** (pencil icon on story modal)
 - Input → Review → Complete
 - Describe changes, Claude suggests updated acceptance criteria
 - Finds related stories (tag overlap ≥2 or dependency relationship)
