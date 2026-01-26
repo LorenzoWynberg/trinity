@@ -3,9 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n next,ws -c cyan,magenta \"next dev\" \"node ws-server.js\"",
+    "dev": "concurrently -n next,ws,ngrok -c cyan,magenta,yellow \"next dev\" \"node ws-server.js\" \"ngrok http 3000 --log stdout\"",
+    "dev:local": "concurrently -n next,ws -c cyan,magenta \"next dev\" \"node ws-server.js\"",
     "dev:next": "next dev",
     "dev:terminal": "node ws-server.js",
+    "tunnel": "ngrok http 3000",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
