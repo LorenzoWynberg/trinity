@@ -260,6 +260,49 @@ Radix Select + useSearchParams needs Suspense boundary:
 </Suspense>
 ```
 
+### UI Components (shadcn)
+Always use shadcn CLI to add components - never create them manually:
+```bash
+npx shadcn@latest add input
+npx shadcn@latest add button
+# etc.
+```
+
+This ensures proper Radix primitives, cva variants, and consistent styling.
+
+### PRD Tools (Wizard Flows)
+
+Three Claude-powered PRD editing flows, all with wizard-style UX:
+
+**1. Story Edit Modal** (pencil icon on story modal)
+- Input → Review → Complete
+- Describe changes, Claude suggests updated acceptance criteria
+- Finds related stories (tag overlap ≥2 or dependency relationship)
+- Inline edit suggestions before applying
+
+**2. Refine Stories** (button in Stories header)
+- Analyze → Review → Complete
+- Claude reviews all pending stories for clarity issues
+- Suggests improved acceptance criteria
+- Inline edit suggestions before applying
+
+**3. Generate Stories** (button in Stories header)
+- Input → Review → Complete
+- Describe feature in natural language
+- Claude generates formatted stories with phase, epic, tags, acceptance
+- Inline edit all fields before adding
+
+**Inline editing pattern:**
+- Pencil icon on each card expands edit mode
+- Acceptance criteria: one per line in textarea
+- ✓ to save, ✗ to cancel
+- Selection state persists through edit
+
+**API endpoints:**
+- `POST/PUT /api/prd/story` - Story edit
+- `POST/PUT /api/prd/refine` - Refine stories
+- `POST/PUT /api/prd/generate` - Generate stories
+
 ---
 
 ## Activity Logging
