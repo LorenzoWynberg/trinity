@@ -33,10 +33,10 @@ export const VersionNode = memo(({ data }: NodeProps) => {
         )}
       >
         <div className={cn('flex items-center gap-3', isVertical && 'justify-center')}>
-          <span className="font-bold text-lg text-purple-800 dark:text-purple-100 cyber-dark:text-cyan-300">
+          <span className="font-bold text-lg text-purple-800 dark:text-purple-100 cyber-dark:text-cyan-100">
             {nodeData.label}
           </span>
-          <span className="text-sm text-purple-600 dark:text-purple-300 cyber-dark:text-cyan-400">
+          <span className="text-sm text-purple-600 dark:text-purple-300 cyber-dark:text-cyan-200">
             {nodeData.merged}/{nodeData.total}
           </span>
         </div>

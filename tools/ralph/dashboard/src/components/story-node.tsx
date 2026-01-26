@@ -56,9 +56,9 @@ export const StoryNode = memo(({ data, selected }: NodeProps) => {
         <div className="px-3 py-2">
           <div className={cn('flex items-center gap-2 mb-1', isVertical && 'justify-center')}>
             <div className={cn('w-2 h-2 rounded-full shrink-0', dotClass)} />
-            <span className={cn('font-mono text-xs font-medium truncate text-zinc-800 dark:text-zinc-100 cyber-dark:text-purple-200', !isVertical && 'flex-1')}>{nodeData.label}</span>
+            <span className={cn('font-mono text-xs font-medium truncate text-zinc-800 dark:text-zinc-100 cyber-dark:text-purple-100', !isVertical && 'flex-1')}>{nodeData.label}</span>
           </div>
-          <p className={cn('text-xs text-zinc-600 dark:text-zinc-400 cyber-dark:text-purple-300 line-clamp-2', isVertical && 'text-center')}>{nodeData.title}</p>
+          <p className={cn('text-xs text-zinc-600 dark:text-zinc-400 cyber-dark:text-purple-200 line-clamp-2', isVertical && 'text-center')}>{nodeData.title}</p>
         </div>
         {nodeData.showDeadEnd && (
           <div className="h-1.5 bg-orange-500" />
