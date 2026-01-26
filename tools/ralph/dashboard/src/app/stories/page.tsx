@@ -1,5 +1,6 @@
 import { getPRD, getState, getVersions, getSettings } from '@/lib/data'
 import { StoriesList } from '@/components/stories-list'
+import { StoriesHeader } from '@/components/stories-header'
 
 export const revalidate = 5
 
@@ -42,14 +43,13 @@ export default async function StoriesPage({ searchParams }: PageProps) {
   const currentStoryId = state?.current_story || null
   const phases = [...new Set(prd.stories.map(s => s.phase))].sort((a, b) => a - b)
 
-  const description = `${prd.stories.length} stories across ${phases.length} phases`
-
   return (
     <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Stories</h1>
-        <p className="text-muted-foreground">{description}</p>
-      </div>
+      <StoriesHeader
+        totalStories={prd.stories.length}
+        phaseCount={phases.length}
+        version={currentVersion}
+      />
 
       <StoriesList prd={prd} currentStoryId={currentStoryId} versions={versions} currentVersion={currentVersion} />
     </div>
