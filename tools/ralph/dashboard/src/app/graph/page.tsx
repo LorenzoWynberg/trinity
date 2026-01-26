@@ -1016,18 +1016,18 @@ function GraphContent() {
           fitViewOptions={{ padding: 0.1 }}
           minZoom={0.1}
           maxZoom={2}
-          style={{ background: isCyber ? (isDark ? '#1a1025' : '#f8f0ff') : (isDark ? '#0a0a0a' : '#f8fafc') }}
+          style={{ background: isCyber ? (isDark ? '#1a1025' : '#f0fdfa') : (isDark ? '#0a0a0a' : '#f8fafc') }}
         >
           <Background
             variant={BackgroundVariant.Dots}
             gap={20}
             size={1}
-            color={isCyber ? (isDark ? '#ff2d9580' : '#d946ef60') : (isDark ? '#333' : '#ccc')}
+            color={isCyber ? (isDark ? '#ff2d9580' : '#06b6d460') : (isDark ? '#333' : '#ccc')}
           />
           <Controls showInteractive={!isAutoLayout} />
           <MiniMap
             nodeColor={(node) => {
-              if (node.type === 'version') return isCyber ? '#ff2d95' : (isDark ? '#a855f7' : '#9333ea')
+              if (node.type === 'version') return isCyber ? (isDark ? '#ff2d95' : '#06b6d4') : (isDark ? '#a855f7' : '#9333ea')
               const status = node.data?.status as string
               switch (status) {
                 case 'merged': return '#22c55e'
@@ -1035,11 +1035,11 @@ function GraphContent() {
                 case 'in_progress': return isCyber ? '#0ff' : '#3b82f6'
                 case 'skipped': return '#a855f7'
                 case 'blocked': return '#ef4444'
-                default: return isCyber ? (isDark ? '#6b4f7a' : '#c4b5d0') : (isDark ? '#6b7280' : '#9ca3af')
+                default: return isCyber ? (isDark ? '#6b4f7a' : '#67e8f9') : (isDark ? '#6b7280' : '#9ca3af')
               }
             }}
-            maskColor={isCyber ? (isDark ? 'rgba(26, 16, 37, 0.8)' : 'rgba(248, 240, 255, 0.8)') : (isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)')}
-            style={{ background: isCyber ? (isDark ? '#120a1a' : '#f0e4ff') : (isDark ? '#1a1a1a' : '#f1f5f9') }}
+            maskColor={isCyber ? (isDark ? 'rgba(26, 16, 37, 0.8)' : 'rgba(240, 253, 250, 0.8)') : (isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)')}
+            style={{ background: isCyber ? (isDark ? '#120a1a' : '#ecfeff') : (isDark ? '#1a1a1a' : '#f1f5f9') }}
           />
         </ReactFlow>
       </div>
