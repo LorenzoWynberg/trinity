@@ -3,7 +3,7 @@ import { CommandReference } from '@/components/command-reference'
 
 export default function TerminalPage() {
   return (
-    <div className="h-[calc(100dvh-8rem-env(safe-area-inset-bottom))] md:h-[calc(100vh-2rem)] flex flex-col p-3 md:p-6">
+    <div className="h-full max-h-[calc(100dvh-5rem)] md:max-h-none md:h-[calc(100vh-2rem)] flex flex-col p-3 md:p-6 overflow-hidden">
       <div className="flex items-center justify-between mb-2 flex-shrink-0">
         <div>
           <h1 className="text-xl md:text-2xl font-bold">Terminal</h1>
