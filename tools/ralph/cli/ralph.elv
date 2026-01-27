@@ -291,6 +291,7 @@ while (< $current-iteration $config[max-iterations]) {
     var story-id = $nil
     var branch-name = $nil
     var skip-to-stage = ""  # For checkpoint-based resume
+    var validation-done = $false  # Track if validation already done this iteration
 
     if (and $resume-mode $current-state[current_story]) {
       set story-id = $current-state[current_story]
@@ -320,6 +321,8 @@ while (< $current-iteration $config[max-iterations]) {
       set branch-name = $current-state[branch]
       ui:status "Continuing story: "$story-id
     } else {
+      # NEW STORY - validate BEFORE creating branch to avoid wasted branches on skip
+
       # Check if we're in single-story mode
       if $single-story-mode {
         set story-id = $single-story-id
@@ -347,6 +350,105 @@ while (< $current-iteration $config[max-iterations]) {
         ui:success "Selected: "$story-id
       }
 
+      # Validate story BEFORE branch creation (unless feedback mode or already have clarification)
+      if (and (eq $pending-feedback "") (eq $pending-clarification "")) {
+        var validate-results = [(claude:validate-story $story-id)]
+        var validation = [&valid=$true &questions=""]
+        if (> (count $validate-results) 0) {
+          set validation = $validate-results[-1]
+        }
+        if (not $validation[valid]) {
+          echo "" > /dev/tty
+
+          # Handle auto-clarify flag - automatically proceed with assumptions
+          if $config[auto-clarify] {
+            ui:dim "Auto-clarify enabled, proceeding with reasonable assumptions..." > /dev/tty
+            set pending-clarification = "Auto-clarify mode: Make reasonable assumptions based on the codebase context and existing patterns. If unsure, choose the simpler implementation."
+          } else {
+            ui:warn "Story "$story-id" needs clarification before implementation." > /dev/tty
+            echo "" > /dev/tty
+            echo "What would you like to do?" > /dev/tty
+            echo "\e[33m  [s]kip\e[0m     - Move to the next story" > /dev/tty
+            echo "\e[33m  [c]larify\e[0m  - Answer these questions (opens editor)" > /dev/tty
+            echo "\e[33m  [a]uto\e[0m     - Let Ralph make reasonable assumptions" > /dev/tty
+            echo "\e[33m  [q]uit\e[0m     - Stop and fix the story manually" > /dev/tty
+            echo "" > /dev/tty
+            echo "\e[33mChoice [s/c/a/q]:\e[0m " > /dev/tty
+            try {
+              var answer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
+              echo "" > /dev/tty
+              if (re:match '^[qQ]' $answer) {
+                echo ""
+                ui:status "Stopping. Clarify the story and run again."
+                exit 0
+              } elif (re:match '^[cC]' $answer) {
+                set pending-clarification = (prd:get-clarification $story-id $validation[questions])
+                if (eq $pending-clarification "") {
+                  ui:dim "No clarification provided, skipping story..." > /dev/tty
+                  continue
+                }
+                ui:success "Clarification received, proceeding with implementation..." > /dev/tty
+              } elif (re:match '^[aA]' $answer) {
+                ui:dim "Proceeding with reasonable assumptions..." > /dev/tty
+                set pending-clarification = "Auto-proceed mode: Make reasonable assumptions based on the codebase context and existing patterns. If unsure, choose the simpler implementation."
+              } else {
+                # Default or 's' - skip story (NO BRANCH CREATED - this is the fix)
+                ui:dim "Skipping story, moving to next..." > /dev/tty
+                continue
+              }
+            } catch { }
+          }
+        }
+      }
+
+      # Check external deps BEFORE branch creation
+      if (and (eq $pending-feedback "") (eq $pending-ext-deps-report "")) {
+        if (prd:has-external-deps $story-id) {
+          echo "" > /dev/tty
+          ui:warn "Story "$story-id" has external dependencies:" > /dev/tty
+          echo "" > /dev/tty
+          var deps = [(prd:get-external-deps $story-id)]
+          for dep $deps {
+            var parts = [(str:split "|" $dep)]
+            var name = $parts[0]
+            var desc = ""
+            if (> (count $parts) 1) {
+              set desc = $parts[1]
+            }
+            ui:dim "  • "$name": "$desc > /dev/tty
+          }
+          echo "" > /dev/tty
+          echo "Claude needs to know how these were implemented." > /dev/tty
+          echo "\e[33m  [r]eport\e[0m - Describe the implementation (opens editor)" > /dev/tty
+          echo "\e[33m  [s]kip\e[0m   - Skip this story for now" > /dev/tty
+          echo "" > /dev/tty
+          echo "\e[33mChoice [r/s]:\e[0m " > /dev/tty
+          try {
+            var answer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
+            echo "" > /dev/tty
+            if (re:match '^[sS]' $answer) {
+              ui:dim "Skipping story, moving to next..." > /dev/tty
+              continue
+            } else {
+              set pending-ext-deps-report = (prd:get-external-deps-report $story-id)
+              if (eq $pending-ext-deps-report "") {
+                ui:dim "No report provided, skipping story..." > /dev/tty
+                continue
+              }
+              ui:success "External deps report received" > /dev/tty
+              prd:save-external-deps-report $story-id $pending-ext-deps-report
+              echo "" > /dev/tty
+              claude:propagate-external-deps $story-id $pending-ext-deps-report
+              echo "" > /dev/tty
+            }
+          } catch { }
+        }
+      }
+
+      # Mark validation as done for this iteration (checkpoint saved after branch creation)
+      set validation-done = $true
+
+      # NOW create branch (validation and ext deps passed)
       ui:status "Setting up branch..."
       set branch-name = (prd:get-branch-name $story-id)
       git:create-story-branch $branch-name
@@ -367,12 +469,17 @@ while (< $current-iteration $config[max-iterations]) {
     }
     state:write $current-state
 
-    # Checkpoint: branch created
+    # Checkpoint: branch created (now only saved AFTER validation passes)
     var head-commit = ""
     try {
       set head-commit = (str:trim-space (git -C $project-root rev-parse --short HEAD 2>/dev/null | slurp))
     } catch _ { }
     state:save-checkpoint $story-id "branch_created" [&branch=$branch-name &commit=$head-commit]
+
+    # For new stories, validation was done before branch creation - save checkpoint now
+    if $validation-done {
+      state:save-checkpoint $story-id "validation_complete" [&clarification=$pending-clarification]
+    }
 
     # Verbose: show state transition
     if $config[verbose-mode] {
@@ -382,8 +489,8 @@ while (< $current-iteration $config[max-iterations]) {
 
     git:ensure-on-branch $branch-name
 
-    # Validate story (unless feedback refinement, already have clarification, or skipping to later stage)
-    if (and (eq $pending-feedback "") (eq $pending-clarification "") (not (or (eq $skip-to-stage "claude") (eq $skip-to-stage "pr_flow")))) {
+    # Validation checkpoint (for resume/continue - skip if already done for new stories above)
+    if (and (not $validation-done) (not (or (eq $skip-to-stage "claude") (eq $skip-to-stage "pr_flow")))) {
       # Capture all outputs into list and use last value (handles arity issues)
       var validate-results = [(claude:validate-story $story-id)]
       var validation = [&valid=$true &questions=""]
@@ -457,8 +564,8 @@ while (< $current-iteration $config[max-iterations]) {
       state:save-checkpoint $story-id "validation_complete" [&clarification=$pending-clarification]
     }
 
-    # Check for external dependencies (unless already have report, in feedback mode, or skipping to later stage)
-    if (and (eq $pending-feedback "") (eq $pending-ext-deps-report "") (not (or (eq $skip-to-stage "claude") (eq $skip-to-stage "pr_flow")))) {
+    # Check for external dependencies (unless already done, have report, in feedback mode, or skipping to later stage)
+    if (and (not $validation-done) (eq $pending-feedback "") (eq $pending-ext-deps-report "") (not (or (eq $skip-to-stage "claude") (eq $skip-to-stage "pr_flow")))) {
       if (prd:has-external-deps $story-id) {
         echo "" > /dev/tty
         ui:warn "Story "$story-id" has external dependencies:" > /dev/tty

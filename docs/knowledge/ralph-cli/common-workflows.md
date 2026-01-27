@@ -34,20 +34,22 @@ Only work on v2.0 stories. Useful when you have multiple versions in the PRD.
 
 ## Story Validation
 
-Before executing a story, Claude validates the acceptance criteria for ambiguity:
+Before creating a branch, Claude validates the acceptance criteria for ambiguity:
 ```
 Story needs clarification:
 - What Go version should be used?
 - What module path format?
 
-[y]es skip / [n]o stop / [c]larify / [a]uto-proceed
+[s]kip / [c]larify / [a]uto / [q]uit
 ```
 
 Options:
-- `[y]` - Skip this story, try the next one (default)
-- `[n]` - Stop execution entirely
+- `[s]` - Skip this story, try the next one (default) - **no branch created**
 - `[c]` - Open editor to provide clarification answers
 - `[a]` - Auto-proceed with reasonable assumptions
+- `[q]` - Stop execution entirely
+
+**Note:** Validation happens BEFORE branch creation. If you skip, no branch is wasted.
 
 **Flag:** `--auto-clarify` automatically uses auto-proceed mode.
 
