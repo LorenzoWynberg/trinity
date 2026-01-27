@@ -1,0 +1,12 @@
+{
+  "title": "Ralph Dashboard",
+  "description": "Dashboard for viewing PRD status and running Ralph",
+  "icon": "LayoutDashboard",
+  "pages": [
+    { "slug": "index", "title": "Overview" },
+    { "slug": "graph", "title": "Graph" },
+    { "slug": "terminal", "title": "Terminal" },
+    { "slug": "prd-tools", "title": "PRD Tools" },
+    { "slug": "themes", "title": "Themes" }
+  ]
+}

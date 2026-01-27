@@ -1,18 +1,17 @@
 {
-  "title": "Ralph",
+  "title": "Ralph CLI",
   "description": "Ralph CLI workflows and reference",
   "icon": "Terminal",
   "pages": [
     { "slug": "index", "title": "Overview" },
-    { "slug": "prd-structure", "title": "PRD Structure" },
-    { "slug": "common-workflows", "title": "Workflows" },
     { "slug": "cli-reference", "title": "CLI Reference" },
+    { "slug": "common-workflows", "title": "Workflows" },
+    { "slug": "prd-structure", "title": "PRD Structure" },
     { "slug": "story-validation", "title": "Story Validation" },
     { "slug": "duplicate-detection", "title": "Duplicate Detection" },
     { "slug": "reverse-dependencies", "title": "Reverse Dependencies" },
     { "slug": "learning-extraction", "title": "Learning Extraction" },
     { "slug": "release-workflow", "title": "Release Workflow" },
-    { "slug": "dashboard", "title": "Dashboard" },
     { "slug": "faq", "title": "FAQ" }
   ]
 }
