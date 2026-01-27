@@ -6,6 +6,7 @@
     { "slug": "index", "title": "Overview" },
     { "slug": "common-workflows", "title": "Workflows" },
     { "slug": "cli-reference", "title": "CLI Reference" },
+    { "slug": "dashboard", "title": "Dashboard" },
     { "slug": "faq", "title": "FAQ" }
   ]
 }

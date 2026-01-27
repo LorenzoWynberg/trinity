@@ -1,4 +1,4 @@
-# Dashboard Knowledge Base
+# Dashboard
 
 Architecture and features of the Ralph Dashboard.
 
