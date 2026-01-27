@@ -41,6 +41,6 @@ tags: [relevant, tags]
 
 ## Notes
 
-- Use CR timezone (Costa Rica, UTC-6) for timestamps
+- **Get current CR time:** Run `date -u '+%Y-%m-%d %H:%M'` then subtract 6 hours (CR = UTC-6, no DST)
 - APPEND new entries, never overwrite existing
 - Archive logs older than 7 days to `logs/activity/trinity/archive/YYYY-MM/`
