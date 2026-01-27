@@ -1,13 +1,26 @@
 # Activity Logging
 
-Create or update `logs/activity/trinity/YYYY-MM-DD.md` (today's date) using this template:
+Create or update `logs/activity/trinity/YYYY-MM-DD.md` (today's date).
+
+## Template
 
 ```markdown
-## {{CURRENT_STORY}}: [Story Title from PRD]
+---
+story_id: {{CURRENT_STORY}}
+title: "[Story Title from PRD]"
+status: complete
+started: "YYYY-MM-DD HH:MM CR"
+completed: "YYYY-MM-DD HH:MM CR"
+duration_minutes: [estimated]
+version: {{VERSION}}
+branch: {{BRANCH}}
+files_changed:
+  - path/to/file1.go
+  - path/to/file2.go
+tags: [relevant, tags]
+---
 
-**Phase:** [phase number] | **Epic:** [epic number] | **Version:** {{VERSION}}
-**Started:** [current timestamp, e.g., 2026-01-24 17:30]
-**Branch:** {{BRANCH}}
+## {{CURRENT_STORY}}: [Story Title]
 
 ### What was done
 - [Change 1]
@@ -26,4 +39,8 @@ Create or update `logs/activity/trinity/YYYY-MM-DD.md` (today's date) using this
 ---
 ```
 
-**Archiving:** Archive logs older than 7 days to `logs/activity/trinity/archive/YYYY-MM/`.
+## Notes
+
+- Use CR timezone (Costa Rica, UTC-6) for timestamps
+- APPEND new entries, never overwrite existing
+- Archive logs older than 7 days to `logs/activity/trinity/archive/YYYY-MM/`

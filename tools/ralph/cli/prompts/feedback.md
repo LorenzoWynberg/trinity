@@ -1,39 +1,47 @@
 # Feedback on {{CURRENT_STORY}}
 
-## Context
-Version: {{VERSION}} | Story: {{CURRENT_STORY}} | Branch: {{BRANCH}} | Attempt: {{ATTEMPT}} | Iteration: {{ITERATION}}/{{MAX_ITERATIONS}}
-
-Dependencies (completed): {{DEPENDENCIES}}
+**Context:** Version {{VERSION}} | Branch: {{BRANCH}} | Attempt: {{ATTEMPT}}
 
 ## Original Task
 {{ORIGINAL_TASK}}
 
-## What Was Done
-Review the current state:
-- Check `git log --oneline -10` to see recent commits on this branch
-- Check `git diff dev...HEAD` to see all changes made
-- Review the PR if one exists
-
 ## Feedback
-The user has reviewed your work and requested the following changes:
+The user has reviewed your work and requested changes:
 
 > {{FEEDBACK}}
 
-## Instructions
-Address the feedback by making the necessary changes. Follow the same workflow as the original task:
+## Workflow
 
-1. **Understand the feedback** - What specifically needs to change?
-2. **Make the changes** - Keep them focused on the feedback
-3. **Verify** - Build and test your changes
-4. **Self-review** - Does this address the feedback completely?
-5. **Commit and push** - Use conventional commit format
+Create tasks to track your response to this feedback:
 
-Do NOT:
+| # | Task Subject | Done When |
+|---|--------------|-----------|
+| 1 | Understand feedback | You know what needs to change |
+| 2 | Make changes | Changes implemented |
+| 3 | Verify | Build passes, tests pass |
+| 4 | Commit & signal | signal.json written |
+
+## Guidelines
+
+**Do:**
+- Review `git log --oneline -10` and `git diff dev...HEAD` to see current state
+- Focus only on what the feedback mentions
+- Run verification: `go work sync && go build ./cli/cmd/trinity && go test ./...`
+
+**Don't:**
 - Refactor unrelated code
 - Add features not requested
-- Change things that weren't mentioned in feedback
+- Change things not mentioned in feedback
 
-{{WORKFLOW}}
+## Signal
 
-## 8. All Done?
-If ALL stories in prd.json have `"merged": true`, write signal file with `"status": "all_complete"`.
+When done, write `tools/ralph/cli/signal.json`:
+```json
+{
+  "status": "complete",
+  "story_id": "{{CURRENT_STORY}}",
+  "files_changed": ["list", "of", "files"],
+  "tests_passed": true,
+  "message": null
+}
+```

@@ -1,40 +1,41 @@
 # Context Loading
 
-**Always read first:**
-- `CLAUDE.md` - project rules and conventions (required)
-- `tools/ralph/cli/prd/{{VERSION}}.json` - find your story ({{CURRENT_STORY}}) and read:
-  - `title` - what to do
-  - `intent` - why it matters
-  - `description` - implementation context, patterns, constraints (if present)
-  - `acceptance` - done when all criteria met
+## Required Reading
 
-**Then pick relevant docs based on the task:**
-| Doc | When to read |
-|-----|--------------|
-| `docs/ARCHITECTURE.md` | System design, component relationships, data flow |
-| `docs/COMMANDS.md` | CLI command specs, flags, usage |
-| `docs/PROMPTS.md` | Prompt templates, placeholders, schemas |
+1. **Project rules**: `CLAUDE.md`
+2. **Your story**: `tools/ralph/cli/prd/{{VERSION}}.json` → find {{CURRENT_STORY}}
+   - `title` - what to do
+   - `intent` - why it matters
+   - `description` - implementation context (if present)
+   - `acceptance` - done when all criteria met
+
+## Optional Reading (pick what's relevant)
+
+**Architecture docs:**
+| Doc | When |
+|-----|------|
+| `docs/ARCHITECTURE.md` | System design, data flow |
+| `docs/COMMANDS.md` | CLI specs, flags |
 | `tools/ralph/cli/progress.txt` | Previous story history |
 
-**Knowledge** (`docs/knowledge/<book>/`) - Product documentation:
+**Knowledge** (`docs/knowledge/`):
 | Book | Content |
 |------|---------|
-| `ralph/` | CLI workflow, state management, PRD features |
-| `dashboard/` | Dashboard architecture, terminal, themes |
-| `trinity/` | Trinity CLI overview and architecture |
-| `go/` | Go workspaces, multi-module setup |
+| `ralph-cli/` | CLI workflow, state, PRD features |
+| `ralph-dashboard/` | Dashboard architecture, terminal |
+| `trinity/` | Trinity CLI overview |
+| `go/` | Go workspaces, modules |
 
-**Gotchas** (`docs/gotchas/<book>/`) - Pitfalls to avoid:
+**Gotchas** (`docs/gotchas/`):
 | Book | Content |
 |------|---------|
 | `elvish/` | Elvish shell pitfalls |
-| `dashboard/` | React/Next.js hydration, mobile issues |
-| `go/` | Go module path, workspace sync timing |
-| `patterns/` | Reusable patterns discovered |
-| `conventions/` | Coding standards learned |
+| `nextjs/` | React/Next.js hydration, mobile |
+| `node/` | Node.js native modules |
+| `go/` | Go module path issues |
 
-Both use the same structure: folder with `index.json` (metadata) and `.md` chapters. Check `index.json` for available chapters.
+Check each book's `index.json` for available chapters.
 
-**Don't read docs you don't need.** A dashboard task doesn't need COMMANDS.md. A Go task doesn't need dashboard docs.
+## If Retrying
 
-If attempt > 1 or refinement: check `git log` and `git diff` for previous work. Focus on the feedback if provided.
+If attempt > 1: check `git log` and `git diff` for previous work. Focus on the feedback.

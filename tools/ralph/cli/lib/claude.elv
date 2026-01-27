@@ -12,7 +12,6 @@ var project-root = ""
 var script-dir = ""
 var prompt-template = ""
 var feedback-template = ""
-var workflow-partial = ""
 var claude-timeout = 1800
 var quiet-mode = $false
 var max-iterations = 100
@@ -32,17 +31,12 @@ fn init {|root sdir template timeout quiet max-iter &auto-handle-dup=$false &aut
   set auto-add-reverse-deps = $auto-add-rev-deps
   set auto-update-related = $auto-upd-related
 
-  # Load feedback template and workflow partial (relative to script directory)
+  # Load feedback template (relative to script directory)
   var prompts-dir = (path:join $sdir "prompts")
   try {
     set feedback-template = (cat (path:join $prompts-dir "feedback.md") | slurp)
   } catch _ {
     set feedback-template = ""
-  }
-  try {
-    set workflow-partial = (cat (path:join $prompts-dir "partials" "workflow.md") | slurp)
-  } catch _ {
-    set workflow-partial = ""
   }
 }
 
@@ -227,7 +221,6 @@ fn prepare {|story-id branch-name attempt iteration feedback &clarification="" &
 
     set prompt = (str:replace &max=-1 "{{ORIGINAL_TASK}}" $original-task $prompt)
     set prompt = (str:replace &max=-1 "{{FEEDBACK}}" $feedback $prompt)
-    set prompt = (str:replace &max=-1 "{{WORKFLOW}}" $workflow-partial $prompt)
   } else {
     # Use main template with optional feedback section
     set prompt = $prompt-template
