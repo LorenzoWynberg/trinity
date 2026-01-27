@@ -198,7 +198,8 @@ fn get-recent-activity-logs {
 # Returns: [&prompt-file=<path> &output-file=<path> &story-title=<title>]
 # Optional &clarification param for validation clarifications
 # Optional &external_deps_report param for external dependency implementation details
-fn prepare {|story-id branch-name attempt iteration feedback &clarification="" &external_deps_report=""|
+# Optional &previous_failure param for retry context
+fn prepare {|story-id branch-name attempt iteration feedback &clarification="" &external_deps_report="" &previous_failure=""|
   var prompt = ""
 
   # If feedback is provided and we have a feedback template, use it
@@ -296,6 +297,25 @@ Use this information to integrate with the external systems correctly (endpoints
 "
     # Insert before the Quick Reference section
     set prompt = (str:replace &max=-1 "## Quick Reference" $ext-deps-section"## Quick Reference" $prompt)
+  }
+
+  # Add previous failure context if provided (for smart retry)
+  if (not (eq $previous_failure "")) {
+    var failure-section = "## Previous Attempt Failed
+
+**IMPORTANT:** The previous attempt to complete this story failed. Learn from this error:
+
+> "$previous_failure"
+
+**Instructions:**
+1. Analyze what went wrong in the previous attempt
+2. Take a different approach to avoid the same issue
+3. If the same approach is needed, be more careful about the specific failure point
+4. Consider simpler alternatives if the original approach was too complex
+
+"
+    # Insert at the beginning (after title)
+    set prompt = (str:replace &max=-1 "## Context" $failure-section"## Context" $prompt)
   }
 
   var output-file = (mktemp)

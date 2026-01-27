@@ -226,6 +226,8 @@ Ralph tracks runtime state in `state.json`:
   "current_story": "1.2.3",
   "status": "running",
   "error": null,
+  "last_error": "Timeout after 1800s - story may be too complex",
+  "failure_count": 2,
   "started_at": "2024-01-15T10:30:00Z",
   "branch": "feat/v0.1/story-1.2.3",
   "attempts": 1,
@@ -241,6 +243,8 @@ Ralph tracks runtime state in `state.json`:
 | `current_story` | string/null | Story being worked on |
 | `status` | string | `idle`, `running`, `blocked`, `error` |
 | `error` | string/null | Last error message |
+| `last_error` | string/null | Most recent failure message (for smart retry) |
+| `failure_count` | number | Consecutive failures with same error (for smart retry) |
 | `started_at` | string/null | When current story started |
 | `branch` | string/null | Current feature branch |
 | `attempts` | number | Retry count for current story |

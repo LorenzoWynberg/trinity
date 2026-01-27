@@ -78,6 +78,64 @@ Nuclear option - clears everything for a story:
 
 Use when a story is hopelessly stuck.
 
+## Smart Retry
+
+When retries fail repeatedly, Ralph tracks the failure and provides context to Claude.
+
+### How It Works
+
+1. **Failure tracking:** Each failure records an error message
+2. **Same error detection:** If the next failure has the same error, increment counter
+3. **Context injection:** On retry, Claude receives "Previous attempt failed because: X"
+4. **Auto-escalation:** After 2+ failures with same error, prompt for user feedback
+
+### Failure Messages
+
+| Scenario | Error Message |
+|----------|--------------|
+| Timeout | "Timeout after Xs - story may be too complex" |
+| Claude error | "Claude error: <reason>" |
+| Blocked signal | "Story blocked - Claude output <story-blocked> signal" |
+
+### Auto-Escalation Prompt
+
+After 2+ consecutive failures with the same error:
+
+```
+This story has failed 2 times with the same error:
+  Timeout after 1800s - story may be too complex
+
+[f]eedback - Provide guidance to help Claude succeed
+[r]etry    - Try again with failure context
+[s]kip     - Skip this story for now
+```
+
+The `[f]eedback` option opens an editor pre-filled with the error context.
+
+### Prompt Injection
+
+When retrying with failure context, Claude receives:
+
+```markdown
+## Previous Attempt Failed
+
+**IMPORTANT:** The previous attempt to complete this story failed.
+
+> Timeout after 1800s - story may be too complex
+
+**Instructions:**
+1. Analyze what went wrong in the previous attempt
+2. Take a different approach to avoid the same issue
+3. Consider simpler alternatives if the original approach was too complex
+```
+
+### Clearing Failure Tracking
+
+Failure tracking is cleared when:
+- Story completes successfully
+- `--retry-clean` is run
+- User provides feedback (resets counter)
+
 ## Common Scenarios
 
 ### Claude Timeout

@@ -15,7 +15,7 @@ fn init {|path &root=""|
 
   # Create state file if missing
   if (not (path:is-regular $state-file)) {
-    echo '{"version":1,"current_story":null,"status":"idle","branch":null,"pr_url":null,"started_at":null,"last_updated":null,"attempts":0,"error":null,"checkpoints":[]}' > $state-file
+    echo '{"version":1,"current_story":null,"status":"idle","branch":null,"pr_url":null,"started_at":null,"last_updated":null,"attempts":0,"error":null,"last_error":null,"failure_count":0,"checkpoints":[]}' > $state-file
   }
 }
 
@@ -43,9 +43,59 @@ fn reset {
     &last_updated=$nil
     &attempts=(num 0)
     &error=$nil
+    &last_error=$nil
+    &failure_count=(num 0)
     &checkpoints=[]
   ]
   write $state
+}
+
+# Record a failure with error message
+fn record-failure {|error-msg|
+  var state = (read)
+  var prev-error = ""
+  if (has-key $state last_error) {
+    set prev-error = $state[last_error]
+  }
+
+  # Increment failure count if same error, reset if different
+  var fc = (num 0)
+  if (has-key $state failure_count) {
+    set fc = $state[failure_count]
+  }
+
+  if (eq $error-msg $prev-error) {
+    set fc = (+ $fc 1)
+  } else {
+    set fc = (num 1)
+  }
+
+  set state[last_error] = $error-msg
+  set state[failure_count] = $fc
+  write $state
+  put $fc
+}
+
+# Clear failure tracking (on success or story change)
+fn clear-failure {
+  var state = (read)
+  set state[last_error] = $nil
+  set state[failure_count] = (num 0)
+  write $state
+}
+
+# Get current failure info
+fn get-failure-info {
+  var state = (read)
+  var error = $nil
+  var count = (num 0)
+  if (has-key $state last_error) {
+    set error = $state[last_error]
+  }
+  if (has-key $state failure_count) {
+    set count = $state[failure_count]
+  }
+  put [&error=$error &count=$count]
 }
 
 # Save a checkpoint for a story at a specific stage
@@ -130,6 +180,10 @@ fn handle-retry-clean {|story-id|
   # Clear checkpoints for this story
   ui:dim "  Clearing checkpoints"
   clear-checkpoints $story-id
+
+  # Clear failure tracking
+  ui:dim "  Clearing failure tracking"
+  clear-failure
 
   # Clear state.json
   ui:dim "  Clearing Ralph state"

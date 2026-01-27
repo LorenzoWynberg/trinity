@@ -263,6 +263,7 @@ var resume-mode = $config[resume-mode]
 var pending-feedback = ""  # Feedback from PR review to pass to next Claude run
 var pending-clarification = ""  # Clarification from validation questions to pass to Claude
 var pending-ext-deps-report = ""  # External deps report to pass to Claude
+var pending-failure-context = ""  # Previous failure context for smart retry
 
 while (< $current-iteration $config[max-iterations]) {
     set current-iteration = (+ $current-iteration 1)
@@ -637,8 +638,67 @@ while (< $current-iteration $config[max-iterations]) {
       ui:status "Skipping to PR flow (checkpoint resume)..."
       set signals[complete] = $true  # We completed Claude in a previous run
     } else {
+      # Check for previous failure context (smart retry)
+      if (and (eq $pending-failure-context "") (> $current-state[attempts] 1)) {
+        var failure-info = (state:get-failure-info)
+        if (and $failure-info[error] (> $failure-info[count] 0)) {
+          set pending-failure-context = $failure-info[error]
+
+          # Auto-escalate to user feedback after 2 failures with same error
+          if (>= $failure-info[count] 2) {
+            echo "" > /dev/tty
+            ui:warn "This story has failed "(to-string $failure-info[count])" times with the same error:" > /dev/tty
+            ui:dim "  "$failure-info[error] > /dev/tty
+            echo "" > /dev/tty
+            echo "\e[33m[f]eedback\e[0m - Provide guidance to help Claude succeed" > /dev/tty
+            echo "\e[33m[r]etry\e[0m    - Try again with failure context" > /dev/tty
+            echo "\e[33m[s]kip\e[0m     - Skip this story for now" > /dev/tty
+            echo "" > /dev/tty
+            echo "\e[33mChoice [f/r/s]:\e[0m " > /dev/tty
+            try {
+              var answer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
+              echo "" > /dev/tty
+              if (re:match '^[fF]' $answer) {
+                # Open editor for user feedback
+                var tmp = (mktemp)
+                echo "# Provide guidance to help Claude complete this story" > $tmp
+                echo "# The previous attempts failed with:" >> $tmp
+                echo "#   "$failure-info[error] >> $tmp
+                echo "#" >> $tmp
+                echo "# Describe what Claude should do differently:" >> $tmp
+                echo "" >> $tmp
+
+                var editor = "vim"
+                if (has-env EDITOR) { set editor = $E:EDITOR }
+                try {
+                  (external $editor) $tmp </dev/tty >/dev/tty 2>/dev/tty
+                } catch _ { }
+
+                set pending-feedback = (grep -v '^#' $tmp 2>/dev/null | slurp)
+                rm -f $tmp
+                if (not (eq (str:trim-space $pending-feedback) "")) {
+                  ui:success "Feedback received, proceeding with guidance..." > /dev/tty
+                  state:clear-failure
+                  set pending-failure-context = ""
+                }
+              } elif (re:match '^[sS]' $answer) {
+                ui:dim "Skipping story..." > /dev/tty
+                set current-state[current_story] = $nil
+                set current-state[branch] = $nil
+                set current-state[status] = "idle"
+                set current-state[attempts] = (num 0)
+                state:write $current-state
+                state:clear-failure
+                continue
+              }
+              # Default to retry with failure context
+            } catch _ { }
+          }
+        }
+      }
+
       # Prepare Claude prompt (with any pending feedback, clarification, or external deps report)
-      var prep = (claude:prepare $story-id $branch-name $current-state[attempts] $current-iteration $pending-feedback &clarification=$pending-clarification &external_deps_report=$pending-ext-deps-report)
+      var prep = (claude:prepare $story-id $branch-name $current-state[attempts] $current-iteration $pending-feedback &clarification=$pending-clarification &external_deps_report=$pending-ext-deps-report &previous_failure=$pending-failure-context)
       var prompt-file = $prep[prompt-file]
       var output-file = $prep[output-file]
       set story-title = $prep[story-title]
@@ -652,7 +712,7 @@ while (< $current-iteration $config[max-iterations]) {
         echo ""
       }
 
-      # Clear feedback/clarification/ext-deps-report after using it, track mode for display
+      # Clear feedback/clarification/ext-deps-report/failure-context after using it, track mode for display
       var mode-label = "attempt "$current-state[attempts]
       if (not (eq $pending-feedback "")) {
         set mode-label = "feedback refinement"
@@ -664,6 +724,9 @@ while (< $current-iteration $config[max-iterations]) {
       } elif (not (eq $pending-ext-deps-report "")) {
         set mode-label = "with external deps"
         set pending-ext-deps-report = ""  # Clear after use
+      } elif (not (eq $pending-failure-context "")) {
+        set mode-label = "retry with failure context"
+        set pending-failure-context = ""  # Clear after use
       }
       ui:status "Running Claude ("$mode-label")..."
       ui:dim "  Story:  "$story-id
@@ -732,10 +795,20 @@ while (< $current-iteration $config[max-iterations]) {
           ui:dim "  • Breaking it into smaller stories"
           ui:dim "  • Increasing timeout with --timeout <seconds>"
           ui:dim "  • Running ./ralph.elv --resume to continue"
+          # Track failure for smart retry
+          var fc = (state:record-failure "Timeout after "$claude-config[timeout]"s - story may be too complex")
+          if (>= $fc 2) {
+            ui:warn "This is failure #"(to-string $fc)" - consider providing feedback on next run"
+          }
         } else {
           ui:warn "Claude encountered an issue"
           ui:dim "Error: "(to-string $e[reason])
           ui:dim "Run ./ralph.elv --resume to try again"
+          # Track failure for smart retry
+          var fc = (state:record-failure "Claude error: "(to-string $e[reason]))
+          if (>= $fc 2) {
+            ui:warn "This is failure #"(to-string $fc)" - consider providing feedback on next run"
+          }
         }
       } finally {
         rm -f $prompt-file
@@ -793,6 +866,9 @@ while (< $current-iteration $config[max-iterations]) {
     if $signals[complete] {
       echo ""
       ui:success "Story "$story-id" completed!"
+      # Clear failure tracking on success
+      state:clear-failure
+      set pending-failure-context = ""
       if $config[notify-enabled] {
         ui:notify "Ralph" "Story "$story-id" completed!"
       }
@@ -915,6 +991,11 @@ while (< $current-iteration $config[max-iterations]) {
       ui:dim "Claude couldn't complete this story. Check the output above for details."
       ui:dim "You can retry with: ./ralph.elv --retry-clean "$story-id
       ui:dim "Clearing state to try the next story..."
+      # Track failure for smart retry
+      var fc = (state:record-failure "Story blocked - Claude output <story-blocked> signal")
+      if (>= $fc 2) {
+        ui:warn "This is failure #"(to-string $fc)" on this story"
+      }
       set current-state[status] = "blocked"
       set current-state[current_story] = $nil
       set current-state[branch] = $nil
