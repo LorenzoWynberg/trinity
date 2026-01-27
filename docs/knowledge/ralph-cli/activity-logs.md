@@ -20,8 +20,8 @@ Each log entry uses YAML frontmatter for structured metadata, followed by prose 
 story_id: 1.2.3
 title: "Add authentication"
 status: complete
-started: "2026-01-27 14:00 CR"
-completed: "2026-01-27 15:30 CR"
+started: "2026-01-27 14:00"
+completed: "2026-01-27 15:30"
 duration_minutes: 90
 version: v0.1
 branch: feat/v0.1/story-1.2.3
@@ -56,7 +56,7 @@ tags: [auth, api, security]
 | `story_id` | string | Story being worked on |
 | `title` | string | Human-readable title from PRD |
 | `status` | string | `complete`, `in_progress`, or `blocked` |
-| `started` | string | Start timestamp in CR timezone |
+| `started` | string | Start timestamp in configured timezone |
 | `completed` | string | Completion timestamp (if done) |
 | `duration_minutes` | number | Estimated time spent |
 | `version` | string | PRD version (e.g., `v0.1`) |

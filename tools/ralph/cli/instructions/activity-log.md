@@ -9,8 +9,8 @@ Create or update `logs/activity/trinity/YYYY-MM-DD.md` (today's date).
 story_id: {{CURRENT_STORY}}
 title: "[Story Title from PRD]"
 status: complete
-started: "YYYY-MM-DD HH:MM CR"
-completed: "YYYY-MM-DD HH:MM CR"
+started: "YYYY-MM-DD HH:MM"
+completed: "YYYY-MM-DD HH:MM"
 duration_minutes: [estimated]
 version: {{VERSION}}
 branch: {{BRANCH}}
