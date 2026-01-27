@@ -48,6 +48,57 @@ fn reset {
   write $state
 }
 
+# Save a checkpoint for a story at a specific stage
+fn save-checkpoint {|story-id stage data|
+  var state = (read)
+  var checkpoint = [
+    &story_id=$story-id
+    &stage=$stage
+    &at=(date -u '+%Y-%m-%dT%H:%M:%SZ')
+    &attempt=$state[attempts]
+    &data=$data
+  ]
+  # Replace same-stage checkpoint, keep others
+  var new-cps = []
+  for cp $state[checkpoints] {
+    if (or (not (eq $cp[story_id] $story-id)) (not (eq $cp[stage] $stage))) {
+      set new-cps = [$@new-cps $cp]
+    }
+  }
+  set state[checkpoints] = [$@new-cps $checkpoint]
+  write $state
+}
+
+# Get a checkpoint for a story at a specific stage
+fn get-checkpoint {|story-id stage|
+  var state = (read)
+  for cp $state[checkpoints] {
+    if (and (eq $cp[story_id] $story-id) (eq $cp[stage] $stage)) {
+      put $cp
+      return
+    }
+  }
+  put $nil
+}
+
+# Check if a checkpoint exists for a story at a specific stage
+fn has-checkpoint {|story-id stage|
+  not (eq (get-checkpoint $story-id $stage) $nil)
+}
+
+# Clear all checkpoints for a story
+fn clear-checkpoints {|story-id|
+  var state = (read)
+  var new-cps = []
+  for cp $state[checkpoints] {
+    if (not (eq $cp[story_id] $story-id)) {
+      set new-cps = [$@new-cps $cp]
+    }
+  }
+  set state[checkpoints] = $new-cps
+  write $state
+}
+
 # Handle retry-clean mode: delete branches and reset story for fresh retry
 fn handle-retry-clean {|story-id|
   ui:status "Retry clean: "$story-id
@@ -75,6 +126,10 @@ fn handle-retry-clean {|story-id|
   # Reset story in prd.json
   ui:dim "  Resetting story state in PRD"
   prd:reset-story $story-id
+
+  # Clear checkpoints for this story
+  ui:dim "  Clearing checkpoints"
+  clear-checkpoints $story-id
 
   # Clear state.json
   ui:dim "  Clearing Ralph state"

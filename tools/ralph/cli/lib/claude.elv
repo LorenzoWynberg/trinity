@@ -87,8 +87,8 @@ fn preflight-checks {
   # Check base branch is up to date (optional, just warn)
   try {
     git -C $project-root fetch origin 2>/dev/null
-    var local = (git -C $project-root rev-parse dev 2>/dev/null | slurp | str:trim-space)
-    var remote = (git -C $project-root rev-parse origin/dev 2>/dev/null | slurp | str:trim-space)
+    var local = (str:trim-space (git -C $project-root rev-parse dev 2>/dev/null | slurp))
+    var remote = (str:trim-space (git -C $project-root rev-parse origin/dev 2>/dev/null | slurp))
     if (not (eq $local $remote)) {
       ui:warn "  Base branch: out of sync with origin (consider 'git pull')"
     } else {
@@ -211,8 +211,8 @@ fn prepare {|story-id branch-name attempt iteration feedback &clarification="" &
     var original-task = ""
     try {
       var prd-file = (prd:get-prd-file)
-      var title = (jq -r '.stories[] | select(.id == "'$story-id'") | .title // ""' $prd-file 2>/dev/null | slurp | str:trim-space)
-      var acceptance = (jq -r '.stories[] | select(.id == "'$story-id'") | .acceptance | join("\n- ") // ""' $prd-file 2>/dev/null | slurp | str:trim-space)
+      var title = (str:trim-space (jq -r '.stories[] | select(.id == "'$story-id'") | .title // ""' $prd-file 2>/dev/null | slurp))
+      var acceptance = (str:trim-space (jq -r '.stories[] | select(.id == "'$story-id'") | .acceptance | join("\n- ") // ""' $prd-file 2>/dev/null | slurp))
       if (not (eq $acceptance "")) {
         set acceptance = "- "$acceptance
       }
@@ -358,8 +358,8 @@ fn prepare-plan-prompt {|story-id|
     set story-json = (jq -r '.stories[] | select(.id == "'$story-id'")' $prd-file 2>/dev/null | slurp)
   } catch _ { }
 
-  var title = (try { jq -r '.stories[] | select(.id == "'$story-id'") | .title // ""' $prd-file | slurp | str:trim-space } catch _ { put "" })
-  var acceptance = (try { jq -r '.stories[] | select(.id == "'$story-id'") | .acceptance | join("\n- ") // ""' $prd-file | slurp | str:trim-space } catch _ { put "" })
+  var title = (try { str:trim-space (jq -r '.stories[] | select(.id == "'$story-id'") | .title // ""' $prd-file | slurp) } catch _ { put "" })
+  var acceptance = (try { str:trim-space (jq -r '.stories[] | select(.id == "'$story-id'") | .acceptance | join("\n- ") // ""' $prd-file | slurp) } catch _ { put "" })
   var deps = (prd:get-story-deps $story-id | slurp)
 
   var version = (prd:get-current-version)

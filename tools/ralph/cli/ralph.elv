@@ -290,11 +290,30 @@ while (< $current-iteration $config[max-iterations]) {
     # Determine story to work on
     var story-id = $nil
     var branch-name = $nil
+    var skip-to-stage = ""  # For checkpoint-based resume
 
     if (and $resume-mode $current-state[current_story]) {
       set story-id = $current-state[current_story]
       set branch-name = $current-state[branch]
       ui:status "Resuming story: "$story-id
+
+      # Check for checkpoints to resume from
+      # Check checkpoints from most advanced to least
+      if (state:has-checkpoint $story-id "pr_created") {
+        set skip-to-stage = "pr_flow"
+        ui:status "Resuming from checkpoint: PR created → merge flow"
+      } elif (state:has-checkpoint $story-id "claude_complete") {
+        set skip-to-stage = "pr_flow"
+        ui:status "Resuming from checkpoint: Claude complete → PR flow"
+      } elif (state:has-checkpoint $story-id "validation_complete") {
+        set skip-to-stage = "claude"
+        ui:status "Resuming from checkpoint: validation → Claude"
+      } elif (state:has-checkpoint $story-id "branch_created") {
+        set skip-to-stage = "validation"
+        ui:status "Resuming from checkpoint: branch → validation"
+      }
+      # claude_started doesn't allow resume (can't resume mid-Claude)
+
       set resume-mode = $false
     } elif $current-state[current_story] {
       set story-id = $current-state[current_story]
@@ -348,6 +367,13 @@ while (< $current-iteration $config[max-iterations]) {
     }
     state:write $current-state
 
+    # Checkpoint: branch created
+    var head-commit = ""
+    try {
+      set head-commit = (str:trim-space (git -C $project-root rev-parse --short HEAD 2>/dev/null | slurp))
+    } catch _ { }
+    state:save-checkpoint $story-id "branch_created" [&branch=$branch-name &commit=$head-commit]
+
     # Verbose: show state transition
     if $config[verbose-mode] {
       ui:dim "VERBOSE: State transition -> in_progress"
@@ -356,8 +382,8 @@ while (< $current-iteration $config[max-iterations]) {
 
     git:ensure-on-branch $branch-name
 
-    # Validate story (unless feedback refinement or already have clarification)
-    if (and (eq $pending-feedback "") (eq $pending-clarification "")) {
+    # Validate story (unless feedback refinement, already have clarification, or skipping to later stage)
+    if (and (eq $pending-feedback "") (eq $pending-clarification "") (not (or (eq $skip-to-stage "claude") (eq $skip-to-stage "pr_flow")))) {
       # Capture all outputs into list and use last value (handles arity issues)
       var validate-results = [(claude:validate-story $story-id)]
       var validation = [&valid=$true &questions=""]
@@ -426,10 +452,13 @@ while (< $current-iteration $config[max-iterations]) {
           } catch { }
         }
       }
+
+      # Checkpoint: validation complete
+      state:save-checkpoint $story-id "validation_complete" [&clarification=$pending-clarification]
     }
 
-    # Check for external dependencies (unless already have report or in feedback mode)
-    if (and (eq $pending-feedback "") (eq $pending-ext-deps-report "")) {
+    # Check for external dependencies (unless already have report, in feedback mode, or skipping to later stage)
+    if (and (eq $pending-feedback "") (eq $pending-ext-deps-report "") (not (or (eq $skip-to-stage "claude") (eq $skip-to-stage "pr_flow")))) {
       if (prd:has-external-deps $story-id) {
         echo "" > /dev/tty
         ui:warn "Story "$story-id" has external dependencies:" > /dev/tty
@@ -489,145 +518,168 @@ while (< $current-iteration $config[max-iterations]) {
       }
     }
 
-    # Prepare Claude prompt (with any pending feedback, clarification, or external deps report)
-    var prep = (claude:prepare $story-id $branch-name $current-state[attempts] $current-iteration $pending-feedback &clarification=$pending-clarification &external_deps_report=$pending-ext-deps-report)
-    var prompt-file = $prep[prompt-file]
-    var output-file = $prep[output-file]
-    var story-title = $prep[story-title]
-    var claude-config = (claude:get-config)
-
-    # Verbose: show full prompt
-    if $config[verbose-mode] {
-      ui:divider "VERBOSE: Full Prompt"
-      cat $prompt-file
-      ui:divider-end
-      echo ""
-    }
-
-    # Clear feedback/clarification/ext-deps-report after using it, track mode for display
-    var mode-label = "attempt "$current-state[attempts]
+    # Initialize variables needed by later code
+    var signals = [&complete=$false &blocked=$false &all_complete=$false]
     var was-feedback-refinement = $false
-    if (not (eq $pending-feedback "")) {
-      set mode-label = "feedback refinement"
-      set was-feedback-refinement = $true
-      set pending-feedback = ""  # Clear after use
-    } elif (not (eq $pending-clarification "")) {
-      set mode-label = "with clarification"
-      set pending-clarification = ""  # Clear after use
-    } elif (not (eq $pending-ext-deps-report "")) {
-      set mode-label = "with external deps"
-      set pending-ext-deps-report = ""  # Clear after use
-    }
-    ui:status "Running Claude ("$mode-label")..."
-    ui:dim "  Story:  "$story-id
-    ui:dim "  Title:  "$story-title
-    ui:dim "  Branch: "$branch-name
-    ui:dim "  Output: "$output-file
-    echo ""
-
-    ui:status "Invoking Claude CLI..."
-    ui:dim "  This may take several minutes. Claude is working autonomously."
-    if $claude-config[quiet-mode] {
-      ui:dim "  Quiet mode: output captured to file only."
-    } else {
-      ui:dim "  Streaming mode: real-time output."
-    }
-    ui:dim "  Waiting for completion signal..."
-    echo ""
-
-    ui:divider "Claude Working"
-
-    # Run streaming pipeline at TOP LEVEL (not in a function) - this is critical for streaming to work
-    cd $claude-config[project-root]
-    var claude-start = (date +%s)
     var claude-duration = 0
     var claude-tokens = [&input=(num 0) &output=(num 0)]
+    var story-title = (prd:get-story-title $story-id)
 
-    try {
-      if $claude-config[quiet-mode] {
-        timeout $claude-config[timeout] bash -c 'claude --dangerously-skip-permissions --print < "$1"' _ $prompt-file > $output-file 2>&1
-      } else {
-        # jq filters from https://www.aihero.dev/heres-how-to-stream-claude-code-with-afk-ralph
-        var stream-text = 'select(.type == "assistant").message.content[]? | select(.type == "text").text // empty | gsub("\n"; "\r\n") | . + "\r\n\n"'
-        var final-result = 'select(.type == "result").result // empty'
-
-        # Streaming pipeline - must run at top level, not in a function
-        try {
-          timeout $claude-config[timeout] claude --dangerously-skip-permissions --verbose --print --output-format stream-json < $prompt-file 2>&1 | grep --line-buffered '^{' | tee $output-file | jq --unbuffered -rj $stream-text 2>/dev/null
-        } catch _ { }
-
-        # Extract final result text for signal detection
-        try {
-          jq -rs $final-result $output-file > $output-file".result" 2>/dev/null
-        } catch _ { }
-
-        # Use the extracted result if available
-        if (path:is-regular $output-file".result") {
-          var result-content = (cat $output-file".result" | slurp)
-          if (not (eq $result-content "")) {
-            echo $result-content > $output-file
-          }
-          rm -f $output-file".result"
-        }
-      }
-      var claude-end = (date +%s)
-      set claude-duration = (- $claude-end $claude-start)
-      ui:divider-end
-      ui:success "Claude execution completed in "$claude-duration"s"
-    } catch e {
-      var claude-end = (date +%s)
-      set claude-duration = (- $claude-end $claude-start)
-      ui:divider-end
-      if (>= $claude-duration $claude-config[timeout]) {
-        ui:warn "Claude timed out after "$claude-config[timeout]"s"
-        ui:dim "The story might be too complex. Try:"
-        ui:dim "  • Breaking it into smaller stories"
-        ui:dim "  • Increasing timeout with --timeout <seconds>"
-        ui:dim "  • Running ./ralph.elv --resume to continue"
-      } else {
-        ui:warn "Claude encountered an issue"
-        ui:dim "Error: "(to-string $e[reason])
-        ui:dim "Run ./ralph.elv --resume to try again"
-      }
-    } finally {
-      rm -f $prompt-file
-      rm -f $output-file".result" 2>/dev/null
-    }
-
-    # Format code files
-    echo ""
-    format:go-files $project-root
-    echo ""
-
-    # Verbose: show raw Claude output
-    if $config[verbose-mode] {
-      ui:divider "VERBOSE: Raw Claude Output"
-      try {
-        cat $output-file
-      } catch _ {
-        ui:dim "(output file empty or not readable)"
-      }
-      ui:divider-end
-      echo ""
-    }
-
-    # Extract tokens before cleanup (for metrics)
-    set claude-tokens = (metrics:extract-tokens-from-output $output-file)
-
-    # Check signals
-    ui:status "Checking for completion signals..."
-    var signals = (claude:check-signals $output-file $story-id)
-    if $signals[complete] {
-      ui:dim "  Found: <story-complete>"
-    } elif $signals[blocked] {
-      ui:dim "  Found: <story-blocked>"
-    } elif $signals[all_complete] {
-      ui:dim "  Found: <promise>COMPLETE</promise>"
+    # Skip Claude execution if resuming to PR flow
+    if (eq $skip-to-stage "pr_flow") {
+      ui:status "Skipping to PR flow (checkpoint resume)..."
+      set signals[complete] = $true  # We completed Claude in a previous run
     } else {
-      ui:dim "  No completion signal found (story still in progress)"
+      # Prepare Claude prompt (with any pending feedback, clarification, or external deps report)
+      var prep = (claude:prepare $story-id $branch-name $current-state[attempts] $current-iteration $pending-feedback &clarification=$pending-clarification &external_deps_report=$pending-ext-deps-report)
+      var prompt-file = $prep[prompt-file]
+      var output-file = $prep[output-file]
+      set story-title = $prep[story-title]
+      var claude-config = (claude:get-config)
+
+      # Verbose: show full prompt
+      if $config[verbose-mode] {
+        ui:divider "VERBOSE: Full Prompt"
+        cat $prompt-file
+        ui:divider-end
+        echo ""
+      }
+
+      # Clear feedback/clarification/ext-deps-report after using it, track mode for display
+      var mode-label = "attempt "$current-state[attempts]
+      if (not (eq $pending-feedback "")) {
+        set mode-label = "feedback refinement"
+        set was-feedback-refinement = $true
+        set pending-feedback = ""  # Clear after use
+      } elif (not (eq $pending-clarification "")) {
+        set mode-label = "with clarification"
+        set pending-clarification = ""  # Clear after use
+      } elif (not (eq $pending-ext-deps-report "")) {
+        set mode-label = "with external deps"
+        set pending-ext-deps-report = ""  # Clear after use
+      }
+      ui:status "Running Claude ("$mode-label")..."
+      ui:dim "  Story:  "$story-id
+      ui:dim "  Title:  "$story-title
+      ui:dim "  Branch: "$branch-name
+      ui:dim "  Output: "$output-file
+      echo ""
+
+      ui:status "Invoking Claude CLI..."
+      ui:dim "  This may take several minutes. Claude is working autonomously."
+      if $claude-config[quiet-mode] {
+        ui:dim "  Quiet mode: output captured to file only."
+      } else {
+        ui:dim "  Streaming mode: real-time output."
+      }
+      ui:dim "  Waiting for completion signal..."
+      echo ""
+
+      ui:divider "Claude Working"
+
+      # Checkpoint: claude started
+      state:save-checkpoint $story-id "claude_started" [&attempt=$current-state[attempts]]
+
+      # Run streaming pipeline at TOP LEVEL (not in a function) - this is critical for streaming to work
+      cd $claude-config[project-root]
+      var claude-start = (date +%s)
+
+      try {
+        if $claude-config[quiet-mode] {
+          timeout $claude-config[timeout] bash -c 'claude --dangerously-skip-permissions --print < "$1"' _ $prompt-file > $output-file 2>&1
+        } else {
+          # jq filters from https://www.aihero.dev/heres-how-to-stream-claude-code-with-afk-ralph
+          var stream-text = 'select(.type == "assistant").message.content[]? | select(.type == "text").text // empty | gsub("\n"; "\r\n") | . + "\r\n\n"'
+          var final-result = 'select(.type == "result").result // empty'
+
+          # Streaming pipeline - must run at top level, not in a function
+          try {
+            timeout $claude-config[timeout] claude --dangerously-skip-permissions --verbose --print --output-format stream-json < $prompt-file 2>&1 | grep --line-buffered '^{' | tee $output-file | jq --unbuffered -rj $stream-text 2>/dev/null
+          } catch _ { }
+
+          # Extract final result text for signal detection
+          try {
+            jq -rs $final-result $output-file > $output-file".result" 2>/dev/null
+          } catch _ { }
+
+          # Use the extracted result if available
+          if (path:is-regular $output-file".result") {
+            var result-content = (cat $output-file".result" | slurp)
+            if (not (eq $result-content "")) {
+              echo $result-content > $output-file
+            }
+            rm -f $output-file".result"
+          }
+        }
+        var claude-end = (date +%s)
+        set claude-duration = (- $claude-end $claude-start)
+        ui:divider-end
+        ui:success "Claude execution completed in "$claude-duration"s"
+      } catch e {
+        var claude-end = (date +%s)
+        set claude-duration = (- $claude-end $claude-start)
+        ui:divider-end
+        if (>= $claude-duration $claude-config[timeout]) {
+          ui:warn "Claude timed out after "$claude-config[timeout]"s"
+          ui:dim "The story might be too complex. Try:"
+          ui:dim "  • Breaking it into smaller stories"
+          ui:dim "  • Increasing timeout with --timeout <seconds>"
+          ui:dim "  • Running ./ralph.elv --resume to continue"
+        } else {
+          ui:warn "Claude encountered an issue"
+          ui:dim "Error: "(to-string $e[reason])
+          ui:dim "Run ./ralph.elv --resume to try again"
+        }
+      } finally {
+        rm -f $prompt-file
+        rm -f $output-file".result" 2>/dev/null
+      }
+
+      # Format code files
+      echo ""
+      format:go-files $project-root
+      echo ""
+
+      # Verbose: show raw Claude output
+      if $config[verbose-mode] {
+        ui:divider "VERBOSE: Raw Claude Output"
+        try {
+          cat $output-file
+        } catch _ {
+          ui:dim "(output file empty or not readable)"
+        }
+        ui:divider-end
+        echo ""
+      }
+
+      # Extract tokens before cleanup (for metrics)
+      set claude-tokens = (metrics:extract-tokens-from-output $output-file)
+
+      # Check signals
+      ui:status "Checking for completion signals..."
+      set signals = (claude:check-signals $output-file $story-id)
+      if $signals[complete] {
+        ui:dim "  Found: <story-complete>"
+      } elif $signals[blocked] {
+        ui:dim "  Found: <story-blocked>"
+      } elif $signals[all_complete] {
+        ui:dim "  Found: <promise>COMPLETE</promise>"
+      } else {
+        ui:dim "  No completion signal found (story still in progress)"
+      }
+      claude:cleanup $output-file
+      echo ""
+
+      # Checkpoint: claude complete (if signal found)
+      if $signals[complete] {
+        var complete-commit = ""
+        try {
+          set complete-commit = (str:trim-space (git -C $project-root rev-parse --short HEAD 2>/dev/null | slurp))
+        } catch _ { }
+        state:save-checkpoint $story-id "claude_complete" [&signal="complete" &commit=$complete-commit]
+      }
     }
-    claude:cleanup $output-file
-    echo ""
+    # End of else block for skip-to-stage check
 
     ui:status "Updating state based on outcome..."
 
@@ -655,6 +707,11 @@ while (< $current-iteration $config[max-iterations]) {
       var pr-flow-result = (pr:run-flow $story-id $branch-name $story-title $current-iteration &state-pr-url=$state-pr-url &feedback-pending=$was-feedback-refinement)
       var pr-result = $pr-flow-result[result]
       var pr-url = $pr-flow-result[pr_url]
+
+      # Checkpoint: PR created (if we have a URL and it's not merged yet)
+      if (and (not (eq $pr-url "")) (not (eq $pr-result "merged"))) {
+        state:save-checkpoint $story-id "pr_created" [&pr_url=$pr-url]
+      }
 
       # Handle feedback loop - re-run Claude with feedback
       if (eq $pr-result "feedback") {
@@ -698,6 +755,7 @@ while (< $current-iteration $config[max-iterations]) {
       set current-state[attempts] = (num 0)
       set current-state[error] = $nil
       state:write $current-state
+      state:clear-checkpoints $story-id
       ui:dim "  State saved."
 
       # Verbose: show state transition
@@ -756,6 +814,7 @@ while (< $current-iteration $config[max-iterations]) {
       set current-state[started_at] = $nil
       set current-state[attempts] = (num 0)
       state:write $current-state
+      state:clear-checkpoints $story-id
       ui:dim "  State saved."
 
       # Verbose: show state transition
