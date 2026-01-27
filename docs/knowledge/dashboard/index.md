@@ -44,7 +44,9 @@ The dashboard is a Next.js app for viewing PRD status, running Ralph, and managi
 - Split by project (trinity/ralph)
 
 ### Knowledge/Gotchas Pages
-- Documentation browser
+- Hierarchical book/chapter navigation
+- Two dropdowns: book selector + chapter selector (hidden if only one chapter)
+- URL params: `?book=ralph&chapter=cli-reference`
 - Markdown rendering with syntax highlighting
 
 ---
@@ -186,3 +188,50 @@ useEffect(() => setMounted(true), [])
   .react-flow__controls { bottom: 80px !important; }
 }
 ```
+
+---
+
+## Documentation Structure
+
+Knowledge and Gotchas use a book/chapter hierarchy:
+
+```
+docs/knowledge/
+├── ralph/
+│   ├── index.json           # Book metadata + page order
+│   ├── index.md             # Overview chapter
+│   ├── common-workflows.md  # Workflows chapter
+│   ├── cli-reference.md     # CLI Reference chapter
+│   └── faq.md               # FAQ chapter
+├── dashboard/
+│   ├── index.json
+│   └── index.md
+└── ...
+```
+
+**index.json schema:**
+```json
+{
+  "title": "Ralph",
+  "description": "Ralph CLI workflows and reference",
+  "icon": "Terminal",
+  "pages": [
+    { "slug": "index", "title": "Overview" },
+    { "slug": "cli-reference", "title": "CLI Reference" }
+  ]
+}
+```
+
+**Adding a new chapter:**
+1. Create `<chapter-slug>.md` in the book folder
+2. Add entry to `index.json` pages array
+
+**Data functions (`src/lib/data.ts`):**
+- `getKnowledgeChapters()` - reads from `docs/knowledge/`
+- `getGotchasChapters()` - reads from `docs/gotchas/`
+
+**ChapterNav component (`src/components/chapter-nav.tsx`):**
+- Takes `chapters` array and `basePath` prop
+- Book dropdown shows all books with icons from `index.json`
+- Chapter dropdown shows pages (hidden if only one page)
+- URL sync via `?book=` and `?chapter=` params
