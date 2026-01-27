@@ -27,10 +27,10 @@ Read instructions as needed from `tools/ralph/cli/instructions/`:
 
 ## Quick Reference
 
-**Signals:**
-- Success: `<story-complete>{{CURRENT_STORY}}</story-complete>`
-- Blocked: `<story-blocked>{{CURRENT_STORY}}</story-blocked>`
-- All done: `<promise>COMPLETE</promise>`
+**Signal file** (`tools/ralph/cli/signal.json`) - write at end:
+- Success: `{"status": "complete", "story_id": "{{CURRENT_STORY}}", ...}`
+- Blocked: `{"status": "blocked", "story_id": "{{CURRENT_STORY}}", ...}`
+- All done: `{"status": "all_complete", ...}`
 
 **Key files:**
 - Task: `tools/ralph/cli/prd/{{VERSION}}.json`

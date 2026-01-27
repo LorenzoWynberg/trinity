@@ -839,11 +839,14 @@ while (< $current-iteration $config[max-iterations]) {
       ui:status "Checking for completion signals..."
       set signals = (claude:check-signals $output-file $story-id)
       if $signals[complete] {
-        ui:dim "  Found: <story-complete>"
+        ui:dim "  Signal: complete"
       } elif $signals[blocked] {
-        ui:dim "  Found: <story-blocked>"
+        ui:dim "  Signal: blocked"
+        if (not (eq $signals[message] "")) {
+          ui:dim "  Reason: "$signals[message]
+        }
       } elif $signals[all_complete] {
-        ui:dim "  Found: <promise>COMPLETE</promise>"
+        ui:dim "  Signal: all_complete"
       } else {
         ui:dim "  No completion signal found (story still in progress)"
       }
@@ -992,7 +995,7 @@ while (< $current-iteration $config[max-iterations]) {
       ui:dim "You can retry with: ./ralph.elv --retry-clean "$story-id
       ui:dim "Clearing state to try the next story..."
       # Track failure for smart retry
-      var fc = (state:record-failure "Story blocked - Claude output <story-blocked> signal")
+      var fc = (state:record-failure "Story blocked - Claude reported blocked status")
       if (>= $fc 2) {
         ui:warn "This is failure #"(to-string $fc)" on this story"
       }

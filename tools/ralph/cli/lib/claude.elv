@@ -333,35 +333,78 @@ fn get-config {
   put [&project-root=$project-root &timeout=$claude-timeout &quiet-mode=$quiet-mode]
 }
 
-# Check output file for completion signals
+# Check for completion signals - prefers signal.json, falls back to XML tags
 fn check-signals {|output-file story-id|
   var story-complete = $false
   var story-blocked = $false
   var all-complete = $false
+  var files-changed = []
+  var tests-passed = $nil
+  var message = ""
 
-  try {
-    grep -q '<story-complete>'$story-id'</story-complete>' $output-file
-    set story-complete = $true
-  } catch { }
+  # Signal file path
+  var signal-file = (path:join $script-dir "signal.json")
 
-  try {
-    grep -q '<story-blocked>'$story-id'</story-blocked>' $output-file
-    set story-blocked = $true
-  } catch { }
+  # Try reading signal.json first (preferred)
+  if (path:is-regular $signal-file) {
+    try {
+      var signal = (cat $signal-file | from-json)
+      var status = $signal[status]
 
-  try {
-    grep -q '<promise>COMPLETE</promise>' $output-file
-    set all-complete = $true
-  } catch { }
+      if (eq $status "complete") {
+        set story-complete = $true
+      } elif (eq $status "blocked") {
+        set story-blocked = $true
+      } elif (eq $status "all_complete") {
+        set all-complete = $true
+      }
 
-  # Return as map (no ui output inside function to avoid value capture issues)
-  put [&complete=$story-complete &blocked=$story-blocked &all_complete=$all-complete]
+      # Extract extra metadata
+      if (has-key $signal files_changed) {
+        set files-changed = $signal[files_changed]
+      }
+      if (has-key $signal tests_passed) {
+        set tests-passed = $signal[tests_passed]
+      }
+      if (has-key $signal message) {
+        set message = $signal[message]
+      }
+    } catch e {
+      ui:warn "Failed to parse signal.json: "(to-string $e[reason])
+    }
+  }
+
+  # Fallback to XML tags in output (for backwards compatibility)
+  if (and (not $story-complete) (not $story-blocked) (not $all-complete)) {
+    try {
+      grep -q '<story-complete>'$story-id'</story-complete>' $output-file
+      set story-complete = $true
+    } catch { }
+
+    try {
+      grep -q '<story-blocked>'$story-id'</story-blocked>' $output-file
+      set story-blocked = $true
+    } catch { }
+
+    try {
+      grep -q '<promise>COMPLETE</promise>' $output-file
+      set all-complete = $true
+    } catch { }
+  }
+
+  # Return as map with all metadata
+  put [&complete=$story-complete &blocked=$story-blocked &all_complete=$all-complete &files_changed=$files-changed &tests_passed=$tests-passed &message=$message]
 }
 
-# Cleanup output file
+# Cleanup output file and signal file
 fn cleanup {|output-file|
   rm -f $output-file
-  ui:dim "  Cleaned up temp file"
+  # Clean up signal file
+  var signal-file = (path:join $script-dir "signal.json")
+  if (path:is-regular $signal-file) {
+    rm -f $signal-file
+  }
+  ui:dim "  Cleaned up temp files"
 }
 
 # Extract learnings from completed story (delegates to learnings module)

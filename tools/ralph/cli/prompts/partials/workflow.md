@@ -119,7 +119,16 @@ git push -u origin {{BRANCH}}
 - **description**: imperative, lowercase, no period, under 72 chars
 - **body**: 2-4 bullet points of significant changes
 
-Output: `<story-complete>{{CURRENT_STORY}}</story-complete>`
+**Write signal file** (`tools/ralph/cli/signal.json`):
+```json
+{
+  "status": "complete",
+  "story_id": "{{CURRENT_STORY}}",
+  "files_changed": ["list", "of", "modified", "files"],
+  "tests_passed": true,
+  "message": null
+}
+```
 
 ## 7. On BLOCKED
 Don't commit. Don't update prd.json.
@@ -131,7 +140,16 @@ Don't commit. Don't update prd.json.
 
 Failures are valuable learning opportunities - don't lose them!
 
-Output: `<story-blocked>{{CURRENT_STORY}}</story-blocked>`
+**Write signal file** (`tools/ralph/cli/signal.json`):
+```json
+{
+  "status": "blocked",
+  "story_id": "{{CURRENT_STORY}}",
+  "files_changed": [],
+  "tests_passed": false,
+  "message": "Explain why blocked and what was tried"
+}
+```
 
 ## Important Rules
 - No AI attribution in code, comments, or commits

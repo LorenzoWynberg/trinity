@@ -24,7 +24,7 @@ Ralph is an autonomous development loop that builds Trinity v0.1 by working thro
 1. **Picks next story** - Selects from `prd.json`, respecting dependencies
 2. **Creates branch** - `feat/story-<phase>.<epic>.<story>` from dev
 3. **Runs Claude** - Pipes prompt.md template to Claude CLI
-4. **Parses signals** - Detects `<story-complete>`, `<story-blocked>`
+4. **Reads signal file** - Checks `signal.json` for completion status
 5. **Creates PR** - Auto-creates PR to dev (or prompts if `--no-auto-pr`)
 6. **Merges PR** - Prompts to merge (or auto-merges if `--auto-merge`)
 7. **Updates state** - Persists progress to state.json
@@ -106,15 +106,24 @@ Ralph will:
 
 This enables iterative refinement without leaving the loop.
 
-## Signals
+## Signal File
 
-Claude outputs these signals to communicate with Ralph:
+Claude writes `signal.json` to communicate status to Ralph:
 
+```json
+{
+  "status": "complete",      // or "blocked", "all_complete"
+  "story_id": "STORY-X.Y.Z",
+  "files_changed": ["src/foo.go", "src/bar.go"],
+  "tests_passed": true,
+  "message": null            // reason if blocked
+}
 ```
-<story-complete>STORY-X.Y.Z</story-complete>  # Story finished
-<story-blocked>STORY-X.Y.Z</story-blocked>    # Can't proceed
-<promise>COMPLETE</promise>                    # All done
-```
+
+Status values:
+- `complete` - Story finished successfully
+- `blocked` - Can't proceed (see message for reason)
+- `all_complete` - All stories in PRD merged
 
 ## State
 

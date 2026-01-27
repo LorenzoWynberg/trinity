@@ -36,4 +36,4 @@ Do NOT:
 {{WORKFLOW}}
 
 ## 8. All Done?
-If ALL stories in prd.json have `"merged": true`, output: `<promise>COMPLETE</promise>`
+If ALL stories in prd.json have `"merged": true`, write signal file with `"status": "all_complete"`.

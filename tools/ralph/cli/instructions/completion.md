@@ -1,5 +1,11 @@
 # Completion Instructions
 
+## Signal File
+
+**IMPORTANT:** At the end of your work, write a signal file so Ralph knows the outcome.
+
+Write to: `tools/ralph/cli/signal.json`
+
 ## On SUCCESS
 
 Update these files:
@@ -28,7 +34,16 @@ git push -u origin {{BRANCH}}
 - **description**: imperative, lowercase, no period, under 72 chars
 - **body**: 2-4 bullet points of significant changes
 
-Output: `<story-complete>{{CURRENT_STORY}}</story-complete>`
+**Write signal file:**
+```json
+{
+  "status": "complete",
+  "story_id": "{{CURRENT_STORY}}",
+  "files_changed": ["list", "of", "modified", "files"],
+  "tests_passed": true,
+  "message": null
+}
+```
 
 ## On BLOCKED
 
@@ -41,8 +56,26 @@ Don't commit. Don't update prd.json.
 
 Failures are valuable learning opportunities - don't lose them!
 
-Output: `<story-blocked>{{CURRENT_STORY}}</story-blocked>`
+**Write signal file:**
+```json
+{
+  "status": "blocked",
+  "story_id": "{{CURRENT_STORY}}",
+  "files_changed": [],
+  "tests_passed": false,
+  "message": "Explain why blocked and what was tried"
+}
+```
 
 ## All Done?
 
-If ALL stories in prd.json have `"merged": true`, output: `<promise>COMPLETE</promise>`
+If ALL stories in prd.json have `"merged": true`, set status to `"all_complete"`:
+```json
+{
+  "status": "all_complete",
+  "story_id": "{{CURRENT_STORY}}",
+  "files_changed": [],
+  "tests_passed": true,
+  "message": "All stories merged"
+}
+```
