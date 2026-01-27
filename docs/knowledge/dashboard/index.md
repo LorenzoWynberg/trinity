@@ -44,8 +44,9 @@ The dashboard is a Next.js app for viewing PRD status, running Ralph, and managi
 - Split by project (trinity/ralph)
 
 ### Knowledge/Gotchas Pages
-- Hierarchical book/chapter navigation
-- Two dropdowns: book selector + chapter selector (hidden if only one chapter)
+- Book selector dropdown for both
+- Knowledge has chapters (second dropdown when book has multiple pages)
+- Gotchas is flat (one page per book, no chapter dropdown)
 - URL params: `?book=ralph&chapter=cli-reference`
 - Markdown rendering with syntax highlighting
 
@@ -193,16 +194,27 @@ useEffect(() => setMounted(true), [])
 
 ## Documentation Structure
 
-Knowledge and Gotchas use a book/chapter hierarchy:
-
+**Knowledge** uses a book/chapter hierarchy (multiple pages per book):
 ```
 docs/knowledge/
 ├── ralph/
 │   ├── index.json           # Book metadata + page order
-│   ├── index.md             # Overview chapter
-│   ├── common-workflows.md  # Workflows chapter
-│   ├── cli-reference.md     # CLI Reference chapter
-│   └── faq.md               # FAQ chapter
+│   ├── index.md             # Overview
+│   ├── common-workflows.md  # Workflows
+│   ├── cli-reference.md     # CLI Reference
+│   └── faq.md               # FAQ
+├── dashboard/
+│   ├── index.json
+│   └── index.md
+└── ...
+```
+
+**Gotchas** is flat (one page per book):
+```
+docs/gotchas/
+├── elvish/
+│   ├── index.json
+│   └── index.md
 ├── dashboard/
 │   ├── index.json
 │   └── index.md
@@ -222,16 +234,11 @@ docs/knowledge/
 }
 ```
 
-**Adding a new chapter:**
+**Adding a chapter to knowledge:**
 1. Create `<chapter-slug>.md` in the book folder
 2. Add entry to `index.json` pages array
 
-**Data functions (`src/lib/data.ts`):**
-- `getKnowledgeChapters()` - reads from `docs/knowledge/`
-- `getGotchasChapters()` - reads from `docs/gotchas/`
-
-**ChapterNav component (`src/components/chapter-nav.tsx`):**
-- Takes `chapters` array and `basePath` prop
-- Book dropdown shows all books with icons from `index.json`
-- Chapter dropdown shows pages (hidden if only one page)
-- URL sync via `?book=` and `?chapter=` params
+**ChapterNav component:**
+- Book dropdown shows all books with icons
+- Chapter dropdown only appears when book has multiple pages
+- Gotchas books have one page → no chapter dropdown

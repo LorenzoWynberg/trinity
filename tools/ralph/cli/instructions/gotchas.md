@@ -8,17 +8,9 @@ After completing {{CURRENT_STORY}}:
 
 If correcting a misconception, note it briefly in the activity log so we know what changed and why.
 
-## Folder Structure
+## Gotchas (`docs/gotchas/`) - Flat structure
 
-Docs use a book/chapter structure:
-```
-docs/knowledge/<book>/
-├── index.json       # { title, icon, pages: [...] }
-├── index.md         # Main/overview chapter
-└── <chapter>.md     # Additional chapters
-```
-
-## Gotcha Books (`docs/gotchas/`)
+One page per book. Just edit `index.md` in the appropriate folder.
 
 | Book | Content |
 |------|---------|
@@ -28,19 +20,20 @@ docs/knowledge/<book>/
 | `patterns/` | Reusable patterns discovered |
 | `conventions/` | Coding standards learned |
 
-## Knowledge Books (`docs/knowledge/`)
+## Knowledge (`docs/knowledge/`) - Hierarchical structure
+
+Multiple chapters per book. Can add new `.md` files.
 
 | Book | Content |
 |------|---------|
-| `ralph/` | Ralph CLI workflow, state management, PRD features |
+| `ralph/` | CLI workflow, state management, PRD features (multiple chapters) |
 | `dashboard/` | Dashboard architecture, terminal, themes |
 | `trinity/` | Trinity CLI overview and architecture |
 | `go/` | Go workspaces, multi-module setup |
 
-## Adding New Chapters
-
+**Adding a chapter to knowledge:**
 1. Create `<chapter>.md` in the book folder
-2. Add entry to `index.json`:
+2. Add entry to book's `index.json`:
 ```json
 {
   "pages": [
