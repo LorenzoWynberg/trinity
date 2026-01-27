@@ -273,6 +273,30 @@ Stages: `branch_created`, `validation_complete`, `claude_started`, `claude_compl
 
 This enables `--resume` to skip completed phases instead of restarting from scratch. See CLI Reference for details.
 
+## Signal File
+
+Claude communicates completion status by writing `signal.json`:
+
+```json
+{
+  "status": "complete",
+  "story_id": "1.2.3",
+  "files_changed": ["src/foo.go", "src/bar.go"],
+  "tests_passed": true,
+  "message": null
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | string | `complete`, `blocked`, or `all_complete` |
+| `story_id` | string | The story ID being worked on |
+| `files_changed` | array | List of files modified |
+| `tests_passed` | boolean | Whether tests passed |
+| `message` | string/null | Reason if blocked, null otherwise |
+
+Ralph reads this file after Claude execution, then deletes it. Falls back to parsing text output for backwards compatibility.
+
 ## Example: Complete Story
 
 ```json

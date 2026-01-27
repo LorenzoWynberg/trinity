@@ -95,7 +95,7 @@ When retries fail repeatedly, Ralph tracks the failure and provides context to C
 |----------|--------------|
 | Timeout | "Timeout after Xs - story may be too complex" |
 | Claude error | "Claude error: <reason>" |
-| Blocked signal | "Story blocked - Claude output <story-blocked> signal" |
+| Blocked signal | "Story blocked - Claude reported blocked status" |
 
 ### Auto-Escalation Prompt
 
@@ -184,7 +184,7 @@ The story might be too complex. Try:
 
 Checkpoints are automatically cleared when:
 - Story is successfully merged
-- Story is blocked (Claude outputs `<story-blocked>`)
+- Story is blocked (Claude writes `"status": "blocked"` to signal.json)
 - `--retry-clean` is run
 
 If checkpoints accumulate (bug), manually edit `state.json`:
