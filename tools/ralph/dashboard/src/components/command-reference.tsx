@@ -103,7 +103,7 @@ function CopyableCommand({ command }: { command: string }) {
         className={cn(
           'group flex items-center gap-1.5 font-mono text-sm px-2 py-1 rounded',
           'bg-muted/50 hover:bg-muted transition-colors cursor-pointer',
-          'text-cyan-600 dark:text-cyan-400 cyber-light:text-cyan-600 cyber-dark:text-cyan-400'
+          'text-cyan-600 dark:text-cyan-400 cyber-light:text-cyan-600 cyber-dark:text-foreground'
         )}
         title="Click to copy"
       >

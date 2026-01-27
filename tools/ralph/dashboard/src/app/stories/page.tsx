@@ -35,7 +35,7 @@ export default async function StoriesPage({ searchParams }: PageProps) {
   if (!prd) {
     return (
       <div className="p-8">
-        <h1 className="text-2xl font-bold mb-4 cyber-light:text-pink-600 cyber-dark:text-cyan-400">Stories</h1>
+        <h1 className="text-2xl font-bold mb-4 cyber-light:text-pink-600 cyber-dark:text-foreground">Stories</h1>
         <p className="text-muted-foreground">No PRD found.</p>
       </div>
     )

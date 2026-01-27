@@ -81,7 +81,7 @@ export default function MetricsPage() {
   if (loading) {
     return (
       <div className="p-8">
-        <h1 className="text-2xl font-bold mb-4 cyber-light:text-pink-600 cyber-dark:text-cyan-400">Metrics</h1>
+        <h1 className="text-2xl font-bold mb-4 cyber-light:text-pink-600 cyber-dark:text-foreground">Metrics</h1>
         <p className="text-muted-foreground">Loading...</p>
       </div>
     )
@@ -90,7 +90,7 @@ export default function MetricsPage() {
   if (!metrics || metrics.stories.length === 0) {
     return (
       <div className="p-8">
-        <h1 className="text-2xl font-bold mb-4 cyber-light:text-pink-600 cyber-dark:text-cyan-400">Metrics</h1>
+        <h1 className="text-2xl font-bold mb-4 cyber-light:text-pink-600 cyber-dark:text-foreground">Metrics</h1>
         <p className="text-muted-foreground">
           No metrics recorded yet. Complete some stories to see data here.
         </p>
@@ -125,8 +125,8 @@ export default function MetricsPage() {
     <div className="p-8 space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold cyber-light:text-pink-600 cyber-dark:text-cyan-400">Metrics</h1>
-          <p className="text-muted-foreground cyber-light:text-cyan-600">Token usage and timing data</p>
+          <h1 className="text-2xl font-bold cyber-light:text-pink-600 cyber-dark:text-foreground">Metrics</h1>
+          <p className="text-muted-foreground cyber-light:text-cyan-600 cyber-dark:text-secondary-foreground">Token usage and timing data</p>
         </div>
 
         {/* Version Filter */}

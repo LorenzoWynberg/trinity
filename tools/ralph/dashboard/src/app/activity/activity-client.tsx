@@ -1,69 +1,77 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Markdown } from '@/components/markdown'
-import { Badge } from '@/components/ui/badge'
-import { Archive, Folder } from 'lucide-react'
-import type { ActivityProject } from '@/lib/data'
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Markdown } from '@/components/markdown';
+import { Badge } from '@/components/ui/badge';
+import { Archive, Folder } from 'lucide-react';
+import type { ActivityProject } from '@/lib/data';
 
 interface Log {
-  date: string
-  content: string
-  archived: boolean
+  date: string;
+  content: string;
+  archived: boolean;
 }
 
 interface ActivityClientProps {
-  initialLogs: Log[]
-  initialProject: ActivityProject
-  projects: ActivityProject[]
+  initialLogs: Log[];
+  initialProject: ActivityProject;
+  projects: ActivityProject[];
 }
 
-export function ActivityClient({ initialLogs, initialProject, projects }: ActivityClientProps) {
-  const [currentProject, setCurrentProject] = useState<ActivityProject>(initialProject)
-  const [logs, setLogs] = useState<Log[]>(initialLogs)
-  const [loading, setLoading] = useState(false)
+export function ActivityClient({
+  initialLogs,
+  initialProject,
+  projects,
+}: ActivityClientProps) {
+  const [currentProject, setCurrentProject] =
+    useState<ActivityProject>(initialProject);
+  const [logs, setLogs] = useState<Log[]>(initialLogs);
+  const [loading, setLoading] = useState(false);
 
   const handleProjectChange = async (project: ActivityProject) => {
-    if (project === currentProject) return
-    setLoading(true)
+    if (project === currentProject) return;
+    setLoading(true);
     try {
-      const res = await fetch(`/api/activity?project=${project}`)
-      const data = await res.json()
-      setLogs(data.logs || [])
-      setCurrentProject(project)
+      const res = await fetch(`/api/activity?project=${project}`);
+      const data = await res.json();
+      setLogs(data.logs || []);
+      setCurrentProject(project);
     } catch (err) {
-      console.error('Failed to fetch logs:', err)
+      console.error('Failed to fetch logs:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const recentLogs = logs.filter(log => !log.archived)
-  const archivedLogs = logs.filter(log => log.archived)
+  const recentLogs = logs.filter((log) => !log.archived);
+  const archivedLogs = logs.filter((log) => log.archived);
 
   return (
     <div className="p-8 space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold cyber-light:text-pink-600 cyber-dark:text-cyan-400">Activity</h1>
-          <p className="text-muted-foreground cyber-light:text-cyan-600">
+          <h1 className="text-2xl font-bold cyber-light:text-pink-600 cyber-dark:text-foreground">
+            Activity
+          </h1>
+          <p className="text-muted-foreground cyber-light:text-cyan-600 cyber-dark:text-secondary-foreground">
             {recentLogs.length} recent, {archivedLogs.length} archived
           </p>
         </div>
 
         {/* Project selector */}
         <div className="flex items-center gap-1 bg-muted cyber-light:bg-cyan-50 cyber-light:border cyber-light:border-cyan-300 rounded-lg p-1">
-          {projects.map(project => (
+          {projects.map((project) => (
             <button
               key={project}
               onClick={() => handleProjectChange(project)}
               className={`
                 flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors
-                ${currentProject === project
-                  ? 'bg-background text-foreground shadow-sm cyber-dark:text-yellow-400'
-                  : 'text-muted-foreground hover:text-foreground cyber-dark:text-accent cyber-dark:hover:text-yellow-400'
+                ${
+                  currentProject === project
+                    ? 'bg-background text-foreground shadow-sm cyber-dark:text-yellow-400'
+                    : 'text-muted-foreground hover:text-foreground cyber-dark:text-foreground cyber-dark:hover:text-yellow-400'
                 }
               `}
               disabled={loading}
@@ -99,14 +107,18 @@ export function ActivityClient({ initialLogs, initialProject, projects }: Activi
             ) : (
               <Tabs defaultValue={recentLogs[0]?.date}>
                 <TabsList className="flex-wrap h-auto gap-1">
-                  {recentLogs.map(log => (
-                    <TabsTrigger key={log.date} value={log.date} className="text-xs">
+                  {recentLogs.map((log) => (
+                    <TabsTrigger
+                      key={log.date}
+                      value={log.date}
+                      className="text-xs"
+                    >
                       {log.date}
                     </TabsTrigger>
                   ))}
                 </TabsList>
 
-                {recentLogs.map(log => (
+                {recentLogs.map((log) => (
                   <TabsContent key={log.date} value={log.date}>
                     <Card>
                       <CardHeader>
@@ -128,14 +140,18 @@ export function ActivityClient({ initialLogs, initialProject, projects }: Activi
             ) : (
               <Tabs defaultValue={archivedLogs[0]?.date}>
                 <TabsList className="flex-wrap h-auto gap-1">
-                  {archivedLogs.map(log => (
-                    <TabsTrigger key={log.date} value={log.date} className="text-xs">
+                  {archivedLogs.map((log) => (
+                    <TabsTrigger
+                      key={log.date}
+                      value={log.date}
+                      className="text-xs"
+                    >
                       {log.date}
                     </TabsTrigger>
                   ))}
                 </TabsList>
 
-                {archivedLogs.map(log => (
+                {archivedLogs.map((log) => (
                   <TabsContent key={log.date} value={log.date}>
                     <Card>
                       <CardHeader>
@@ -159,5 +175,5 @@ export function ActivityClient({ initialLogs, initialProject, projects }: Activi
         </Tabs>
       )}
     </div>
-  )
+  );
 }

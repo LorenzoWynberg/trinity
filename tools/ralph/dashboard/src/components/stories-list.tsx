@@ -166,7 +166,7 @@ function StoriesListInner({ prd, currentStoryId, versions, currentVersion, versi
 
         {/* Phase Filter */}
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium">Phase:</label>
+          <label className="text-sm font-medium cyber-dark:text-foreground">Phase:</label>
           <Select value={selectedPhase} onValueChange={setSelectedPhase}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="All phases" />

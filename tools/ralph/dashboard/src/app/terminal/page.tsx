@@ -6,8 +6,8 @@ export default function TerminalPage() {
     <div className="p-4 md:p-8">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold cyber-light:text-pink-600 cyber-dark:text-cyan-400">Terminal</h1>
-          <p className="text-sm text-muted-foreground cyber-light:text-cyan-600">
+          <h1 className="text-2xl font-bold cyber-light:text-pink-600 cyber-dark:text-foreground">Terminal</h1>
+          <p className="text-sm text-muted-foreground cyber-light:text-cyan-600 cyber-dark:text-secondary-foreground">
             Run Ralph interactively
           </p>
         </div>

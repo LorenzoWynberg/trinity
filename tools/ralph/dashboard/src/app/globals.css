@@ -137,36 +137,36 @@
 
 .cyber-dark {
   --background: oklch(0.1 0.02 280);
-  --foreground: oklch(0.95 0.15 180);
+  --foreground: oklch(90.119% 0.15661 188.254);
   --card: oklch(0.15 0.03 280);
-  --card-foreground: oklch(0.95 0.15 180);
+  --card-foreground: oklch(90.119% 0.15661 188.254);
   --popover: oklch(0.15 0.03 280);
-  --popover-foreground: oklch(0.95 0.15 180);
-  --primary: oklch(0.70 0.25 295);
+  --popover-foreground: oklch(90.119% 0.15661 188.254);
+  --primary: oklch(0.7 0.25 295);
   --primary-foreground: oklch(0.1 0.02 280);
   --secondary: oklch(0.25 0.05 280);
-  --secondary-foreground: oklch(0.95 0.15 180);
+  --secondary-foreground: oklch(65.025% 0.26522 357.482);
   --muted: oklch(0.2 0.04 280);
-  --muted-foreground: oklch(0.65 0.1 180);
-  --accent: oklch(0.6 0.25 180);
+  --muted-foreground: oklch(76.463% 0.15148 229.462);
+  --accent: lab(83.2664 8.65132 106.895);
   --accent-foreground: oklch(0.1 0.02 280);
   --destructive: oklch(0.65 0.25 25);
-  --border: oklch(0.70 0.25 295 / 30%);
-  --input: oklch(0.70 0.25 295 / 20%);
-  --ring: oklch(0.70 0.25 295);
-  --chart-1: oklch(0.70 0.25 295);
+  --border: oklch(53.835% 0.21832 359.116);
+  --input: oklch(0.7 0.25 295 / 20%);
+  --ring: oklch(0.7 0.25 295);
+  --chart-1: oklch(0.7 0.25 295);
   --chart-2: oklch(0.6 0.25 180);
   --chart-3: oklch(0.7 0.2 60);
   --chart-4: oklch(0.65 0.25 280);
   --chart-5: oklch(0.6 0.2 120);
   --sidebar: oklch(0.12 0.025 280);
-  --sidebar-foreground: oklch(0.95 0.15 180);
-  --sidebar-primary: oklch(0.70 0.25 295);
+  --sidebar-foreground: oklch(90.119% 0.15661 188.254);
+  --sidebar-primary: oklch(0.7 0.25 295);
   --sidebar-primary-foreground: oklch(0.1 0.02 280);
   --sidebar-accent: oklch(0.2 0.04 280);
-  --sidebar-accent-foreground: oklch(0.95 0.15 180);
-  --sidebar-border: oklch(0.70 0.25 295 / 30%);
-  --sidebar-ring: oklch(0.70 0.25 295);
+  --sidebar-accent-foreground: oklch(90.119% 0.15661 188.254);
+  --sidebar-border: oklch(43.754% 0.25891 283.191);
+  --sidebar-ring: oklch(0.7 0.25 295);
   /* Graph colors */
   --graph-bg: #1a1025;
   --graph-dots: rgba(255, 45, 149, 0.5);
@@ -229,7 +229,8 @@
     @apply bg-background text-foreground;
   }
   /* Ensure code blocks have no borders */
-  pre, code {
+  pre,
+  code {
     border: none !important;
     outline: none !important;
   }
@@ -321,4 +322,3 @@
     bottom: 80px !important;
   }
 }
-

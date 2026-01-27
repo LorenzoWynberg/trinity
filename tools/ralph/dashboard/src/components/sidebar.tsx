@@ -57,8 +57,8 @@ export function Sidebar() {
     <>
       <div className="p-6 border-b flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold cyber-light:text-pink-600 cyber-dark:text-cyan-400">Ralph Dashboard</h1>
-          <p className="text-sm text-muted-foreground cyber-light:text-cyan-600">PRD Viewer</p>
+          <h1 className="text-xl font-bold cyber-light:text-pink-600 cyber-dark:text-foreground">Ralph Dashboard</h1>
+          <p className="text-sm text-muted-foreground cyber-light:text-cyan-600 cyber-dark:text-secondary-foreground">PRD Viewer</p>
         </div>
         {/* Close button - mobile only */}
         <button
@@ -82,7 +82,7 @@ export function Sidebar() {
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                 isActive
                   ? 'bg-primary text-primary-foreground cyber-light:bg-accent cyber-light:text-accent-foreground cyber-dark:bg-yellow-400 cyber-dark:text-black'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground cyber-light:hover:text-accent cyber-dark:hover:text-yellow-400'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground cyber-light:hover:text-accent cyber-dark:text-foreground cyber-dark:hover:text-yellow-400'
               )}
             >
               <item.icon className="h-4 w-4" />
@@ -95,7 +95,7 @@ export function Sidebar() {
       <div className="p-4 border-t">
         <Link
           href="/settings"
-          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground cyber-light:hover:text-primary cyber-dark:hover:text-yellow-400 transition-colors"
+          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground cyber-light:hover:text-primary cyber-dark:text-foreground cyber-dark:hover:text-yellow-400 transition-colors"
         >
           <Settings className="h-4 w-4" />
           Settings

@@ -116,7 +116,7 @@ export default function SettingsPage() {
 
   return (
     <div className="p-8 max-w-2xl space-y-6">
-      <h1 className="text-2xl font-bold cyber-light:text-pink-600 cyber-dark:text-cyan-400">Settings</h1>
+      <h1 className="text-2xl font-bold cyber-light:text-pink-600 cyber-dark:text-foreground">Settings</h1>
 
       <Card>
         <CardHeader>

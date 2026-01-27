@@ -60,8 +60,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   if (!prd) {
     return (
       <div className="p-8">
-        <h1 className="text-2xl font-bold mb-4 cyber-light:text-pink-600 cyber-dark:text-cyan-400">Dashboard</h1>
-        <p className="text-muted-foreground cyber-light:text-cyan-600">
+        <h1 className="text-2xl font-bold mb-4 cyber-light:text-pink-600 cyber-dark:text-foreground">Dashboard</h1>
+        <p className="text-muted-foreground cyber-light:text-cyan-600 cyber-dark:text-secondary-foreground">
           No PRD found. Make sure prd.json exists in tools/ralph/cli/
         </p>
       </div>
@@ -78,8 +78,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     <div className="p-8 space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold cyber-light:text-pink-600 cyber-dark:text-cyan-400">{prd.title || 'Dashboard'}</h1>
-          <p className="text-muted-foreground cyber-light:text-cyan-600">{prd.description || prd.project}</p>
+          <h1 className="text-2xl font-bold cyber-light:text-pink-600 cyber-dark:text-foreground">{prd.title || 'Dashboard'}</h1>
+          <p className="text-muted-foreground cyber-light:text-cyan-600 cyber-dark:text-secondary-foreground">{prd.description || prd.project}</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground cyber-dark:text-foreground">PRD:</span>
