@@ -56,6 +56,30 @@ fn box {|title style|
   echo $color$C_BOLD"╚════════════════════════════════════════════════════════╝"$C_RESET
 }
 
+# Progress bar (10 chars wide)
+# Usage: progress-bar 3 10 → "███░░░░░░░"
+fn progress-bar {|done total|
+  var width = 10
+  var filled = 0
+  if (> $total 0) {
+    set filled = (/ (* $done $width) $total)
+  }
+  var empty = (- $width $filled)
+
+  var bar = ""
+  var i = 0
+  while (< $i $filled) {
+    set bar = $bar"█"
+    set i = (+ $i 1)
+  }
+  set i = 0
+  while (< $i $empty) {
+    set bar = $bar"░"
+    set i = (+ $i 1)
+  }
+  put $bar
+}
+
 # Desktop notification (macOS/Linux)
 fn notify {|title message|
   if (has-external osascript) {
@@ -92,6 +116,8 @@ OPTIONS:
   --skip ID "reason"      Skip a story, allowing dependents to proceed
   --retry-clean ID        Reset story for fresh retry (deletes branch, clears state)
   --timeout <seconds>     Claude timeout (default: 1800 = 30 min)
+  --story <ID>            Work on a specific story (e.g., STORY-1.2.3 or 1.2.3)
+  --one                   Complete one story cycle, then stop cleanly
   --resume                Resume from last state (skip story selection)
   --reset                 Reset state and start fresh
   --status                Show PRD status (phases, epics, stories) and exit

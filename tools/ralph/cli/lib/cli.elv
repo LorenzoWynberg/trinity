@@ -1,5 +1,6 @@
 # CLI argument parsing and validation for Ralph
 
+use str
 use path
 use ./ui
 
@@ -34,6 +35,8 @@ var refine-prd-mode = $false
 var refine-prd-target = ""
 var add-stories-mode = $false
 var add-stories-description = ""
+var single-story-id = ""
+var one-shot-mode = $false
 
 # Parse command line arguments
 fn parse-args {|arguments|
@@ -184,6 +187,17 @@ fn parse-args {|arguments|
       }
       set add-stories-description = $arguments[$next-idx]
       set i = (+ $i 2)
+    } elif (eq $arg "--story") {
+      var next-idx = (+ $i 1)
+      if (>= $next-idx (count $arguments)) {
+        echo "Error: --story requires a STORY-ID (e.g., STORY-1.2.3 or 1.2.3)" >&2
+        exit 1
+      }
+      set single-story-id = $arguments[$next-idx]
+      set i = (+ $i 2)
+    } elif (eq $arg "--one") {
+      set one-shot-mode = $true
+      set i = (+ $i 1)
     } else {
       echo "Error: Unknown argument: "$arg >&2
       exit 1
@@ -193,11 +207,31 @@ fn parse-args {|arguments|
 
 # Check for required external commands
 fn check-dependencies {
+  var missing = []
   for cmd [jq git claude go gh] {
     if (not (has-external $cmd)) {
-      ui:error "Required command '"$cmd"' not found in PATH"
-      exit 1
+      set missing = [$@missing $cmd]
     }
+  }
+
+  if (> (count $missing) 0) {
+    ui:warn "Missing required tools: "(str:join ", " $missing)
+    echo ""
+    echo "Install the missing tools:"
+    for cmd $missing {
+      if (eq $cmd "jq") {
+        ui:dim "  jq: brew install jq (or apt install jq)"
+      } elif (eq $cmd "claude") {
+        ui:dim "  claude: npm install -g @anthropic-ai/claude-code"
+      } elif (eq $cmd "gh") {
+        ui:dim "  gh: brew install gh (then: gh auth login)"
+      } elif (eq $cmd "go") {
+        ui:dim "  go: https://go.dev/dl/"
+      } elif (eq $cmd "git") {
+        ui:dim "  git: brew install git"
+      }
+    }
+    exit 1
   }
   ui:dim "Dependencies: jq, git, claude, go, gh ✓"
 }
@@ -241,5 +275,7 @@ fn get-config {
     &auto-handle-duplicates=$auto-handle-duplicates
     &auto-add-reverse-deps=$auto-add-reverse-deps
     &auto-update-related=$auto-update-related
+    &single-story-id=$single-story-id
+    &one-shot-mode=$one-shot-mode
   ]
 }

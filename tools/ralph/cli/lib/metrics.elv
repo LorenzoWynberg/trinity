@@ -157,3 +157,36 @@ fn show-stats {
   echo ""
   echo "═══════════════════════════════════════════════════════"
 }
+
+# Show celebration summary (compact version for completion)
+fn show-celebration {
+  use ./ui
+
+  if (not (path:is-regular $metrics-file)) {
+    return
+  }
+
+  var metrics = (cat $metrics-file | slurp)
+
+  var total-tokens = (echo $metrics | jq -r '.total_tokens')
+  var duration = (echo $metrics | jq -r '.total_duration_seconds')
+  var passed = (echo $metrics | jq -r '.stories_passed')
+  var merged = (echo $metrics | jq -r '.stories_merged')
+
+  # Format duration nicely
+  var hours = (/ $duration 3600)
+  var mins = (% (/ $duration 60) 60)
+  var time-str = ""
+  if (> $hours 0) {
+    set time-str = $hours"h "$mins"m"
+  } else {
+    set time-str = $mins" minutes"
+  }
+
+  echo ""
+  echo "Session stats:"
+  ui:dim "  Stories completed:  "$passed
+  ui:dim "  PRs merged:         "$merged
+  ui:dim "  Total Claude time:  "$time-str
+  ui:dim "  Tokens used:        "$total-tokens
+}

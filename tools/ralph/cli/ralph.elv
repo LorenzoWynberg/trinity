@@ -43,9 +43,11 @@ prd:init $prd-dir
 var active-version = (prd:select-version $config[target-version])
 if (eq $active-version "") {
   if (not (eq $config[target-version] "")) {
-    ui:error "Version "$config[target-version]" not found or has no stories"
+    ui:warn "Couldn't find version "$config[target-version]
+    ui:dim "Check the prd/ directory for available version files (e.g., v1.0.json)"
+    ui:dim "Available: "(str:join ", " [(prd:list-versions)])
   } else {
-    ui:success "All versions complete!"
+    ui:success "All versions complete! Nothing left to do."
   }
   exit 0
 }
@@ -201,6 +203,32 @@ if (not (eq $config[skip-story-id] "")) {
   exit 0
 }
 
+# Handle --story ID mode: validate story and check deps before starting
+var single-story-mode = $false
+var single-story-id = ""
+if (not (eq $config[single-story-id] "")) {
+  set single-story-mode = $true
+  set single-story-id = (prd:normalize-story-id $config[single-story-id])
+
+  # Check story exists
+  if (not (prd:story-exists $single-story-id)) {
+    ui:warn "Couldn't find "$single-story-id" in the PRD"
+    ui:dim "Check the story ID format (e.g., STORY-1.2.3 or just 1.2.3)"
+    ui:dim "Use ./ralph.elv --status to see available stories"
+    exit 1
+  }
+
+  # Check deps are met
+  var deps-ok = [(prd:show-story-dep-status $single-story-id)]
+  if (not $deps-ok[-1]) {
+    echo ""
+    ui:dim "Merge the blocking PRs or wait for in-progress work to complete."
+    exit 1
+  }
+
+  ui:success "Dependencies met - ready to work on "$single-story-id
+}
+
 # Read current state
 var current-state = (state:read)
 ui:dim "Current state:"
@@ -213,7 +241,8 @@ echo ""
 # Check if all stories are already complete
 if (prd:all-stories-complete) {
   echo ""
-  ui:box "ALL STORIES COMPLETE - READY FOR RELEASE" "success"
+  ui:box "All done! Ready to ship "$active-version "success"
+  metrics:show-celebration
 
   var release-result = (release:run-full-flow $active-version &skip-release=$config[skip-release] &auto-release=$config[auto-release] &notify-enabled=$config[notify-enabled])
 
@@ -241,6 +270,19 @@ while (< $current-iteration $config[max-iterations]) {
     echo ""
     ui:banner "Iteration "$current-iteration" / "$config[max-iterations]
 
+    # Show progress summary
+    var progress = (prd:get-progress-stats)
+    echo ""
+    ui:dim "Progress: "$progress[merged]"/"$progress[total]" stories merged ("$progress[pct]"%)"
+
+    # Show per-phase progress bars
+    var phase-progress = (prd:get-phase-progress)
+    for p $phase-progress {
+      var bar = (ui:progress-bar $p[merged] $p[total])
+      ui:dim "  "$p[name]": "$bar" "$p[merged]"/"$p[total]
+    }
+    echo ""
+
     # Re-read state
     set current-state = (state:read)
     ui:dim "Re-reading state from disk..."
@@ -259,26 +301,32 @@ while (< $current-iteration $config[max-iterations]) {
       set branch-name = $current-state[branch]
       ui:status "Continuing story: "$story-id
     } else {
-      ui:status "Finding next story..."
-      if (not (eq $config[target-version] "")) {
-        ui:dim "  Filtering for version: "$config[target-version]
-        set story-id = (prd:get-next-story-for-version $config[target-version])
+      # Check if we're in single-story mode
+      if $single-story-mode {
+        set story-id = $single-story-id
+        ui:status "Working on specified story: "$story-id
       } else {
-        set story-id = (prd:get-next-story)
-      }
-      if (eq $story-id "") {
-        # Distinguish between "all complete" and "blocked"
-        if (prd:all-stories-complete) {
-          # All stories merged - will be handled by all_complete signal check
-          ui:success "All stories merged!"
-          exit 0
+        ui:status "Finding next story..."
+        if (not (eq $config[target-version] "")) {
+          ui:dim "  Filtering for version: "$config[target-version]
+          set story-id = (prd:get-next-story-for-version $config[target-version])
         } else {
-          # Stories exist but are blocked
-          prd:show-blocked-state
-          exit 0
+          set story-id = (prd:get-next-story)
         }
+        if (eq $story-id "") {
+          # Distinguish between "all complete" and "blocked"
+          if (prd:all-stories-complete) {
+            # All stories merged - will be handled by all_complete signal check
+            ui:success "All stories merged!"
+            exit 0
+          } else {
+            # Stories exist but are blocked - use friendly message
+            prd:show-nothing-runnable
+            exit 0
+          }
+        }
+        ui:success "Selected: "$story-id
       }
-      ui:success "Selected: "$story-id
 
       ui:status "Setting up branch..."
       set branch-name = (prd:get-branch-name $story-id)
@@ -325,11 +373,19 @@ while (< $current-iteration $config[max-iterations]) {
           set pending-clarification = "Auto-clarify mode: Make reasonable assumptions based on the codebase context and existing patterns. If unsure, choose the simpler implementation."
         } else {
           ui:warn "Story "$story-id" needs clarification before implementation." > /dev/tty
-          echo "\e[33m[y]es skip / [n]o stop / [c]larify / [a]uto-proceed\e[0m" > /dev/tty
+          echo "" > /dev/tty
+          echo "What would you like to do?" > /dev/tty
+          echo "\e[33m  [s]kip\e[0m     - Move to the next story" > /dev/tty
+          echo "\e[33m  [c]larify\e[0m  - Answer these questions (opens editor)" > /dev/tty
+          echo "\e[33m  [a]uto\e[0m     - Let Ralph make reasonable assumptions" > /dev/tty
+          echo "\e[33m  [q]uit\e[0m     - Stop and fix the story manually" > /dev/tty
+          echo "" > /dev/tty
+          echo "\e[33mChoice [s/c/a/q]:\e[0m " > /dev/tty
           try {
             var answer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
             echo "" > /dev/tty
-            if (re:match '^[nN]' $answer) {
+            if (re:match '^[qQ]' $answer) {
+              # Quit
               echo ""
               ui:status "Stopping. Clarify the story and run again."
               exit 0
@@ -352,8 +408,8 @@ while (< $current-iteration $config[max-iterations]) {
               ui:dim "Proceeding with reasonable assumptions..." > /dev/tty
               set pending-clarification = "Auto-proceed mode: Make reasonable assumptions based on the codebase context and existing patterns. If unsure, choose the simpler implementation."
             } else {
-              # Default Y - skip story
-              ui:dim "Skipping story, will try next..." > /dev/tty
+              # Default or 's' - skip story
+              ui:dim "Skipping story, moving to next..." > /dev/tty
               # Reset state so next iteration picks a new story
               set current-state[current_story] = $nil
               set current-state[branch] = $nil
@@ -389,12 +445,16 @@ while (< $current-iteration $config[max-iterations]) {
           ui:dim "  • "$name": "$desc > /dev/tty
         }
         echo "" > /dev/tty
-        echo "\e[33m[r]eport / [n]o skip\e[0m" > /dev/tty
+        echo "Claude needs to know how these were implemented." > /dev/tty
+        echo "\e[33m  [r]eport\e[0m - Describe the implementation (opens editor)" > /dev/tty
+        echo "\e[33m  [s]kip\e[0m   - Skip this story for now" > /dev/tty
+        echo "" > /dev/tty
+        echo "\e[33mChoice [r/s]:\e[0m " > /dev/tty
         try {
           var answer = (bash -c 'read -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
           echo "" > /dev/tty
-          if (re:match '^[nN]' $answer) {
-            ui:dim "Skipping story, will try next..." > /dev/tty
+          if (re:match '^[sS]' $answer) {
+            ui:dim "Skipping story, moving to next..." > /dev/tty
             # Reset state so next iteration picks a new story
             set current-state[current_story] = $nil
             set current-state[branch] = $nil
@@ -519,9 +579,15 @@ while (< $current-iteration $config[max-iterations]) {
       set claude-duration = (- $claude-end $claude-start)
       ui:divider-end
       if (>= $claude-duration $claude-config[timeout]) {
-        ui:error "Claude execution TIMED OUT after "$claude-config[timeout]"s"
+        ui:warn "Claude timed out after "$claude-config[timeout]"s"
+        ui:dim "The story might be too complex. Try:"
+        ui:dim "  • Breaking it into smaller stories"
+        ui:dim "  • Increasing timeout with --timeout <seconds>"
+        ui:dim "  • Running ./ralph.elv --resume to continue"
       } else {
-        ui:error "Claude execution error: "(to-string $e[reason])
+        ui:warn "Claude encountered an issue"
+        ui:dim "Error: "(to-string $e[reason])
+        ui:dim "Run ./ralph.elv --resume to try again"
       }
     } finally {
       rm -f $prompt-file
@@ -645,30 +711,45 @@ while (< $current-iteration $config[max-iterations]) {
         git:sync-base-branch
       }
 
+      # Check for one-shot or single-story mode - exit cleanly after completion
+      if (or $config[one-shot-mode] $single-story-mode) {
+        echo ""
+        ui:box "Story complete!" "success"
+        ui:dim "Exiting after one story (--one or --story mode)."
+        exit 0
+      }
+
       # Pause before next story
       echo ""
-      ui:status "Story "$story-id" done. Continue to next story?"
-      echo "\e[33mStop loop? [y/n]\e[0m \e[2m(continues in 120s)\e[0m"
+      ui:status "Story "$story-id" done!"
+      echo ""
+      echo "Ready for the next story?" > /dev/tty
+      echo "\e[33m  [c]ontinue\e[0m - Start the next story" > /dev/tty
+      echo "\e[33m  [s]top\e[0m     - Take a break (you can resume later)" > /dev/tty
+      echo "" > /dev/tty
+      echo "\e[2mAuto-continues in 120s...\e[0m" > /dev/tty
+      echo "\e[33mChoice [c/s]:\e[0m " > /dev/tty
       try {
         var answer = (bash -c 'read -t 120 -n 1 ans 2>/dev/null; echo "$ans"' </dev/tty 2>/dev/null)
-        if (re:match '^[yY]' $answer) {
+        if (re:match '^[sS]' $answer) {
           echo ""
-          ui:warn "Stopped by user."
-          ui:dim "Run again to continue."
+          ui:status "Taking a break. Run ./ralph.elv to continue."
           exit 0
         }
       } catch {
-        ui:dim "(Timeout - continuing)"
+        ui:dim "(Timeout - continuing automatically)"
       }
       ui:dim "Continuing to next story..."
 
     } elif $signals[blocked] {
       echo ""
-      ui:error "Story "$story-id" is BLOCKED"
+      ui:warn "Story "$story-id" hit a blocker"
       if $config[notify-enabled] {
-        ui:notify "Ralph" "Story "$story-id" BLOCKED!"
+        ui:notify "Ralph" "Story "$story-id" needs attention"
       }
-      ui:dim "  Clearing story state..."
+      ui:dim "Claude couldn't complete this story. Check the output above for details."
+      ui:dim "You can retry with: ./ralph.elv --retry-clean "$story-id
+      ui:dim "Clearing state to try the next story..."
       set current-state[status] = "blocked"
       set current-state[current_story] = $nil
       set current-state[branch] = $nil
@@ -688,10 +769,11 @@ while (< $current-iteration $config[max-iterations]) {
 
     if $signals[all_complete] {
       echo ""
-      ui:box "ALL STORIES COMPLETE - READY FOR RELEASE" "success"
+      ui:box "All done! Ready to ship "$active-version "success"
       if $config[notify-enabled] {
         ui:notify "Ralph" "All stories complete!"
       }
+      metrics:show-celebration
       ui:dim "Total iterations: "$current-iteration
 
       var release-result = (release:run-full-flow $active-version &skip-release=$config[skip-release] &auto-release=$config[auto-release] &notify-enabled=$config[notify-enabled])

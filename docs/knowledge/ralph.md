@@ -1,6 +1,61 @@
 # Ralph Knowledge Base
 
-> **TL;DR:** Two-stage completion (passes->merged), blocked state detection with dependency info, activity logs split by project (trinity/ for Ralph's work, ralph/ for human docs), release workflow with human gate and hotfix loop, PR defaults (yes create, no merge), validation flow with clarify/auto-proceed options, external deps flow with report requirement + two-phase propagation (descendants then tag-related), duplicate detection before story creation, reverse dependency suggestions after creation.
+Ralph is your tireless coding companion. Point it at a PRD, grab a coffee (or go to sleep), and let it work through stories one by one - implementing, testing, creating PRs, and merging - all while you're away.
+
+## Quick Start
+
+```bash
+# See what's in the queue
+./ralph.elv --status
+
+# Start working (Ralph asks before each PR)
+./ralph.elv
+
+# Full autopilot - go grab dinner
+./ralph.elv --yolo
+```
+
+That's it. Ralph picks the next story, implements it, and handles the git flow. You can stop anytime with `Ctrl+C` and resume later with `--resume`.
+
+---
+
+## Common Workflows
+
+### Run overnight
+```bash
+./ralph.elv --yolo --max-iterations 50
+```
+Ralph works autonomously - creating and merging PRs. Check the dashboard in the morning.
+
+### Review each PR manually
+```bash
+./ralph.elv --auto-clarify
+```
+Ralph handles ambiguous stories but pauses before each PR and merge for your review.
+
+### Work on one specific story
+```bash
+./ralph.elv --story STORY-1.2.3
+```
+Target a specific story. Ralph checks dependencies first and tells you if it's blocked.
+
+### Just do the next thing
+```bash
+./ralph.elv --one
+```
+Complete one story cycle, then stop cleanly. Great for incremental progress.
+
+### Target a specific version
+```bash
+./ralph.elv --target-version v2.0
+```
+Only work on v2.0 stories. Useful when you have multiple versions in the PRD.
+
+---
+
+## Reference
+
+> **TL;DR:** Two-stage completion (passes→merged), blocked state detection with dependency info, activity logs split by project (trinity/ for Ralph's work, ralph/ for human docs), release workflow with human gate and hotfix loop, PR defaults (yes create, no merge), validation flow with clarify/auto-proceed options, external deps flow with report requirement + two-phase propagation (descendants then tag-related), duplicate detection before story creation, reverse dependency suggestions after creation.
 
 ## CLI Commands & Flags
 
@@ -39,6 +94,8 @@ elvish ./ralph.elv [OPTIONS]
 
 | Flag | Description |
 |------|-------------|
+| `--story <ID>` | Work on a specific story (checks deps first) |
+| `--one` | Complete one story cycle, then stop |
 | `--resume` | Resume from last state |
 | `--reset` | Reset state and start fresh |
 | `--status` | Show PRD status and exit |
@@ -271,3 +328,45 @@ claude --output-format stream-json < prompt.md 2>&1 | \
 ```
 
 Key flags: `--line-buffered` on grep, `--unbuffered` on jq, `-rj` for raw output.
+
+---
+
+## FAQ
+
+**Q: Can I stop Ralph mid-story?**
+Yes! `Ctrl+C` anytime. Your work is saved. Run `./ralph.elv --resume` to pick up where you left off.
+
+**Q: What if Ralph makes a mistake?**
+At any PR prompt, choose `[f]eedback` to tell Ralph what to fix. It'll re-run with your feedback and come back to the same checkpoint.
+
+**Q: How do I skip a problematic story?**
+```bash
+./ralph.elv --skip STORY-1.2.3 "needs external API first"
+```
+The story is marked skipped, and dependents can proceed if they don't strictly need it.
+
+**Q: A story is stuck. How do I retry from scratch?**
+```bash
+./ralph.elv --retry-clean STORY-1.2.3
+```
+This deletes the branch, clears state, and lets Ralph try again fresh.
+
+**Q: How do I see overall progress?**
+```bash
+./ralph.elv --status           # PRD overview
+./ralph.elv --version-status   # Progress by version
+./ralph.elv --stats            # Token usage and costs
+```
+Or check the dashboard for a visual view.
+
+**Q: Can I run Ralph on multiple versions?**
+Yes! Use `--target-version v2.0` to focus on a specific version. Without it, Ralph works through versions in order.
+
+**Q: What's the difference between `passes` and `merged`?**
+- `passes` = Claude finished the work and pushed to a branch
+- `merged` = The PR was merged into dev
+
+Dependencies check `merged`, not `passes`. This prevents starting work before the code is actually available in dev.
+
+**Q: Ralph says "blocked" - what do I do?**
+Check the output - it shows which PRs need merging or which stories are in progress. Merge the blocking PRs and Ralph will continue automatically.

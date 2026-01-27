@@ -231,6 +231,220 @@ fn check-all-deps-met {|deps-list|
   put $true
 }
 
+# Check if a story exists in the PRD
+fn story-exists {|story-id|
+  # Handle both STORY-X.Y.Z and X.Y.Z formats
+  var normalized = $story-id
+  if (not (str:has-prefix $story-id "STORY-")) {
+    set normalized = "STORY-"$story-id
+  }
+  var found = (jq -r '.stories[] | select(.id == "'$normalized'") | .id // ""' $prd-file)
+  not (eq $found "")
+}
+
+# Normalize story ID to STORY-X.Y.Z format
+fn normalize-story-id {|story-id|
+  if (str:has-prefix $story-id "STORY-") {
+    put $story-id
+  } else {
+    put "STORY-"$story-id
+  }
+}
+
+# Check if a story's dependencies are met
+# Returns [&met=$bool &unmet=[$list of dep info maps]]
+fn check-story-deps {|story-id|
+  var normalized = (normalize-story-id $story-id)
+  var deps = [(jq -r '.stories[] | select(.id == "'$normalized'") | .depends_on // [] | .[]' $prd-file)]
+
+  var unmet = []
+
+  for dep $deps {
+    if (not (check-dep-met $dep)) {
+      # Get detailed info about this unmet dependency
+      var dep-info = [&dep=$dep &status="unknown" &detail=""]
+
+      if (re:match '^STORY-' $dep) {
+        # It's a specific story - get its status
+        var story-passes = (jq -r '.stories[] | select(.id == "'$dep'") | .passes // false' $prd-file)
+        var story-merged = (jq -r '.stories[] | select(.id == "'$dep'") | .merged // false' $prd-file)
+        var story-pr = (jq -r '.stories[] | select(.id == "'$dep'") | .pr_url // ""' $prd-file)
+        var story-title = (jq -r '.stories[] | select(.id == "'$dep'") | .title // ""' $prd-file)
+        var story-branch = (get-story-branch $dep)
+
+        set dep-info[title] = $story-title
+
+        if (eq $story-merged "true") {
+          # Shouldn't happen since we're in unmet, but handle it
+          set dep-info[status] = "merged"
+        } elif (eq $story-passes "true") {
+          if (not (eq $story-pr "")) {
+            set dep-info[status] = "pr_open"
+            set dep-info[detail] = $story-pr
+          } else {
+            set dep-info[status] = "passed_no_pr"
+            set dep-info[detail] = $story-branch
+          }
+        } else {
+          # Check if it's in progress (has a branch)
+          var branch-exists = $false
+          try {
+            git rev-parse --verify $story-branch >/dev/null 2>&1
+            set branch-exists = $true
+          } catch _ { }
+
+          if $branch-exists {
+            set dep-info[status] = "in_progress"
+            set dep-info[detail] = $story-branch
+          } else {
+            set dep-info[status] = "pending"
+          }
+        }
+      } else {
+        # It's a phase/epic/version dependency
+        set dep-info[status] = "incomplete"
+        set dep-info[detail] = "Not all stories merged"
+      }
+
+      set unmet = [$@unmet $dep-info]
+    }
+  }
+
+  put [&met=(eq (count $unmet) 0) &unmet=$unmet]
+}
+
+# Show friendly dependency status for a story
+fn show-story-dep-status {|story-id|
+  var normalized = (normalize-story-id $story-id)
+  var title = (get-story-title $normalized)
+  var result = (check-story-deps $normalized)
+
+  if $result[met] {
+    ui:success "All dependencies met for "$normalized
+    put $true
+    return
+  }
+
+  echo ""
+  ui:warn "Can't start "$normalized" - dependencies not met:"
+  echo ""
+
+  for info $result[unmet] {
+    var dep = $info[dep]
+    var status = $info[status]
+    var detail = $info[detail]
+
+    if (re:match '^STORY-' $dep) {
+      var dep-title = ""
+      if (has-key $info title) {
+        set dep-title = $info[title]
+      }
+      echo "  "$dep" ("$dep-title")"
+
+      if (eq $status "pr_open") {
+        ui:dim "  └── PR open, waiting for merge"
+        ui:dim "  └── "$detail
+      } elif (eq $status "passed_no_pr") {
+        ui:dim "  └── Passed but no PR created yet"
+        ui:dim "  └── Branch: "$detail
+      } elif (eq $status "in_progress") {
+        ui:dim "  └── In progress"
+        ui:dim "  └── Branch: "$detail
+      } else {
+        ui:dim "  └── Not started yet"
+      }
+    } else {
+      echo "  "$dep
+      ui:dim "  └── "$detail
+    }
+    echo ""
+  }
+
+  put $false
+}
+
+# Get count of stories that would be unblocked if given deps were met
+fn count-unblocked-if-merged {|story-ids|
+  var count = 0
+  var all-stories = [(jq -r '.stories[] | select(.passes != true) | .id' $prd-file)]
+
+  for sid $all-stories {
+    var deps = [(jq -r '.stories[] | select(.id == "'$sid'") | .depends_on // [] | .[]' $prd-file)]
+    var would-unblock = $true
+
+    for dep $deps {
+      # Check if dep is in our story-ids list or already met
+      var dep-in-list = $false
+      for check-id $story-ids {
+        if (eq $dep $check-id) {
+          set dep-in-list = $true
+          break
+        }
+      }
+
+      if (and (not $dep-in-list) (not (check-dep-met $dep))) {
+        set would-unblock = $false
+        break
+      }
+    }
+
+    if $would-unblock {
+      set count = (+ $count 1)
+    }
+  }
+
+  put $count
+}
+
+# Show friendly "nothing to do" status
+fn show-nothing-runnable {
+  # Check if all complete
+  if (all-stories-complete) {
+    echo ""
+    ui:box "All stories complete! Nothing left to work on." "success"
+    echo ""
+    ui:dim "Run ./ralph.elv --status to see the full picture."
+    return
+  }
+
+  # There are stories but they're all blocked
+  echo ""
+  ui:box "Nothing runnable right now" "info"
+  echo ""
+
+  # Show what's blocking
+  var unmerged = [(get-unmerged-passed)]
+  var blocking-ids = []
+
+  if (> (count $unmerged) 0) {
+    echo "Waiting on:"
+    for sid $unmerged {
+      var pr-url = (get-pr-url $sid)
+      var title = (get-story-title $sid)
+      set blocking-ids = [$@blocking-ids $sid]
+
+      if (not (eq $pr-url "")) {
+        ui:dim "  • "$sid" - PR needs merge"
+        ui:dim "    "$pr-url
+      } else {
+        ui:dim "  • "$sid" - Passed, needs PR"
+      }
+    }
+    echo ""
+  }
+
+  # Show blocked count
+  var blocked = [(get-blocked-stories)]
+  var blocked-count = (count $blocked)
+
+  if (> $blocked-count 0) {
+    var would-unblock = (count-unblocked-if-merged $unmerged)
+    if (> $would-unblock 0) {
+      ui:dim "Once these complete, "$would-unblock" more stories will be unblocked."
+    }
+  }
+}
+
 # Get next available story (respects dependencies - deps must be MERGED)
 fn get-next-story {
   # Get stories that haven't passed yet (available for work)
@@ -659,21 +873,24 @@ fn is-version-released {|version|
 # Show blocked state with details about what's waiting on what
 fn show-blocked-state {
   echo ""
-  ui:box "BLOCKED - WAITING ON DEPENDENCIES" "warn"
+  ui:box "Taking a break - waiting for PR reviews" "info"
   echo ""
 
   # Show unmerged PRs
   var unmerged = [(get-unmerged-passed)]
   if (> (count $unmerged) 0) {
-    echo "Unmerged PRs:"
+    echo "Ralph has done everything it can! These PRs need attention:"
+    echo ""
     for sid $unmerged {
       var pr-url = (get-pr-url $sid)
       var title = (get-story-title $sid)
       if (not (eq $pr-url "")) {
-        ui:dim "  • "$sid" ("$title"): "$pr-url
+        echo "  "$sid" ("$title")"
+        ui:dim "  └── PR open, needs merge: "$pr-url
       } else {
         var branch = (get-story-branch $sid)
-        ui:dim "  • "$sid" ("$title") - no PR yet (branch: "$branch")"
+        echo "  "$sid" ("$title")"
+        ui:dim "  └── Passed but no PR yet (branch: "$branch")"
       }
     }
     echo ""
@@ -682,15 +899,14 @@ fn show-blocked-state {
   # Show blocked stories
   var blocked = [(get-blocked-stories)]
   if (> (count $blocked) 0) {
-    echo "Pending stories blocked by unmerged work:"
-    for info $blocked {
-      var title = (get-story-title $info[story])
-      ui:dim "  • "$info[story]" ("$title") → waiting on "$info[blocked_by]
+    var would-unblock = (count-unblocked-if-merged $unmerged)
+    if (> $would-unblock 0) {
+      ui:dim "Once merged, "$would-unblock" more stories will be unblocked."
     }
     echo ""
   }
 
-  ui:dim "Run ralph to pick up where you left off."
+  ui:dim "Merge the open PRs and Ralph will automatically continue."
 }
 
 # Handle skip mode: skip story and log to activity
@@ -1042,6 +1258,35 @@ fn get-story-deps {|story-id|
     set result = [(jq -r '.stories[] | select(.id == "'$story-id'") | .depends_on[]?' $prd-file)]
   } catch _ { }
   put $@result
+}
+
+# Get overall progress stats
+# Returns map with total, merged, passed, percentage
+fn get-progress-stats {
+  var total = (num (jq '.stories | length' $prd-file))
+  var merged = (num (jq '[.stories[] | select(.merged == true)] | length' $prd-file))
+  var passed = (num (jq '[.stories[] | select(.passes == true)] | length' $prd-file))
+  var pct = 0
+  if (> $total 0) {
+    set pct = (/ (* $merged 100) $total)
+  }
+  put [&total=$total &merged=$merged &passed=$passed &pct=$pct]
+}
+
+# Get progress per phase
+# Returns list of maps with phase, name, total, merged
+fn get-phase-progress {
+  var result = []
+  var phases = [(jq -r '.stories | map(.phase) | unique | .[]' $prd-file)]
+
+  for phase $phases {
+    var name = (get-phase-name $phase)
+    var total = (num (jq '[.stories[] | select(.phase == '$phase')] | length' $prd-file))
+    var merged = (num (jq '[.stories[] | select(.phase == '$phase' and .merged == true)] | length' $prd-file))
+    set result = [$@result [&phase=$phase &name=$name &total=$total &merged=$merged]]
+  }
+
+  put $result
 }
 
 # Get story phase number

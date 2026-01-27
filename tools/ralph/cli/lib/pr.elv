@@ -398,8 +398,13 @@ fn run-flow {|story-id branch-name story-title current-iteration &state-pr-url="
 
   # === CREATE PR PROMPT (skip if PR already exists or auto-pr) ===
   if (and (not $auto-pr) (not $pr-exists)) {
-    ui:status "Create PR to "$base-branch"?" > /dev/tty
-    echo "\e[33m[y]es / [n]o / [f]eedback\e[0m" > /dev/tty
+    echo "" > /dev/tty
+    ui:status "Ready to create PR to "$base-branch > /dev/tty
+    echo "\e[33m  [y]es\e[0m      - Create the PR" > /dev/tty
+    echo "\e[33m  [n]o\e[0m       - Skip PR for now (story stays passed)" > /dev/tty
+    echo "\e[33m  [f]eedback\e[0m - Request changes first" > /dev/tty
+    echo "" > /dev/tty
+    echo "\e[33mChoice [y/n/f]:\e[0m " > /dev/tty
 
     var answer = (prompt-user 0)
     if (re:match '^[nN]$' $answer) {
@@ -426,9 +431,14 @@ fn run-flow {|story-id branch-name story-title current-iteration &state-pr-url="
 
   # === UPDATE PR PROMPT (when coming back from feedback with existing PR) ===
   if (and $pr-exists $feedback-pending (not $auto-pr)) {
+    echo "" > /dev/tty
     ui:status "PR exists: "$pr-url > /dev/tty
-    ui:status "Update PR with changes?" > /dev/tty
-    echo "\e[33m[y]es / [n]o / [f]eedback\e[0m" > /dev/tty
+    ui:status "Feedback changes ready. Update the PR?" > /dev/tty
+    echo "\e[33m  [y]es\e[0m      - Update the PR with changes" > /dev/tty
+    echo "\e[33m  [n]o\e[0m       - Skip update, proceed to merge decision" > /dev/tty
+    echo "\e[33m  [f]eedback\e[0m - Request more changes" > /dev/tty
+    echo "" > /dev/tty
+    echo "\e[33mChoice [y/n/f]:\e[0m " > /dev/tty
 
     var answer = (prompt-user 0)
     if (re:match '^[nN]$' $answer) {
@@ -466,11 +476,15 @@ fn run-flow {|story-id branch-name story-title current-iteration &state-pr-url="
   # === MERGE PROMPT ===
   if (and $pr-exists (not $auto-merge)) {
     echo "" > /dev/tty
-    ui:status "What would you like to do?" > /dev/tty
-    echo "\e[33m[y]es merge / [n]o leave open / [f]eedback request changes\e[0m" > /dev/tty
+    ui:status "PR is ready. What would you like to do?" > /dev/tty
+    echo "\e[33m  [m]erge\e[0m    - Merge the PR to "$base-branch > /dev/tty
+    echo "\e[33m  [l]eave\e[0m    - Leave PR open (story stays passed)" > /dev/tty
+    echo "\e[33m  [f]eedback\e[0m - Request changes before merging" > /dev/tty
+    echo "" > /dev/tty
+    echo "\e[33mChoice [m/l/f]:\e[0m " > /dev/tty
 
     var answer = (prompt-user 0)
-    if (re:match '^[yY]$' $answer) {
+    if (re:match '^[mMyY]$' $answer) {
       # Update PR description before merge (includes all feedback rounds)
       update $branch-name $story-id $story-title
       var commit = (merge $branch-name)
