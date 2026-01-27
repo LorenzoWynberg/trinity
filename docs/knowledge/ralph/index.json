@@ -4,6 +4,7 @@
   "icon": "Terminal",
   "pages": [
     { "slug": "index", "title": "Overview" },
+    { "slug": "prd-structure", "title": "PRD Structure" },
     { "slug": "common-workflows", "title": "Workflows" },
     { "slug": "cli-reference", "title": "CLI Reference" },
     { "slug": "dashboard", "title": "Dashboard" },
