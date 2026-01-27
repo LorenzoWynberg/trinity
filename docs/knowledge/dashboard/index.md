@@ -44,9 +44,8 @@ The dashboard is a Next.js app for viewing PRD status, running Ralph, and managi
 - Split by project (trinity/ralph)
 
 ### Knowledge/Gotchas Pages
-- Book selector dropdown for both
-- Knowledge has chapters (second dropdown when book has multiple pages)
-- Gotchas is flat (one page per book, no chapter dropdown)
+- Same book/chapter structure for both
+- Book selector dropdown + chapter dropdown (hidden if only one chapter)
 - URL params: `?book=ralph&chapter=cli-reference`
 - Markdown rendering with syntax highlighting
 
@@ -194,31 +193,23 @@ useEffect(() => setMounted(true), [])
 
 ## Documentation Structure
 
-**Knowledge** uses a book/chapter hierarchy (multiple pages per book):
+Both Knowledge and Gotchas use the same book/chapter structure:
+
 ```
-docs/knowledge/
-├── ralph/
-│   ├── index.json           # Book metadata + page order
-│   ├── index.md             # Overview
-│   ├── common-workflows.md  # Workflows
-│   ├── cli-reference.md     # CLI Reference
-│   └── faq.md               # FAQ
-├── dashboard/
-│   ├── index.json
-│   └── index.md
-└── ...
+docs/<knowledge|gotchas>/<book>/
+├── index.json           # Book metadata + page order
+├── index.md             # Overview (required)
+└── <chapter>.md         # Additional chapters (optional)
 ```
 
-**Gotchas** is flat (one page per book):
+**Example (Ralph has multiple chapters):**
 ```
-docs/gotchas/
-├── elvish/
-│   ├── index.json
-│   └── index.md
-├── dashboard/
-│   ├── index.json
-│   └── index.md
-└── ...
+docs/knowledge/ralph/
+├── index.json
+├── index.md             # Overview
+├── common-workflows.md  # Workflows
+├── cli-reference.md     # CLI Reference
+└── faq.md               # FAQ
 ```
 
 **index.json schema:**
@@ -234,11 +225,11 @@ docs/gotchas/
 }
 ```
 
-**Adding a chapter to knowledge:**
+**Adding a chapter:**
 1. Create `<chapter-slug>.md` in the book folder
 2. Add entry to `index.json` pages array
 
-**ChapterNav component:**
-- Book dropdown shows all books with icons
+**ChapterNav component (`src/components/chapter-nav.tsx`):**
+- Book dropdown shows all books with icons from `index.json`
 - Chapter dropdown only appears when book has multiple pages
-- Gotchas books have one page → no chapter dropdown
+- Same component used for both Knowledge and Gotchas

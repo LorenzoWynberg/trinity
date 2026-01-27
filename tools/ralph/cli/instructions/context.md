@@ -16,10 +16,10 @@
 | `docs/PROMPTS.md` | Prompt templates, placeholders, schemas |
 | `tools/ralph/cli/progress.txt` | Previous story history |
 
-**Knowledge base** (`docs/knowledge/<book>/`) - Product documentation:
+**Knowledge** (`docs/knowledge/<book>/`) - Product documentation:
 | Book | Content |
 |------|---------|
-| `ralph/` | CLI workflow, state management, PRD features (has multiple chapters) |
+| `ralph/` | CLI workflow, state management, PRD features |
 | `dashboard/` | Dashboard architecture, terminal, themes |
 | `trinity/` | Trinity CLI overview and architecture |
 | `go/` | Go workspaces, multi-module setup |
@@ -33,7 +33,7 @@
 | `patterns/` | Reusable patterns discovered |
 | `conventions/` | Coding standards learned |
 
-Each book is a folder with `index.json` (metadata) and `.md` files (chapters). Read `index.json` to see available chapters.
+Both use the same structure: folder with `index.json` (metadata) and `.md` chapters. Check `index.json` for available chapters.
 
 **Don't read docs you don't need.** A dashboard task doesn't need COMMANDS.md. A Go task doesn't need dashboard docs.
 
