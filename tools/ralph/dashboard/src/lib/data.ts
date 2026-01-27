@@ -1,6 +1,6 @@
 import fs from 'fs/promises'
 import path from 'path'
-import type { PRD, State, Metrics, PhaseProgress, EpicProgress, Story, VersionInfo, BlockedInfo, Phase, Epic } from './types'
+import type { PRD, State, Metrics, PhaseProgress, EpicProgress, Story, VersionInfo, BlockedInfo, Phase, Epic, KnowledgeChapter, ChapterIndex, KnowledgePage } from './types'
 
 // Paths relative to project root
 const PROJECT_ROOT = path.join(process.cwd(), '../../..')
@@ -317,6 +317,64 @@ export async function getGotchas(): Promise<{ category: string; content: string 
   } catch {
     return []
   }
+}
+
+async function getChaptersFromDir(dirPath: string): Promise<KnowledgeChapter[]> {
+  try {
+    const entries = await fs.readdir(dirPath, { withFileTypes: true })
+
+    const chapters: KnowledgeChapter[] = []
+
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue  // Skip loose files
+
+      const chapterDir = path.join(dirPath, entry.name)
+      const indexPath = path.join(chapterDir, 'index.json')
+
+      try {
+        // Read index.json for metadata
+        const indexContent = await fs.readFile(indexPath, 'utf-8')
+        const index: ChapterIndex = JSON.parse(indexContent)
+
+        // Read pages based on order in index.json
+        const pages: KnowledgePage[] = []
+        for (const pageMeta of index.pages) {
+          const mdPath = path.join(chapterDir, `${pageMeta.slug}.md`)
+          try {
+            const content = await fs.readFile(mdPath, 'utf-8')
+            pages.push({
+              slug: pageMeta.slug,
+              title: pageMeta.title,
+              content
+            })
+          } catch {
+            // Page file doesn't exist, skip
+          }
+        }
+
+        chapters.push({
+          slug: entry.name,
+          index,
+          pages
+        })
+      } catch {
+        // No index.json or invalid, skip this directory
+      }
+    }
+
+    // Sort chapters alphabetically by title
+    return chapters.sort((a, b) => a.index.title.localeCompare(b.index.title))
+  } catch {
+    return []
+  }
+}
+
+export async function getKnowledgeChapters(): Promise<KnowledgeChapter[]> {
+  return getChaptersFromDir(path.join(DOCS_DIR, 'knowledge'))
+}
+
+export async function getGotchasChapters(): Promise<KnowledgeChapter[]> {
+  return getChaptersFromDir(path.join(DOCS_DIR, 'gotchas'))
 }
 
 // Computed data helpers

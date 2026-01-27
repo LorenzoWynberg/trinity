@@ -128,3 +128,28 @@ export function getStoryStatus(story: Story, currentStoryId: string | null): Sto
   if (story.id === currentStoryId) return 'in_progress'
   return 'pending'
 }
+
+// Knowledge Base Types
+export interface ChapterPageMeta {
+  slug: string        // filename without .md
+  title: string       // display title for navigation
+}
+
+export interface ChapterIndex {
+  title: string       // chapter display name
+  description?: string
+  icon?: string       // lucide icon name
+  pages: ChapterPageMeta[]
+}
+
+export interface KnowledgePage {
+  slug: string
+  title: string
+  content: string     // raw markdown
+}
+
+export interface KnowledgeChapter {
+  slug: string        // folder name
+  index: ChapterIndex // from index.json
+  pages: KnowledgePage[]
+}

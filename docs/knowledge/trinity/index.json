@@ -1,0 +1,8 @@
+{
+  "title": "Trinity",
+  "description": "Autonomous AI development loop CLI",
+  "icon": "Cpu",
+  "pages": [
+    { "slug": "index", "title": "Overview" }
+  ]
+}

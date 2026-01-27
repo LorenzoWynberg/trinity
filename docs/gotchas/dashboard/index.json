@@ -1,0 +1,8 @@
+{
+  "title": "Dashboard",
+  "description": "Dashboard development gotchas",
+  "icon": "Layout",
+  "pages": [
+    { "slug": "index", "title": "Overview" }
+  ]
+}

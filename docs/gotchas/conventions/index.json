@@ -1,0 +1,8 @@
+{
+  "title": "Conventions",
+  "description": "Project conventions and standards",
+  "icon": "FileCode",
+  "pages": [
+    { "slug": "index", "title": "Overview" }
+  ]
+}

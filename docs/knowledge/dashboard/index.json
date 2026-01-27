@@ -1,0 +1,8 @@
+{
+  "title": "Dashboard",
+  "description": "Ralph Dashboard architecture and features",
+  "icon": "Layout",
+  "pages": [
+    { "slug": "index", "title": "Overview" }
+  ]
+}

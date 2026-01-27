@@ -1,0 +1,11 @@
+{
+  "title": "Ralph",
+  "description": "Ralph CLI workflows and reference",
+  "icon": "Terminal",
+  "pages": [
+    { "slug": "index", "title": "Overview" },
+    { "slug": "common-workflows", "title": "Workflows" },
+    { "slug": "cli-reference", "title": "CLI Reference" },
+    { "slug": "faq", "title": "FAQ" }
+  ]
+}
