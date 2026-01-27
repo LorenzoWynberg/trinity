@@ -1,9 +1,5 @@
 # Ralph Dashboard
 
-Architecture and features of the Ralph Dashboard.
-
-## Overview
-
 The dashboard is a Next.js app for viewing PRD status, running Ralph, and managing the development loop.
 
 **Location:** `tools/ralph/dashboard/`
@@ -15,44 +11,27 @@ The dashboard is a Next.js app for viewing PRD status, running Ralph, and managi
 
 ## Pages
 
-### Stories Page
-- Lists all stories grouped by phase/epic
-- Blocked stories show only "first generation" blocked - stories whose blocker is NOT itself blocked
-- Version filtering via URL param: `?version=v1.0`
-- Phases are per-version
+| Page | Description |
+|------|-------------|
+| [Stories](stories.md) | PRD stories grouped by phase/epic |
+| [Graph](graph.md) | Dependency visualization |
+| [Terminal](terminal.md) | Interactive shell for running Ralph |
+| [Metrics](metrics.md) | Token usage and cost tracking |
+| [Activity](activity.md) | Daily activity logs |
+| [Knowledge & Gotchas](knowledge-gotchas.md) | Documentation viewer |
+| [Settings](settings.md) | Theme and preferences |
 
-### Graph Page
-- Dependency visualization using ReactFlow
-- Version filtering, multiple layouts, custom saved layouts
-- See [Graph](graph.md) for details
+## Features
 
-### Story Detail Page (`/stories/[id]`)
-- Full story view with intent, description, acceptance criteria
-- Dependency links (what this story depends on)
-- Dependent links (what depends on this story)
-- PR URL and merge commit tracking
-- Edit button to modify story
+| Feature | Description |
+|---------|-------------|
+| [PRD Tools](prd-tools.md) | Claude-powered story editing wizards |
+| [Themes](themes.md) | Light, dark, and cyber themes |
 
-### Terminal Page
-- Interactive terminal for running Ralph from the dashboard
-- Full PTY support enables interactive programs like `claude`
-- See [Terminal](terminal.md) for details
+## Running Locally
 
-### Metrics Page
-- Token usage and cost tracking
-- Duration statistics
-
-### Activity Page
-- Daily activity logs
-- Split by project (trinity/ralph)
-
-### Knowledge/Gotchas Pages
-- Same book/chapter structure for both
-- Book selector dropdown + chapter dropdown (hidden if only one chapter)
-- URL params: `?book=ralph&chapter=cli-reference`
-- Markdown rendering with syntax highlighting
-
-### Settings Page
-- **Theme selection:** light, dark, cyber-light, cyber-dark, system
-- **Default version:** Which PRD version to show by default
-- Settings persisted via `/api/settings` to `settings.json`
+```bash
+npm run dev           # Next.js + WebSocket + ngrok
+npm run dev:terminal  # WebSocket server only
+npm run dev:next      # Next.js only
+```
