@@ -136,7 +136,14 @@ Ralph uses numeric dot-notation: `phase.epic.story`
 1.2.3  →  Phase 1, Epic 2, Story 3
 ```
 
-This differs from Trinity's planned format (`STORY-1.2.3`). Ralph's format is simpler and matches the hierarchical structure directly.
+**Both formats work:** Ralph accepts both `1.2.3` and `STORY-1.2.3`. The code normalizes input internally via `normalize-story-id`, so these are equivalent:
+
+```bash
+./ralph.elv --story 1.2.3
+./ralph.elv --story STORY-1.2.3
+```
+
+PRD files store IDs in the short `1.2.3` format. The `STORY-` prefix is added when needed for display or external references.
 
 ## Dependency Syntax
 
@@ -215,6 +222,7 @@ Ralph tracks runtime state in `state.json`:
 
 ```json
 {
+  "version": 1,
   "current_story": "1.2.3",
   "status": "running",
   "error": null,
@@ -222,12 +230,14 @@ Ralph tracks runtime state in `state.json`:
   "branch": "feat/v0.1/story-1.2.3",
   "attempts": 1,
   "pr_url": "https://github.com/...",
-  "last_updated": "2024-01-15T10:35:00Z"
+  "last_updated": "2024-01-15T10:35:00Z",
+  "checkpoints": []
 }
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `version` | number | State schema version (currently 1) |
 | `current_story` | string/null | Story being worked on |
 | `status` | string | `idle`, `running`, `blocked`, `error` |
 | `error` | string/null | Last error message |
@@ -236,6 +246,7 @@ Ralph tracks runtime state in `state.json`:
 | `attempts` | number | Retry count for current story |
 | `pr_url` | string/null | PR URL if created |
 | `last_updated` | string/null | Last state change timestamp |
+| `checkpoints` | array | Completed workflow checkpoints for current story |
 
 This enables `--resume` to continue where Ralph left off after interruption.
 
