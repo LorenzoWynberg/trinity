@@ -407,8 +407,35 @@ When working on Ralph (`tools/ralph/`):
 
 4. **Always update the activity logs** after making changes:
    - Location: `logs/activity/ralph/YYYY-MM-DD.md`
-   - Document what was changed, why, and which files were modified
+   - Use YAML frontmatter for machine-readable metadata
    - Group related changes under clear section headers
+
+   **Activity log format:**
+   ```markdown
+   ---
+   title: "Brief description of work"
+   time: "YYYY-MM-DD ~HH:MM CR"
+   status: complete
+   files_changed:
+     - tools/ralph/cli/file1.elv
+     - tools/ralph/cli/file2.elv
+   files_created:
+     - docs/knowledge/ralph-cli/new-file.md
+   tags: [checkpoint, state, resume]
+   ---
+
+   ## Brief Description of Work
+
+   **Time:** YYYY-MM-DD ~HH:MM CR
+
+   ### What was done
+   Description of changes...
+
+   ### Files modified
+   - `path/to/file` - What changed
+
+   ---
+   ```
 
 Ralph is written in Elvish shell. The learnings files capture hard-won knowledge about its quirks and patterns.
 

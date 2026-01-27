@@ -20,10 +20,18 @@ Example: `logs/activity/trinity/2026-01-27.md`
 
 ## Log Format
 
-Each day's log is a markdown file with sections for different activities:
+Each day's log is a markdown file with YAML frontmatter for machine-readable metadata:
 
 ```markdown
-# Activity Log - 2026-01-27
+---
+title: "Add authentication"
+time: "2026-01-27 ~14:00 CR"
+status: complete
+files_changed:
+  - src/auth/login.go
+  - src/middleware/jwt.go
+tags: [auth, api]
+---
 
 ## Feature: Add authentication
 
@@ -37,6 +45,11 @@ Each day's log is a markdown file with sections for different activities:
 - src/auth/login.go
 - src/middleware/jwt.go
 ```
+
+The YAML frontmatter enables:
+- Dashboard queries (filter by status, tags, files)
+- Metrics aggregation (count changes, track patterns)
+- Trend analysis over time
 
 ## Project Tabs
 
