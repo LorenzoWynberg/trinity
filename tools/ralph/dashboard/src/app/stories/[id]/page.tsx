@@ -135,10 +135,11 @@ export default async function StoryDetailPage({
               ? `${String(story.epic).padStart(2, '0')}. ${story.epic_name}`
               : `Epic ${story.epic}`}
           </span>
-        </div>
-        <div className="text-sm text-muted-foreground flex items-center gap-1">
-          <GitBranch className="h-4 w-4 cyber-dark:text-accent" />
-          <code>{branchName}</code>
+          <span className="cyber-dark:text-accent">•</span>
+          <div className="flex items-center gap-1">
+            <GitBranch className="h-4 w-4 cyber-dark:text-accent" />
+            <code>{branchName}</code>
+          </div>
         </div>
       </div>
 
