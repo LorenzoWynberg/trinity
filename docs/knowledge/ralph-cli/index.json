@@ -7,6 +7,7 @@
     { "slug": "cli-reference", "title": "CLI Reference" },
     { "slug": "recovery", "title": "Recovery & Resume" },
     { "slug": "common-workflows", "title": "Workflows" },
+    { "slug": "prompt-system", "title": "Prompt System" },
     { "slug": "prd-structure", "title": "PRD Structure" },
     { "slug": "story-validation", "title": "Story Validation" },
     { "slug": "duplicate-detection", "title": "Duplicate Detection" },
