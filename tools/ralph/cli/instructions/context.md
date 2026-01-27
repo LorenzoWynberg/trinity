@@ -14,13 +14,26 @@
 | `docs/ARCHITECTURE.md` | System design, component relationships, data flow |
 | `docs/COMMANDS.md` | CLI command specs, flags, usage |
 | `docs/PROMPTS.md` | Prompt templates, placeholders, schemas |
-| `docs/knowledge/ralph.md` | Ralph CLI workflow, state management, PRD features |
-| `docs/knowledge/dashboard.md` | Dashboard architecture, terminal, themes |
-| `docs/knowledge/go.md` | Go workspaces, multi-module setup |
-| `docs/gotchas/elvish.md` | Elvish shell pitfalls |
-| `docs/gotchas/dashboard.md` | React/Next.js hydration, mobile issues |
-| `docs/gotchas/go.md` | Go module path, workspace sync timing |
 | `tools/ralph/cli/progress.txt` | Previous story history |
+
+**Knowledge base** (`docs/knowledge/<book>/`) - Product documentation:
+| Book | Content |
+|------|---------|
+| `ralph/` | CLI workflow, state management, PRD features (has multiple chapters) |
+| `dashboard/` | Dashboard architecture, terminal, themes |
+| `trinity/` | Trinity CLI overview and architecture |
+| `go/` | Go workspaces, multi-module setup |
+
+**Gotchas** (`docs/gotchas/<book>/`) - Pitfalls to avoid:
+| Book | Content |
+|------|---------|
+| `elvish/` | Elvish shell pitfalls |
+| `dashboard/` | React/Next.js hydration, mobile issues |
+| `go/` | Go module path, workspace sync timing |
+| `patterns/` | Reusable patterns discovered |
+| `conventions/` | Coding standards learned |
+
+Each book is a folder with `index.json` (metadata) and `.md` files (chapters). Read `index.json` to see available chapters.
 
 **Don't read docs you don't need.** A dashboard task doesn't need COMMANDS.md. A Go task doesn't need dashboard docs.
 

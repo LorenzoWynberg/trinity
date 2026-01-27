@@ -3,6 +3,9 @@
 ## Scope
 Implement ONLY {{CURRENT_STORY}}. No refactoring unrelated code. Note other issues in Learnings only.
 
+## Task Tracking
+For non-trivial work, break into tracked tasks before starting. Use TaskCreate to plan steps, TaskUpdate to mark progress. This helps maintain focus and shows clear progress.
+
 ## Coding Standards
 - Write tests when applicable (unit tests for logic)
 - Tests go in appropriate `*_test.go` files
