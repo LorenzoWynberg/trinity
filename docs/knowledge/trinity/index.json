@@ -3,6 +3,11 @@
   "description": "Autonomous AI development loop CLI",
   "icon": "Cpu",
   "pages": [
-    { "slug": "index", "title": "Overview" }
+    { "slug": "index", "title": "Overview" },
+    { "slug": "architecture", "title": "Architecture" },
+    { "slug": "commands", "title": "Commands" },
+    { "slug": "prd", "title": "PRD Guide" },
+    { "slug": "prompts", "title": "Prompts" },
+    { "slug": "workflows", "title": "Workflows" }
   ]
 }
