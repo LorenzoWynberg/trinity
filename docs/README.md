@@ -1,12 +1,44 @@
-# Trinity Documentation
+# Documentation Structure
 
-## Knowledge Bases
+This folder contains all Trinity documentation, organized into two knowledge bases that are rendered in the Ralph Dashboard.
 
-Documentation is organized into books viewable in the dashboard:
+## Structure
 
-- **[knowledge/](./knowledge/)** - Product documentation (Trinity, Ralph, Go)
-- **[gotchas/](./gotchas/)** - Common pitfalls and lessons learned
+```
+docs/
+├── knowledge/          # Product documentation
+│   ├── trinity/        # Trinity CLI (planned Go implementation)
+│   ├── ralph/          # Ralph CLI (current Elvish prototype)
+│   └── go/             # Go workspace patterns
+│
+└── gotchas/            # Lessons learned & pitfalls
+    ├── conventions/    # Coding standards
+    ├── dashboard/      # React/Next.js issues
+    ├── elvish/         # Elvish shell quirks
+    ├── go/             # Go language gotchas
+    └── patterns/       # Design patterns
+```
 
-## Planning
+## Book Format
 
-- **[ROADMAP.md](./ROADMAP.md)** - Version roadmap and decisions
+Each book is a folder with:
+- `index.json` - Metadata (title, icon, pages list)
+- `index.md` - Overview page (required)
+- `<chapter>.md` - Additional chapters (optional)
+
+```json
+{
+  "title": "Ralph",
+  "icon": "Terminal",
+  "pages": [
+    { "slug": "index", "title": "Overview" },
+    { "slug": "dashboard", "title": "Dashboard" }
+  ]
+}
+```
+
+## Adding Content
+
+**New chapter:** Create `<slug>.md` in the book folder, add to `index.json` pages array.
+
+**New book:** Create folder with `index.json` + `index.md`.
