@@ -199,7 +199,7 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) resetEdit(); onOpenChange(o) }}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="md:!max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <DialogTitle className="font-mono">{story.id}</DialogTitle>
@@ -234,14 +234,15 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
         <div className="flex-1 overflow-y-auto space-y-4">
           {!isEditing && (
             <div>
-              <h3 className="font-medium">{story.title}</h3>
+              <h3 className="font-medium cyber-dark:text-secondary-foreground">{story.title}</h3>
               <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                <span>Phase {story.phase}</span>
-                <span>·</span>
-                <span>Epic {story.epic}</span>
-                <span>·</span>
+                <span>{story.phase_name ? `${String(story.phase).padStart(2, '0')}. ${story.phase_name}` : `Phase ${story.phase}`}</span>
+                <span className="cyber-dark:text-accent">·</span>
+                <span>{story.epic_name ? `${String(story.epic).padStart(2, '0')}. ${story.epic_name}` : `Epic ${story.epic}`}</span>
+                <span className="cyber-dark:text-accent">·</span>
                 <span>{storyVersion}</span>
               </div>
+              <div className="border-b border-border mt-3" />
             </div>
           )}
 
@@ -398,21 +399,25 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
             <>
               {story.intent && (
                 <div>
-                  <h4 className="text-sm font-medium mb-1">Intent</h4>
-                  <p className="text-sm text-muted-foreground">{story.intent}</p>
+                  <h4 className="text-sm font-medium mb-1 cyber-dark:text-foreground">Intent</h4>
+                  <p className="text-sm text-muted-foreground cyber-dark:text-muted-foreground">{story.intent}</p>
                 </div>
               )}
 
               {story.description && (
-                <div>
-                  <h4 className="text-sm font-medium mb-1">Description</h4>
-                  <p className="text-sm text-muted-foreground">{story.description}</p>
-                </div>
+                <>
+                  <div className="border-b border-border" />
+                  <div>
+                    <h4 className="text-sm font-medium mb-1 cyber-dark:text-foreground">Description</h4>
+                    <p className="text-sm text-muted-foreground cyber-dark:text-muted-foreground">{story.description}</p>
+                  </div>
+                </>
               )}
 
+              <div className="border-b border-border" />
               <div>
-                <h4 className="text-sm font-medium mb-2">Acceptance Criteria</h4>
-                <ul className="space-y-1">
+                <h4 className="text-sm font-medium mb-2 cyber-dark:text-foreground">Acceptance Criteria</h4>
+                <ul className="space-y-1 cyber-dark:text-muted-foreground">
                   {story.acceptance.map((ac, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm">
                       {story.merged ? (
@@ -427,20 +432,24 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
               </div>
 
               {story.depends_on && story.depends_on.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium mb-1">Dependencies</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {story.depends_on.map(dep => (
-                      <Badge key={dep} variant="outline" className="font-mono text-xs">
-                        {dep}
-                      </Badge>
-                    ))}
+                <>
+                  <div className="border-b border-border" />
+                  <div>
+                    <h4 className="text-sm font-medium mb-1 cyber-dark:text-foreground">Dependencies</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {story.depends_on.map(dep => (
+                        <Badge key={dep} variant="outline" className="font-mono text-xs">
+                          {dep}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                </>
               )}
 
+              <div className="border-b border-border" />
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <GitBranch className="h-4 w-4" />
+                <GitBranch className="h-4 w-4 cyber-dark:text-accent" />
                 <code className="text-xs">{branchName}</code>
               </div>
 
