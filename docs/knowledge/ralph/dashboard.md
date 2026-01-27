@@ -27,9 +27,25 @@ The dashboard is a Next.js app for viewing PRD status, running Ralph, and managi
 
 ### Graph Page
 - Dependency visualization using ReactFlow
-- Supports horizontal/vertical layouts
-- Version filtering
-- Fullscreen mode
+- Version filtering via dropdown
+- Multiple layout options:
+  - **Horizontal** - Left to right flow
+  - **Vertical** - Top to bottom flow
+  - **Compact** - Tighter spacing
+- Custom saved layouts (per version)
+- Fullscreen mode (native + CSS fallback)
+- Minimap for navigation
+- **Toggles:**
+  - Show dead ends (stories with no dependents)
+  - Show external dependencies
+- **Edge coloring:** Depth-based rainbow (25 colors) showing dependency chains
+
+### Story Detail Page (`/stories/[id]`)
+- Full story view with intent, description, acceptance criteria
+- Dependency links (what this story depends on)
+- Dependent links (what depends on this story)
+- PR URL and merge commit tracking
+- Edit button to modify story
 
 ### Terminal Page
 - Interactive terminal for running Ralph from the dashboard
@@ -49,6 +65,11 @@ The dashboard is a Next.js app for viewing PRD status, running Ralph, and managi
 - URL params: `?book=ralph&chapter=cli-reference`
 - Markdown rendering with syntax highlighting
 
+### Settings Page
+- **Theme selection:** light, dark, cyber-light, cyber-dark, system
+- **Default version:** Which PRD version to show by default
+- Settings persisted via `/api/settings` to `settings.json`
+
 ---
 
 ## Terminal Architecture
@@ -59,8 +80,9 @@ The dashboard is a Next.js app for viewing PRD status, running Ralph, and managi
 
 **Running locally:**
 ```bash
-npm run dev        # Next.js + WebSocket + ngrok (if configured)
-npm run dev:local  # Next.js + WebSocket only (no ngrok)
+npm run dev           # Next.js + WebSocket + ngrok (if configured)
+npm run dev:terminal  # WebSocket server only
+npm run dev:next      # Next.js only (no terminal)
 ```
 
 **Features:**
@@ -113,7 +135,9 @@ tunnels:
 
 ## Themes
 
-Four themes available: `light`, `dark`, `cyber-light`, `cyber-dark`
+Five themes available: `light`, `dark`, `cyber-light`, `cyber-dark`, `system`
+
+- **system** - Follows OS preference (light/dark)
 
 Cyber themes use pink/cyan neon accents. Graph page uses `resolvedTheme` to detect dark mode:
 ```tsx
@@ -125,6 +149,23 @@ const isCyber = resolvedTheme === 'cyber-dark' || resolvedTheme === 'cyber-light
 - Story nodes: Cyan backgrounds, purple text
 - Version nodes: Yellow backgrounds, cyan text
 - Use Tailwind custom variants: `cyber-dark:bg-cyan-900/80 cyber-dark:text-purple-200`
+
+---
+
+## Graph Layouts
+
+The graph page supports custom saved layouts per version.
+
+**Built-in layouts:**
+- Horizontal, Vertical, Compact
+
+**Custom layouts:**
+- Save current node positions as a named layout
+- Set a default layout (star icon)
+- Delete custom layouts
+- Layouts stored per version in `graph-layouts-<version>.json`
+
+**API endpoint:** `/api/graph-layout`
 
 ---
 
