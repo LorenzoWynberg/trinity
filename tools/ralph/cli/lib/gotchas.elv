@@ -500,3 +500,109 @@ Only extract genuinely useful content. Be concise but complete.'
     ui:dim "  No extractions parsed"
   }
 }
+
+# Extract micro-learning from a feedback loop
+# Called after feedback round succeeds - captures "what was wrong → what fixed it" pattern
+fn extract-feedback-learning {|story-id feedback branch-name|
+  ui:status "Extracting fix pattern from feedback loop..."
+
+  # Get the diff of changes made after feedback
+  var diff = ""
+  try {
+    # Get last 2 commits (the fix commit and the one before)
+    var commits = [(git -C $project-root log --oneline -2 --format="%H" $branch-name 2>/dev/null)]
+    if (>= (count $commits) 2) {
+      set diff = (git -C $project-root diff $commits[1]".."$commits[0] 2>/dev/null | slurp)
+    }
+  } catch _ { }
+
+  if (eq $diff "") {
+    ui:dim "  No diff found, skipping feedback extraction"
+    return
+  }
+
+  # Get story title for context
+  var story-title = (prd:get-story-title $story-id)
+
+  var prompt = 'Extract a "fix pattern" gotcha from this feedback loop.
+
+STORY: '$story-id' - '$story-title'
+
+USER FEEDBACK (what was wrong):
+'$feedback'
+
+CHANGES MADE TO FIX (diff):
+'$diff'
+
+This is a feedback loop pattern: user identified something wrong, developer fixed it.
+These patterns are valuable because they capture real mistakes and their solutions.
+
+Extract a concise gotcha that could help avoid this mistake in the future.
+Focus on:
+- What the symptom was (from feedback)
+- What the actual issue was (from the fix)
+- How to avoid it or fix it
+
+Output format:
+
+If not a reusable pattern (too specific to this story):
+<no-extraction/>
+
+Otherwise:
+<gotcha file="appropriate-topic.md">
+### Problem Brief Title
+
+**Symptom:** What went wrong or what user complained about
+
+**Cause:** Why it happened
+
+**Fix:** How to avoid or fix it
+
+```code-example-if-relevant```
+</gotcha>
+
+Be concise. Only extract if this is genuinely reusable knowledge.'
+
+  var result = ""
+  try {
+    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
+  } catch e {
+    ui:warn "Feedback extraction failed: "(to-string $e[reason])
+    return
+  }
+
+  if (str:contains $result "<no-extraction/>") {
+    ui:dim "  Feedback was story-specific, no reusable pattern"
+    return
+  }
+
+  # Parse and apply gotcha
+  if (str:contains $result "<gotcha") {
+    mkdir -p $gotchas-dir
+
+    var found-files = [(echo $result | grep -o '<gotcha file="[^"]*">' | sed 's/<gotcha file="//; s/">//' | sort -u)]
+    for file $found-files {
+      if (and (str:has-suffix $file ".md") (not (str:contains $file "/"))) {
+        try {
+          var content = (echo $result | sed -n '/<gotcha file="'$file'">/,/<\/gotcha>/p' | sed '1d;$d')
+          if (not (eq (str:trim-space $content) "")) {
+            var target = (path:join $gotchas-dir $file)
+            if (not (path:is-regular $target)) {
+              var title = (echo $file | sed 's/\.md$//; s/-/ /g; s/\b\(.\)/\u\1/g')
+              echo "# "$title" Gotchas" > $target
+              echo "" >> $target
+              ui:dim "  Created new gotcha file: "$file
+            }
+            echo "" >> $target
+            echo "<!-- From feedback loop on "$story-id" -->" >> $target
+            echo $content >> $target
+            mark-updated $target
+            ui:success "  Extracted fix pattern to "$file
+          }
+        } catch _ { }
+      }
+    }
+  } else {
+    ui:dim "  No fix pattern extracted"
+  }
+}

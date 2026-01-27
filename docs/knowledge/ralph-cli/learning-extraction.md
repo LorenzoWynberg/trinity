@@ -21,6 +21,36 @@ After each story, Ralph extracts learnings and gotchas from the work done, build
 
 Ralph creates new files if the topic warrants it, or appends to existing files.
 
+## Feedback Loop Micro-Learnings
+
+In addition to extraction at story completion, Ralph extracts "fix patterns" from feedback loops.
+
+**When it triggers:**
+- User provides feedback (something was wrong)
+- Claude fixes it
+- Story completes successfully
+
+**What gets extracted:**
+- **Symptom:** What the user complained about
+- **Cause:** Why it happened (from analyzing the fix)
+- **Fix:** How to avoid or fix it
+
+**Why this matters:**
+- Feedback loops capture real mistakes and their solutions
+- These patterns are often the most valuable gotchas
+- Tagged with `<!-- From feedback loop on STORY-X.Y.Z -->` for traceability
+
+**Example output:**
+```markdown
+### Incorrect import path in module
+
+**Symptom:** Build fails with "package not found"
+
+**Cause:** Used relative import instead of full module path
+
+**Fix:** Always use full module path: `github.com/org/repo/pkg`
+```
+
 ## Automatic Compaction
 
 To prevent unbounded growth, Ralph periodically compacts documentation:

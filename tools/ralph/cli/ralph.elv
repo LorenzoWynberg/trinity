@@ -264,6 +264,7 @@ var pending-feedback = ""  # Feedback from PR review to pass to next Claude run
 var pending-clarification = ""  # Clarification from validation questions to pass to Claude
 var pending-ext-deps-report = ""  # External deps report to pass to Claude
 var pending-failure-context = ""  # Previous failure context for smart retry
+var last-used-feedback = ""  # Track feedback for micro-learning extraction
 
 while (< $current-iteration $config[max-iterations]) {
     set current-iteration = (+ $current-iteration 1)
@@ -717,6 +718,7 @@ while (< $current-iteration $config[max-iterations]) {
       if (not (eq $pending-feedback "")) {
         set mode-label = "feedback refinement"
         set was-feedback-refinement = $true
+        set last-used-feedback = $pending-feedback  # Save for micro-learning extraction
         set pending-feedback = ""  # Clear after use
       } elif (not (eq $pending-clarification "")) {
         set mode-label = "with clarification"
@@ -884,6 +886,13 @@ while (< $current-iteration $config[max-iterations]) {
       # Extract learnings before PR flow
       echo ""
       claude:extract-learnings $story-id $branch-name
+
+      # Extract micro-learning from feedback loop if this was a feedback refinement
+      if (and $was-feedback-refinement (not (eq $last-used-feedback ""))) {
+        echo ""
+        gotchas:extract-feedback-learning $story-id $last-used-feedback $branch-name
+        set last-used-feedback = ""  # Clear after extraction
+      }
 
       # Run PR flow (may request feedback)
       # Pass pr_url from state to skip PR prompt if already exists
