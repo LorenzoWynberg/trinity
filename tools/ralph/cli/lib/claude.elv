@@ -254,6 +254,16 @@ Stay focused on the feedback - don't refactor unrelated code.
   set prompt = (str:replace &max=-1 "{{ATTEMPT}}" (to-string $attempt) $prompt)
   set prompt = (str:replace &max=-1 "{{VERSION}}" (prd:get-current-version) $prompt)
 
+  # Get timezone from dashboard settings
+  var timezone = "America/Costa_Rica"  # default
+  var dashboard-settings = (path:join $script-dir ".." "dashboard" "settings.json")
+  try {
+    if (path:is-regular $dashboard-settings) {
+      set timezone = (jq -r '.timezone // "America/Costa_Rica"' $dashboard-settings)
+    }
+  } catch _ { }
+  set prompt = (str:replace &max=-1 "{{TIMEZONE}}" $timezone $prompt)
+
   # Add dependency info
   var deps-info = (prd:get-story-deps $story-id | slurp)
   set prompt = (str:replace &max=-1 "{{DEPENDENCIES}}" $deps-info $prompt)

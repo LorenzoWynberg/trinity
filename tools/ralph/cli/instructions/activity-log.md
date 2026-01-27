@@ -41,6 +41,6 @@ tags: [relevant, tags]
 
 ## Notes
 
-- **Get current CR time:** Run `date -u '+%Y-%m-%d %H:%M'` then subtract 6 hours (CR = UTC-6, no DST)
+- **Get current time:** Run `TZ={{TIMEZONE}} date '+%Y-%m-%d %H:%M'` for configured timezone
 - APPEND new entries, never overwrite existing
 - Archive logs older than 7 days to `logs/activity/trinity/archive/YYYY-MM/`

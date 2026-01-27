@@ -9,13 +9,15 @@ type Settings = {
   graphDirection: 'horizontal' | 'vertical'
   showDeadEnds: boolean
   defaultVersion: string // 'first' means use first available version
+  timezone: string // IANA timezone name (e.g., 'America/Costa_Rica') or UTC offset (e.g., 'UTC-6')
 }
 
 const defaultSettings: Settings = {
   theme: 'dark',
   graphDirection: 'horizontal',
   showDeadEnds: false,
-  defaultVersion: 'first'
+  defaultVersion: 'first',
+  timezone: 'America/Costa_Rica'
 }
 
 async function getSettings(): Promise<Settings> {

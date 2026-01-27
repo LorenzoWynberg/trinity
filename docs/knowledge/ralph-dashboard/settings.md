@@ -20,6 +20,15 @@ Which PRD version to show by default when opening the dashboard. Affects:
 - Graph page initial view
 - Metrics page initial view
 
+### Timezone
+
+Timezone used for activity log timestamps. Claude reads this setting and uses it when writing timestamps. Common options include:
+- America/Costa_Rica (UTC-6)
+- America/New_York
+- America/Los_Angeles
+- Europe/London
+- UTC
+
 ## Persistence
 
 Settings are persisted via `/api/settings` to `settings.json` in the dashboard directory.
@@ -28,6 +37,7 @@ Settings are persisted via `/api/settings` to `settings.json` in the dashboard d
 {
   "theme": "cyber-dark",
   "defaultVersion": "v0.1",
+  "timezone": "America/Costa_Rica",
   "showDeadEnds": true,
   "showExternalDeps": true
 }

@@ -29,7 +29,7 @@ Create these 5 tasks upfront using TaskCreate. Work through them sequentially.
 - Implement ONLY {{CURRENT_STORY}} - note other issues in learnings
 - APPEND to activity/progress files, never overwrite
 - Keep changes minimal and focused
-- **Timestamps:** Get current time with `date -u` then subtract 6 hours for CR timezone (UTC-6, no DST)
+- **Timestamps:** Run `TZ={{TIMEZONE}} date '+%Y-%m-%d %H:%M'` to get current time in the configured timezone
 
 ## Key Files
 
