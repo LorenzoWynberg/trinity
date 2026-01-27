@@ -2,7 +2,9 @@
 
 ## Can I stop Ralph mid-story?
 
-Yes! `Ctrl+C` anytime. Your work is saved. Run `./ralph.elv --resume` to pick up where you left off.
+Yes! `Ctrl+C` anytime. Ralph saves checkpoints at each phase. Run `./ralph.elv --resume` to continue from the last checkpoint.
+
+See the **Recovery & Resume** chapter for details on checkpoints and recovery scenarios.
 
 ---
 
@@ -28,7 +30,7 @@ The story is marked skipped, and dependents can proceed if they don't strictly n
 ./ralph.elv --retry-clean STORY-1.2.3
 ```
 
-This deletes the branch, clears state, and lets Ralph try again fresh.
+This deletes the branch (local and remote), clears state and checkpoints, and lets Ralph try again fresh.
 
 ---
 

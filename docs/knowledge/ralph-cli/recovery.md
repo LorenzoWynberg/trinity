@@ -1,0 +1,162 @@
+# Recovery & Resume
+
+Ralph is designed for long-running autonomous sessions. Crashes, timeouts, and interruptions are expected. This chapter covers how to recover gracefully.
+
+## Checkpoints
+
+Ralph saves progress at each major phase so `--resume` can skip completed work.
+
+### Checkpoint Stages
+
+| Stage | When Saved | What It Means |
+|-------|------------|---------------|
+| `branch_created` | After story selection | Branch exists, ready for validation |
+| `validation_complete` | After validation passes | Story is valid, ready for Claude |
+| `claude_started` | Before Claude invocation | Claude is running (cannot resume mid-execution) |
+| `claude_complete` | After completion signal | Claude finished, ready for PR |
+| `pr_created` | After PR created | PR exists, waiting for merge |
+
+### Checkpoint Data
+
+Each checkpoint stores contextual data:
+
+```json
+{
+  "story_id": "1.2.3",
+  "stage": "claude_complete",
+  "at": "2026-01-27T15:30:00Z",
+  "attempt": 2,
+  "data": {
+    "signal": "complete",
+    "commit": "abc123"
+  }
+}
+```
+
+Stage-specific data:
+- `branch_created`: branch name, commit hash
+- `validation_complete`: clarification text (if provided)
+- `claude_started`: attempt number
+- `claude_complete`: signal type, commit hash
+- `pr_created`: PR URL
+
+## Resume Modes
+
+### Basic Resume
+
+```bash
+./ralph.elv --resume
+```
+
+Detects most advanced checkpoint and skips to that phase:
+- `pr_created` or `claude_complete` → PR flow
+- `validation_complete` → Claude execution
+- `branch_created` → Validation
+
+**Note:** `claude_started` doesn't allow mid-execution resume. Ralph restarts Claude from the beginning of that phase.
+
+### Fresh Start
+
+```bash
+./ralph.elv --reset
+```
+
+Clears state but preserves checkpoints. Use when you want to pick a new story.
+
+### Retry Clean
+
+```bash
+./ralph.elv --retry-clean STORY-1.2.3
+```
+
+Nuclear option - clears everything for a story:
+- Deletes local branch
+- Deletes remote branch
+- Resets story in PRD (passes=false, merged=false)
+- Clears all checkpoints
+- Clears state.json
+
+Use when a story is hopelessly stuck.
+
+## Common Scenarios
+
+### Claude Timeout
+
+```
+Claude timed out after 1800s
+The story might be too complex. Try:
+  • Breaking it into smaller stories
+  • Increasing timeout with --timeout <seconds>
+  • Running ./ralph.elv --resume to continue
+```
+
+**What happened:** Claude hit the 30-minute default timeout.
+
+**Recovery:**
+1. `./ralph.elv --resume` - Restarts Claude (validation checkpoint exists)
+2. Or `./ralph.elv --timeout 3600 --resume` - Resume with longer timeout
+
+### Ctrl+C Interrupt
+
+**What happened:** You pressed Ctrl+C during execution.
+
+**Recovery:**
+1. `./ralph.elv --resume` - Continues from last checkpoint
+2. If interrupted during Claude: restarts Claude execution
+3. If interrupted during PR flow: skips to PR flow
+
+### Process Crash
+
+**What happened:** Terminal closed, machine rebooted, etc.
+
+**Recovery:**
+1. Check `./ralph.elv --status` to see current state
+2. `./ralph.elv --resume` to continue
+
+### Story Won't Complete
+
+**Symptoms:** Story keeps failing, Claude can't figure it out.
+
+**Options:**
+1. `./ralph.elv --retry-clean STORY-1.2.3` - Fresh start
+2. `./ralph.elv --skip STORY-1.2.3 "reason"` - Skip and move on
+3. `./ralph.elv --refine-prd STORY-1.2.3` - Have Claude improve the story definition
+
+## Checkpoint Cleanup
+
+Checkpoints are automatically cleared when:
+- Story is successfully merged
+- Story is blocked (Claude outputs `<story-blocked>`)
+- `--retry-clean` is run
+
+If checkpoints accumulate (bug), manually edit `state.json`:
+```json
+{
+  "checkpoints": []
+}
+```
+
+## Debugging
+
+### Check Current State
+
+```bash
+./ralph.elv --status
+```
+
+Shows:
+- Current story (if any)
+- Branch name
+- Status (idle, in_progress, blocked)
+- Attempt count
+
+### Verbose Mode
+
+```bash
+./ralph.elv --resume -v
+```
+
+Shows:
+- Full prompts sent to Claude
+- State transitions
+- Checkpoint saves/loads

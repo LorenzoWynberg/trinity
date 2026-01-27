@@ -5,6 +5,7 @@
   "pages": [
     { "slug": "index", "title": "Overview" },
     { "slug": "cli-reference", "title": "CLI Reference" },
+    { "slug": "recovery", "title": "Recovery & Resume" },
     { "slug": "common-workflows", "title": "Workflows" },
     { "slug": "prd-structure", "title": "PRD Structure" },
     { "slug": "story-validation", "title": "Story Validation" },

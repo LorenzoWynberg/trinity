@@ -35,7 +35,7 @@ elvish ./ralph.elv [OPTIONS]
 |------|-------------|
 | `--story <ID>` | Work on a specific story (e.g., `1.2.3` or `STORY-1.2.3`) |
 | `--one` | Complete one story cycle, then stop cleanly |
-| `--resume` | Resume from last state (skip story selection) |
+| `--resume` | Resume from checkpoint (skips completed phases - see Checkpoints) |
 | `--reset` | Reset state and start fresh |
 | `--status` | Show PRD status (phases, epics, stories) and exit |
 | `--stats` | Show metrics (tokens, durations, costs) and exit |
@@ -79,3 +79,11 @@ elvish ./ralph.elv [OPTIONS]
 |------|-------------|
 | `--no-notifs` | Disable desktop notifications (default: enabled) |
 | `-h, --help` | Show help message |
+
+## Checkpoints
+
+Ralph tracks progress at each phase so `--resume` can skip completed work instead of restarting from scratch.
+
+**Stages:** `branch_created` → `validation_complete` → `claude_started` → `claude_complete` → `pr_created`
+
+See the **Recovery & Resume** chapter for full details on checkpoints, resume modes, and common recovery scenarios.

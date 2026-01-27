@@ -246,9 +246,28 @@ Ralph tracks runtime state in `state.json`:
 | `attempts` | number | Retry count for current story |
 | `pr_url` | string/null | PR URL if created |
 | `last_updated` | string/null | Last state change timestamp |
-| `checkpoints` | array | Completed workflow checkpoints for current story |
+| `checkpoints` | array | Completed workflow checkpoints for resume (see below) |
 
-This enables `--resume` to continue where Ralph left off after interruption.
+### Checkpoint Structure
+
+Each checkpoint in the array has:
+
+```json
+{
+  "story_id": "1.2.3",
+  "stage": "claude_complete",
+  "at": "2026-01-27T15:30:00Z",
+  "attempt": 2,
+  "data": {
+    "signal": "complete",
+    "commit": "abc123"
+  }
+}
+```
+
+Stages: `branch_created`, `validation_complete`, `claude_started`, `claude_complete`, `pr_created`
+
+This enables `--resume` to skip completed phases instead of restarting from scratch. See CLI Reference for details.
 
 ## Example: Complete Story
 

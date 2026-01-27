@@ -95,6 +95,22 @@ if (> (count $result-list) 0) {
 }
 ```
 
+### str:trim-space doesn't take pipeline input
+`str:trim-space` expects a value argument, NOT pipeline input. This is a common mistake:
+
+```elvish
+# WRONG - arity mismatch (0 values)
+var result = (git rev-parse HEAD | slurp | str:trim-space)
+
+# RIGHT - nest the subshell as argument
+var result = (str:trim-space (git rev-parse HEAD | slurp))
+
+# ALSO RIGHT - use each for pipeline
+var result = (git rev-parse HEAD | slurp | each {|s| str:trim-space $s })
+```
+
+The wrong pattern fails silently if wrapped in try/catch - the error is "arity mismatch: arguments must be 1 value, but is 0 values".
+
 ### Try/catch for error handling
 ```elvish
 try {
