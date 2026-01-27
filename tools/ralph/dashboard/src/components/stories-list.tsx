@@ -27,6 +27,7 @@ type StoriesListProps = {
   versions: string[]
   currentVersion: string
   versionMetadata?: VersionMetadata[]
+  initialPhase?: string
 }
 
 // Wrapper with Suspense to avoid hydration mismatch from useSearchParams + Radix Select
@@ -46,10 +47,10 @@ function getStoryStatus(story: Story, currentStoryId: string | null): StoryStatu
   return 'pending'
 }
 
-function StoriesListInner({ prd, currentStoryId, versions, currentVersion, versionMetadata }: StoriesListProps) {
+function StoriesListInner({ prd, currentStoryId, versions, currentVersion, versionMetadata, initialPhase }: StoriesListProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [selectedPhase, setSelectedPhase] = useState<string>('all')
+  const [selectedPhase, setSelectedPhase] = useState<string>(initialPhase || 'all')
   const [selectedEpics, setSelectedEpics] = useState<Record<number, string>>({})
   const [collapsedPhases, setCollapsedPhases] = useState<Set<number>>(new Set())
 
@@ -138,7 +139,7 @@ function StoriesListInner({ prd, currentStoryId, versions, currentVersion, versi
         {/* Version Filter */}
         {versions.length > 1 && (
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">PRD:</label>
+            <label className="text-sm font-medium cyber-dark:text-foreground">PRD:</label>
             <Select value={currentVersion} onValueChange={handleVersionChange}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue>
@@ -225,7 +226,7 @@ function StoriesListInner({ prd, currentStoryId, versions, currentVersion, versi
                       <div className="flex items-center gap-4 mb-4">
                         <button
                           onClick={toggleCollapse}
-                          className="flex items-center gap-2 hover:text-primary transition-colors cursor-pointer"
+                          className="flex items-center gap-2 hover:text-primary cyber-dark:hover:text-yellow-400 transition-colors cursor-pointer"
                         >
                           {isCollapsed ? (
                             <ChevronRight className="h-5 w-5" />

@@ -40,7 +40,7 @@ function SplitButton({
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         "border-border dark:border-input",
         "cyber-light:border-cyan-500 cyber-light:hover:border-yellow-400",
-        "cyber-dark:border-cyan-400 cyber-dark:hover:border-primary cyber-dark:hover:bg-primary",
+        "cyber-dark:border-border cyber-dark:hover:border-yellow-400 cyber-dark:hover:bg-yellow-400",
         sizeClasses[size],
         className
       )}
@@ -53,8 +53,8 @@ function SplitButton({
           "bg-muted text-muted-foreground",
           "cyber-light:bg-white cyber-light:text-pink-500 cyber-light:border-r-cyan-500",
           "cyber-light:group-hover:bg-pink-500 cyber-light:group-hover:text-white cyber-light:group-hover:border-r-cyan-500",
-          "cyber-dark:bg-transparent cyber-dark:text-cyan-400 cyber-dark:border-r-0",
-          "cyber-dark:group-hover:bg-transparent cyber-dark:group-hover:text-primary-foreground",
+          "cyber-dark:bg-transparent cyber-dark:text-foreground cyber-dark:border-r-0",
+          "cyber-dark:group-hover:bg-transparent cyber-dark:group-hover:text-black",
           iconSizeClasses[size]
         )}
       >
@@ -68,8 +68,8 @@ function SplitButton({
           "group-hover:bg-accent group-hover:text-accent-foreground",
           "cyber-light:bg-white cyber-light:text-foreground",
           "cyber-light:group-hover:bg-cyan-500 cyber-light:group-hover:text-white",
-          "cyber-dark:bg-transparent cyber-dark:text-cyan-400",
-          "cyber-dark:group-hover:bg-transparent cyber-dark:group-hover:text-primary-foreground",
+          "cyber-dark:bg-transparent cyber-dark:text-foreground",
+          "cyber-dark:group-hover:bg-transparent cyber-dark:group-hover:text-black",
           textSizeClasses[size]
         )}
       >

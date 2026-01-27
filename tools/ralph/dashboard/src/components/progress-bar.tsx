@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
 interface ProgressBarProps {
@@ -5,15 +6,16 @@ interface ProgressBarProps {
   value: number
   max: number
   className?: string
+  href?: string
 }
 
-export function ProgressBar({ label, value, max, className }: ProgressBarProps) {
+export function ProgressBar({ label, value, max, className, href }: ProgressBarProps) {
   const percentage = max > 0 ? Math.round((value / max) * 100) : 0
 
-  return (
-    <div className={cn('space-y-2', className)}>
+  const content = (
+    <div className={cn('space-y-2', href && 'cursor-pointer hover:opacity-80 transition-opacity', className)}>
       <div className="flex justify-between text-sm">
-        <span className="font-medium">{label}</span>
+        <span className={cn('font-medium', href && 'cyber-dark:hover:text-yellow-400')}>{label}</span>
         <span className="text-muted-foreground">{value}/{max} ({percentage}%)</span>
       </div>
       <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -24,4 +26,10 @@ export function ProgressBar({ label, value, max, className }: ProgressBarProps) 
       </div>
     </div>
   )
+
+  if (href) {
+    return <Link href={href}>{content}</Link>
+  }
+
+  return content
 }

@@ -82,7 +82,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           <p className="text-muted-foreground cyber-light:text-cyan-600">{prd.description || prd.project}</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">PRD:</span>
+          <span className="text-sm text-muted-foreground cyber-dark:text-foreground">PRD:</span>
           <VersionSelector versions={versions} currentVersion={currentVersion} versionMetadata={versionMetadata} />
         </div>
       </div>
@@ -128,6 +128,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                 label={phase.name ? `${phase.phase}. ${phase.name}` : `Phase ${phase.phase}`}
                 value={phase.merged}
                 max={phase.total}
+                href={`/stories?version=${currentVersion}&phase=${phase.phase}`}
               />
             ))}
           </CardContent>

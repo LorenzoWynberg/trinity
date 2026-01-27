@@ -26,15 +26,15 @@ export function StoryCard({ story, status }: StoryCardProps) {
       <Card className="hover:border-primary transition-colors cursor-pointer h-full cyber-light:border-l-4 cyber-light:border-l-cyan-400">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
-            <CardTitle className="text-sm font-mono cyber-light:text-pink-600">Story {story.id}</CardTitle>
+            <CardTitle className="text-sm font-mono cyber-light:text-pink-600 cyber-dark:text-cyan-400">Story {story.id}</CardTitle>
             <Badge className={cn('text-xs', config.className)}>{config.label}</Badge>
           </div>
-          <p className="text-sm font-medium leading-snug">{story.title}</p>
+          <p className="text-sm font-medium leading-snug cyber-dark:text-teal-400">{story.title}</p>
         </CardHeader>
         <CardContent className="pt-0">
           <div className="text-xs text-muted-foreground space-y-1">
             <div className="flex items-center gap-2">
-              <span className="cyber-light:text-cyan-600">
+              <span className="cyber-light:text-cyan-600 cyber-dark:text-yellow-400">
                 {story.phase_name || `Phase ${story.phase}`} • {story.epic_name || `Epic ${story.epic}`}
               </span>
               {story.target_version && (
@@ -55,7 +55,7 @@ export function StoryCard({ story, status }: StoryCardProps) {
                 <li key={i} className="truncate"><span className="cyber-light:text-pink-400">•</span> {ac}</li>
               ))}
               {story.acceptance.length > 3 && (
-                <li className="text-muted-foreground/50 cyber-light:text-cyan-400/70">+{story.acceptance.length - 3} more</li>
+                <li className="text-muted-foreground/50 cyber-light:text-cyan-400/70 cyber-dark:text-yellow-400/70">+{story.acceptance.length - 3} more</li>
               )}
             </ul>
           )}

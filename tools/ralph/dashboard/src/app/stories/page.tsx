@@ -5,11 +5,11 @@ import { StoriesHeader } from '@/components/stories-header'
 export const revalidate = 5
 
 interface PageProps {
-  searchParams: Promise<{ version?: string }>
+  searchParams: Promise<{ version?: string; phase?: string }>
 }
 
 export default async function StoriesPage({ searchParams }: PageProps) {
-  const { version: selectedVersion } = await searchParams
+  const { version: selectedVersion, phase: selectedPhase } = await searchParams
 
   const [settings, versions, versionMetadata] = await Promise.all([
     getSettings(),
@@ -52,7 +52,7 @@ export default async function StoriesPage({ searchParams }: PageProps) {
         version={currentVersion}
       />
 
-      <StoriesList prd={prd} currentStoryId={currentStoryId} versions={versions} currentVersion={currentVersion} versionMetadata={versionMetadata} />
+      <StoriesList prd={prd} currentStoryId={currentStoryId} versions={versions} currentVersion={currentVersion} versionMetadata={versionMetadata} initialPhase={selectedPhase} />
     </div>
   )
 }

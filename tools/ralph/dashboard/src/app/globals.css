@@ -142,7 +142,7 @@
   --card-foreground: oklch(0.95 0.15 180);
   --popover: oklch(0.15 0.03 280);
   --popover-foreground: oklch(0.95 0.15 180);
-  --primary: oklch(0.75 0.25 330);
+  --primary: oklch(0.70 0.25 295);
   --primary-foreground: oklch(0.1 0.02 280);
   --secondary: oklch(0.25 0.05 280);
   --secondary-foreground: oklch(0.95 0.15 180);
@@ -151,29 +151,29 @@
   --accent: oklch(0.6 0.25 180);
   --accent-foreground: oklch(0.1 0.02 280);
   --destructive: oklch(0.65 0.25 25);
-  --border: oklch(0.75 0.25 330 / 30%);
-  --input: oklch(0.75 0.25 330 / 20%);
-  --ring: oklch(0.75 0.25 330);
-  --chart-1: oklch(0.75 0.25 330);
+  --border: oklch(0.70 0.25 295 / 30%);
+  --input: oklch(0.70 0.25 295 / 20%);
+  --ring: oklch(0.70 0.25 295);
+  --chart-1: oklch(0.70 0.25 295);
   --chart-2: oklch(0.6 0.25 180);
   --chart-3: oklch(0.7 0.2 60);
   --chart-4: oklch(0.65 0.25 280);
   --chart-5: oklch(0.6 0.2 120);
   --sidebar: oklch(0.12 0.025 280);
   --sidebar-foreground: oklch(0.95 0.15 180);
-  --sidebar-primary: oklch(0.75 0.25 330);
+  --sidebar-primary: oklch(0.70 0.25 295);
   --sidebar-primary-foreground: oklch(0.1 0.02 280);
   --sidebar-accent: oklch(0.2 0.04 280);
   --sidebar-accent-foreground: oklch(0.95 0.15 180);
-  --sidebar-border: oklch(0.75 0.25 330 / 30%);
-  --sidebar-ring: oklch(0.75 0.25 330);
+  --sidebar-border: oklch(0.70 0.25 295 / 30%);
+  --sidebar-ring: oklch(0.70 0.25 295);
   /* Graph colors */
   --graph-bg: #1a1025;
   --graph-dots: rgba(255, 45, 149, 0.5);
   --graph-minimap-bg: #120a1a;
   --graph-minimap-mask: rgba(26, 16, 37, 0.8);
   --graph-node-default: #6b4f7a;
-  --graph-node-version: #ff2d95;
+  --graph-node-version: #a855f7;
   --graph-node-in-progress: #0ff;
   --graph-edge-default: #6b4f7a;
 }
@@ -278,12 +278,12 @@
 /* React Flow Controls - Cyber Dark */
 .cyber-dark .react-flow__controls {
   background: #1a1025;
-  border-color: #ff2d95;
+  border-color: #a855f7;
 }
 
 .cyber-dark .react-flow__controls button {
   background: #1a1025;
-  border-color: #ff2d95;
+  border-color: #a855f7;
   fill: #0ff;
 }
 

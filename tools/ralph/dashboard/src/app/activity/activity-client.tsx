@@ -62,8 +62,8 @@ export function ActivityClient({ initialLogs, initialProject, projects }: Activi
               className={`
                 flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors
                 ${currentProject === project
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-background text-foreground shadow-sm cyber-dark:text-yellow-400'
+                  : 'text-muted-foreground hover:text-foreground cyber-dark:text-accent cyber-dark:hover:text-yellow-400'
                 }
               `}
               disabled={loading}
