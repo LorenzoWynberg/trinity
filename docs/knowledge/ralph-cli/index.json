@@ -12,6 +12,7 @@
     { "slug": "duplicate-detection", "title": "Duplicate Detection" },
     { "slug": "reverse-dependencies", "title": "Reverse Dependencies" },
     { "slug": "learning-extraction", "title": "Learning Extraction" },
+    { "slug": "activity-logs", "title": "Activity Logs" },
     { "slug": "release-workflow", "title": "Release Workflow" },
     { "slug": "faq", "title": "FAQ" }
   ]
