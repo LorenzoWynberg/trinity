@@ -635,7 +635,7 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
           <DialogFooter className="pt-4 border-t flex-col sm:flex-row gap-2">
             {editStep === 'input' && !loading && (
               <>
-                <Button variant="outline" onClick={resetEdit}>Cancel</Button>
+                <Button variant="outline" onClick={() => { resetEdit(); onOpenChange(false) }}>Cancel</Button>
                 <Button onClick={handleAnalyze} disabled={loading || !requestedChanges.trim()}>
                   Analyze
                 </Button>
