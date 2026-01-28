@@ -39,11 +39,18 @@ export async function runClaude(
 IMPORTANT: Write your JSON response to this file: ${outputFile}
 Use the Write tool to save the JSON. No markdown, no code blocks, just valid JSON.`
 
-    // Run Claude with prompt via echo (prompt is small now)
+    // Write prompt to temp file, then pipe to Claude
+    const promptFile = path.join(os.tmpdir(), `claude-prompt-${requestId}.md`)
+    await fs.writeFile(promptFile, fullPrompt)
+
+    // Run Claude with prompt file
     const { stdout, stderr } = await execAsync(
-      `echo ${JSON.stringify(fullPrompt)} | claude --dangerously-skip-permissions --print`,
+      `cat "${promptFile}" | claude --dangerously-skip-permissions --print`,
       { cwd, timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024 }
     )
+
+    // Cleanup prompt file
+    await fs.unlink(promptFile).catch(() => {})
 
     // Read the output file Claude wrote
     try {
