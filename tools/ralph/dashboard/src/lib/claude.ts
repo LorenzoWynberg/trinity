@@ -48,9 +48,10 @@ Use the Write tool to create the file. Output ONLY valid JSON, no markdown, no e
     await fs.writeFile(promptFile, fullPrompt)
 
     // Run Claude with prompt file as stdin
-    // shell: true needed for < redirection to work
+    // Use full path and explicit shell for reliability
+    const claudePath = process.env.CLAUDE_PATH || '/Users/dev-wynberg/.local/bin/claude'
     await execAsync(
-      `claude --dangerously-skip-permissions --print < "${promptFile}"`,
+      `"${claudePath}" --dangerously-skip-permissions --print < "${promptFile}"`,
       { cwd, timeout: timeoutMs, shell: '/bin/bash' }
     )
 
@@ -68,9 +69,15 @@ Use the Write tool to create the file. Output ONLY valid JSON, no markdown, no e
       }
     }
   } catch (error: any) {
-    // Capture both stdout and stderr for debugging
-    const errorMsg = error.stderr || error.stdout || error.message
-    return { success: false, error: errorMsg }
+    // Capture all error info for debugging
+    const errorInfo = {
+      message: error.message,
+      stderr: error.stderr,
+      stdout: error.stdout,
+      code: error.code,
+      signal: error.signal
+    }
+    return { success: false, error: JSON.stringify(errorInfo, null, 2) }
   } finally {
     // Cleanup temp files (ignore errors)
     await fs.unlink(promptFile).catch(() => {})
