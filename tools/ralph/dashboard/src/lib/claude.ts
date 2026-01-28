@@ -36,49 +36,45 @@ export async function runClaude(
   const requestId = randomUUID()
   const tmpDir = os.tmpdir()
   const promptFile = path.join(tmpDir, `claude-prompt-${requestId}.md`)
+  const outputFile = path.join(tmpDir, `claude-response-${requestId}.json`)
 
   try {
-    // Write prompt to temp file (avoids shell escaping issues)
+    // Write prompt to temp file with output instruction
     const fullPrompt = `${prompt}
 
-Output ONLY valid JSON (no markdown, no code blocks, no explanation).`
+CRITICAL: You MUST write your JSON response to this exact file path: ${outputFile}
+Use the Write tool to create the file. Output ONLY valid JSON, no markdown, no explanation, no code blocks.`
 
     await fs.writeFile(promptFile, fullPrompt)
 
-    // Run Claude and capture stdout
+    // Run Claude with prompt file as stdin
     const { stdout, stderr } = await execAsync(
       `claude --dangerously-skip-permissions --print < "${promptFile}"`,
       { cwd, timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024 }
     )
 
-    // Parse JSON from stdout
-    const trimmed = stdout.trim()
-
-    // Try to extract JSON if wrapped in markdown code blocks
-    let jsonStr = trimmed
-    const jsonMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/)
-    if (jsonMatch) {
-      jsonStr = jsonMatch[1].trim()
-    }
-
+    // Read the output file
     try {
-      const result = JSON.parse(jsonStr)
+      const outputContent = await fs.readFile(outputFile, 'utf-8')
+      const result = JSON.parse(outputContent)
       return { success: true, result }
-    } catch (parseError: any) {
+    } catch (readError: any) {
+      // Output file doesn't exist or isn't valid JSON
       return {
         success: false,
-        error: `Failed to parse JSON from Claude output`,
-        raw: trimmed.slice(0, 500)
+        error: `Claude did not write valid JSON to output file`,
+        raw: `stdout: ${stdout?.slice(0, 500)}\nstderr: ${stderr?.slice(0, 500)}`
       }
     }
   } catch (error: any) {
     return {
       success: false,
       error: error.message,
-      raw: error.stderr || error.stdout
+      raw: `stderr: ${error.stderr?.slice(0, 500) || 'none'}\nstdout: ${error.stdout?.slice(0, 500) || 'none'}`
     }
   } finally {
-    // Cleanup temp file
+    // Cleanup temp files (ignore errors)
     await fs.unlink(promptFile).catch(() => {})
+    await fs.unlink(outputFile).catch(() => {})
   }
 }
