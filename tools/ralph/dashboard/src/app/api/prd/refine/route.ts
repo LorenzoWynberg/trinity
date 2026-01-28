@@ -57,11 +57,15 @@ Output ONLY valid JSON (no markdown, no code blocks):
       "status": "ok" | "needs_work",
       "issues": ["issue 1", "issue 2"],
       "suggested_description": "Clear, specific description of what to implement and why",
-      "suggested_acceptance": ["clearer criterion 1", "clearer criterion 2"]
+      "suggested_acceptance": ["clearer criterion 1", "clearer criterion 2"],
+      "tags": ["copy", "from", "original"],
+      "depends_on": ["copy", "from", "original"]
     }
   ],
   "summary": "X of ${totalStories} pending stories need refinement"
 }
+
+IMPORTANT: Copy the original tags and depends_on arrays exactly as they are in the input stories.
 
 Be pragmatic - only flag real issues that could lead to wrong implementations.
 If a story is fine, set status to "ok" with empty issues/suggestions.`

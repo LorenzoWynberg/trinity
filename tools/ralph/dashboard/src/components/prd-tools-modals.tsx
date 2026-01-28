@@ -22,6 +22,8 @@ type Refinement = {
   issues: string[]
   suggested_description: string
   suggested_acceptance: string[]
+  tags?: string[]
+  depends_on?: string[]
 }
 
 type GeneratedStory = {
@@ -101,7 +103,10 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
           title: ref.title,
           currentDescription: ref.suggested_description,
           currentAcceptance: ref.suggested_acceptance,
-          userFeedback: editPrompt
+          userFeedback: editPrompt,
+          tags: ref.tags,
+          depends_on: ref.depends_on,
+          allRefinements: refinements  // Pass all so Claude can check related
         })
       })
       const data = await res.json()
@@ -109,14 +114,28 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
       if (data.error) {
         setError(data.error)
       } else {
-        // Update this refinement's suggestions
-        setRefinements(prev => prev.map(r =>
-          r.id === id ? {
-            ...r,
-            suggested_description: data.suggested_description,
-            suggested_acceptance: data.suggested_acceptance
-          } : r
-        ))
+        // Update target and any related refinements
+        setRefinements(prev => prev.map(r => {
+          // Update target story
+          if (r.id === id && data.target) {
+            return {
+              ...r,
+              suggested_description: data.target.suggested_description,
+              suggested_acceptance: data.target.suggested_acceptance
+            }
+          }
+          // Update related stories if Claude flagged them
+          const relatedUpdate = (data.related_updates || []).find((u: any) => u.id === r.id)
+          if (relatedUpdate) {
+            return {
+              ...r,
+              suggested_description: relatedUpdate.suggested_description || r.suggested_description,
+              suggested_acceptance: relatedUpdate.suggested_acceptance || r.suggested_acceptance,
+              issues: [...r.issues, `Updated due to changes in ${id}: ${relatedUpdate.reason}`]
+            }
+          }
+          return r
+        }))
         setEditingId(null)
         setEditPrompt('')
       }
