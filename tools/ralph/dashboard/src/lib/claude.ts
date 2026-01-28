@@ -36,51 +36,49 @@ export async function runClaude(
   const requestId = randomUUID()
   const tmpDir = os.tmpdir()
   const promptFile = path.join(tmpDir, `claude-prompt-${requestId}.md`)
-  const outputFile = path.join(tmpDir, `claude-response-${requestId}.json`)
 
   try {
-    // Write prompt to temp file with output instruction
+    // Write prompt to temp file (avoids shell escaping issues)
     const fullPrompt = `${prompt}
 
-CRITICAL: You MUST write your JSON response to this exact file path: ${outputFile}
-Use the Write tool to create the file. Output ONLY valid JSON, no markdown, no explanation, no code blocks.`
+Output ONLY valid JSON (no markdown, no code blocks, no explanation).`
 
     await fs.writeFile(promptFile, fullPrompt)
 
-    // Run Claude with prompt file as stdin
-    // Use full path and explicit shell for reliability
-    const claudePath = process.env.CLAUDE_PATH || '/Users/dev-wynberg/.local/bin/claude'
-    await execAsync(
-      `"${claudePath}" --dangerously-skip-permissions --print < "${promptFile}"`,
-      { cwd, timeout: timeoutMs, shell: '/bin/bash' }
+    // Run Claude and capture stdout
+    const { stdout, stderr } = await execAsync(
+      `claude --dangerously-skip-permissions --print < "${promptFile}"`,
+      { cwd, timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024 }
     )
 
-    // Read the output file
+    // Parse JSON from stdout
+    const trimmed = stdout.trim()
+
+    // Try to extract JSON if wrapped in markdown code blocks
+    let jsonStr = trimmed
+    const jsonMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/)
+    if (jsonMatch) {
+      jsonStr = jsonMatch[1].trim()
+    }
+
     try {
-      const outputContent = await fs.readFile(outputFile, 'utf-8')
-      const result = JSON.parse(outputContent)
+      const result = JSON.parse(jsonStr)
       return { success: true, result }
-    } catch (readError: any) {
-      // Output file doesn't exist or isn't valid JSON
+    } catch (parseError: any) {
       return {
         success: false,
-        error: `Claude did not write valid JSON to output file`,
-        raw: `Expected output at: ${outputFile}`
+        error: `Failed to parse JSON from Claude output`,
+        raw: trimmed.slice(0, 500)
       }
     }
   } catch (error: any) {
-    // Capture all error info for debugging
-    const errorInfo = {
-      message: error.message,
-      stderr: error.stderr,
-      stdout: error.stdout,
-      code: error.code,
-      signal: error.signal
+    return {
+      success: false,
+      error: error.message,
+      raw: error.stderr || error.stdout
     }
-    return { success: false, error: JSON.stringify(errorInfo, null, 2) }
   } finally {
-    // Cleanup temp files (ignore errors)
+    // Cleanup temp file
     await fs.unlink(promptFile).catch(() => {})
-    await fs.unlink(outputFile).catch(() => {})
   }
 }
