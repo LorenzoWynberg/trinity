@@ -43,9 +43,10 @@ Use the Write tool to save the JSON. No markdown, no code blocks, just valid JSO
     const promptFile = path.join(os.tmpdir(), `claude-prompt-${requestId}.md`)
     await fs.writeFile(promptFile, fullPrompt)
 
-    // Run Claude with prompt file
+    // Run Claude with prompt file (use full path)
+    const claudePath = process.env.CLAUDE_PATH || `${process.env.HOME}/.local/bin/claude`
     const { stdout, stderr } = await execAsync(
-      `cat "${promptFile}" | claude --dangerously-skip-permissions --print`,
+      `cat "${promptFile}" | "${claudePath}" --dangerously-skip-permissions --print`,
       { cwd, timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024 }
     )
 
