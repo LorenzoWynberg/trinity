@@ -116,7 +116,7 @@ Output format (JSON only, no markdown):
 
 Only include related_updates for stories that actually need changes. Keep suggestions specific and testable.`
 
-    const { success, result, error, raw } = await runClaude(claudePrompt, { timeoutMs: 90000 })
+    const { success, result, error, raw } = await runClaude(claudePrompt)
 
     if (!success) {
       return NextResponse.json({ error, raw }, { status: 500 })

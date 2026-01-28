@@ -109,15 +109,8 @@ This keeps humans in the loop while letting AI do the heavy lifting.
 
 ## Timeouts
 
-Claude CLI operations have configurable timeouts:
+All Claude CLI operations use a **15 minute default timeout** (configured in `runClaude()` in `src/lib/claude.ts`).
 
-| Endpoint | Default | Notes |
-|----------|---------|-------|
-| Story edit | 2 min | Single story analysis |
-| Refine | 10 min | Analyzes all pending stories |
-| Generate | 2 min | Story generation |
-| Apply (PUT) | 1 min | Writing to PRD file |
-
-**Gotcha:** The refine endpoint analyzes ALL pending stories in a single Claude call. With 90+ stories, this can take several minutes. If you see SIGTERM/killed errors with "no output", increase the timeout in `runClaude()` call.
+**Gotcha:** The refine endpoint analyzes ALL pending stories in a single Claude call. With 90+ stories, this can take several minutes. If you see SIGTERM/killed errors with "no output", the timeout may need increasing.
 
 Debug logging is available - check terminal for `[runClaude]` and `[refine]` prefixed logs showing request details and error info (exit code, signal, killed status).

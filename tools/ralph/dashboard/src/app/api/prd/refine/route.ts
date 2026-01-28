@@ -65,7 +65,7 @@ Copy tags and depends_on from original. Be pragmatic - only flag real issues.`
 
     // Run Claude with temp files - use longer timeout for analyzing many stories
     console.log('[refine] Calling runClaude, prompt length:', prompt.length)
-    const { success, result, error, raw } = await runClaude(prompt, { timeoutMs: 600000 }) // 10 minutes
+    const { success, result, error, raw } = await runClaude(prompt)
     console.log('[refine] runClaude returned, success:', success)
 
     if (!success) {
@@ -118,7 +118,7 @@ After completing, output this JSON:
   "success": true
 }`
 
-    const { success, result, error, raw } = await runClaude(prompt, { timeoutMs: 60000 })
+    const { success, result, error, raw } = await runClaude(prompt)
 
     if (!success) {
       return NextResponse.json({ error, raw }, { status: 500 })

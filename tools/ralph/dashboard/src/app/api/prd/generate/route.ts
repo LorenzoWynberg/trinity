@@ -124,7 +124,7 @@ After completing, output this JSON:
   "success": true
 }`
 
-    const { success, result, error, raw } = await runClaude(prompt, { timeoutMs: 60000 })
+    const { success, result, error, raw } = await runClaude(prompt)
 
     if (!success) {
       return NextResponse.json({ error, raw }, { status: 500 })

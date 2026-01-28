@@ -29,7 +29,7 @@ export async function runClaude(
     timeoutMs?: number
   } = {}
 ): Promise<ClaudeResult> {
-  const { cwd = PROJECT_ROOT, timeoutMs = 120000 } = options
+  const { cwd = PROJECT_ROOT, timeoutMs = 900000 } = options // 15 min default
   const requestId = randomUUID()
   const outputFile = path.join(os.tmpdir(), `claude-response-${requestId}.json`)
 
