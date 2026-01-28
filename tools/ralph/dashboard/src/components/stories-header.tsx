@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { SplitButton } from '@/components/ui/split-button'
 import { Sparkles, Wand2, Loader2 } from 'lucide-react'
-import { RefineStoriesModal, GenerateStoriesModal } from '@/components/prd-tools-modals'
-import { useTaskContext } from '@/components/task-provider'
+import { RefineStoriesModal, GenerateStoriesModal, StoryEditModal } from '@/components/prd-tools-modals'
+import { useTaskContext, type Task } from '@/components/task-provider'
+import { useTaskStore } from '@/lib/task-store'
 
 type StoriesHeaderProps = {
   totalStories: number
@@ -15,7 +16,62 @@ type StoriesHeaderProps = {
 export function StoriesHeader({ totalStories, phaseCount, version }: StoriesHeaderProps) {
   const [refineOpen, setRefineOpen] = useState(false)
   const [generateOpen, setGenerateOpen] = useState(false)
+  const [storyEditOpen, setStoryEditOpen] = useState(false)
+  const [activeTask, setActiveTask] = useState<Task | null>(null)
   const { isTaskRunning } = useTaskContext()
+
+  const processPendingTasks = useCallback(() => {
+    const { pendingTasks, removePendingTask } = useTaskStore.getState()
+
+    if (pendingTasks.length === 0) return
+
+    // Find the first completed task
+    const task = pendingTasks.find(t =>
+      t.status === 'complete' || t.status === 'failed'
+    )
+
+    if (task) {
+      setActiveTask(task)
+      if (task.type === 'refine') {
+        setRefineOpen(true)
+      } else if (task.type === 'generate') {
+        setGenerateOpen(true)
+      } else if (task.type === 'story-edit') {
+        setStoryEditOpen(true)
+      }
+      // Remove this task from pending
+      removePendingTask(task.id)
+    }
+  }, [])
+
+  // Check for pending tasks on mount and subscribe to changes
+  useEffect(() => {
+    // Check immediately
+    processPendingTasks()
+
+    // Subscribe to store changes
+    const unsubscribe = useTaskStore.subscribe(() => {
+      processPendingTasks()
+    })
+
+    return unsubscribe
+  }, [processPendingTasks])
+
+  // Clear active task when modals close
+  const handleRefineOpenChange = (open: boolean) => {
+    setRefineOpen(open)
+    if (!open) setActiveTask(null)
+  }
+
+  const handleGenerateOpenChange = (open: boolean) => {
+    setGenerateOpen(open)
+    if (!open) setActiveTask(null)
+  }
+
+  const handleStoryEditOpenChange = (open: boolean) => {
+    setStoryEditOpen(open)
+    if (!open) setActiveTask(null)
+  }
 
   const refineRunning = isTaskRunning('refine')
   const generateRunning = isTaskRunning('generate')
@@ -51,13 +107,21 @@ export function StoriesHeader({ totalStories, phaseCount, version }: StoriesHead
 
       <RefineStoriesModal
         open={refineOpen}
-        onOpenChange={setRefineOpen}
+        onOpenChange={handleRefineOpenChange}
         version={version}
+        initialTask={activeTask?.type === 'refine' ? activeTask : undefined}
       />
       <GenerateStoriesModal
         open={generateOpen}
-        onOpenChange={setGenerateOpen}
+        onOpenChange={handleGenerateOpenChange}
         version={version}
+        initialTask={activeTask?.type === 'generate' ? activeTask : undefined}
+      />
+      <StoryEditModal
+        open={storyEditOpen}
+        onOpenChange={handleStoryEditOpenChange}
+        version={version}
+        initialTask={activeTask?.type === 'story-edit' ? activeTask : undefined}
       />
     </>
   )

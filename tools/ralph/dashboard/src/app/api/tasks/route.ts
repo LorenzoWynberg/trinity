@@ -5,6 +5,7 @@ import {
   getActiveTasks,
   getTasksByType,
   cleanupTasks,
+  getUnreadCount,
   type TaskType
 } from '@/lib/tasks'
 
@@ -16,6 +17,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const active = searchParams.get('active')
     const limit = searchParams.get('limit')
+    const includeDeleted = searchParams.get('includeDeleted') === 'true'
 
     let tasks
 
@@ -27,11 +29,13 @@ export async function GET(request: NextRequest) {
       tasks = getTasks({
         type: type || undefined,
         status: status ? status.split(',') as any : undefined,
-        limit: limit ? parseInt(limit) : undefined
+        limit: limit ? parseInt(limit) : undefined,
+        includeDeleted
       })
     }
 
-    return NextResponse.json({ tasks })
+    const unreadCount = getUnreadCount()
+    return NextResponse.json({ tasks, unreadCount })
   } catch (error: any) {
     console.error('[tasks] GET error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -42,7 +46,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { type, version, params } = body
+    const { type, version, params, context } = body
 
     if (!type || !version) {
       return NextResponse.json(
@@ -51,7 +55,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const task = await createTask(type, version, params || {})
+    const task = await createTask(type, version, params || {}, context)
 
     // Cleanup old tasks periodically
     try {

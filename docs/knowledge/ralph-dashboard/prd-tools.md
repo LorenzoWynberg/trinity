@@ -107,6 +107,19 @@ Both Refine and Story Edit support iterative refinement:
 
 This keeps humans in the loop while letting AI do the heavy lifting.
 
+## Background Tasks
+
+All three PRD tools support background task execution. Users can start a task and continue working - they'll be notified when it completes.
+
+**Flow:**
+1. User clicks "Start" in modal
+2. Task queued in database, modal shows "running" state
+3. User can close modal and continue working
+4. Task completes, toast + browser notification appears
+5. User clicks notification → navigates back to modal with results
+
+See `docs/knowledge/ralph-dashboard/tasks.md` for full background task architecture.
+
 ## Timeouts
 
 All Claude CLI operations use a **15 minute default timeout** (configured in `runClaude()` in `src/lib/claude.ts`).

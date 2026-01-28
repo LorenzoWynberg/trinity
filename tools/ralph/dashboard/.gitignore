@@ -10,8 +10,6 @@
 !.yarn/releases
 !.yarn/versions
 
-settings.json
-
 # testing
 /coverage
 
@@ -47,4 +45,3 @@ ngrok.yml
 dashboard.db
 dashboard.db-wal
 dashboard.db-shm
-tasks.json

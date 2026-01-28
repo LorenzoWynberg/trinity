@@ -70,17 +70,28 @@ function runMigrations(db: Database.Database) {
 export type TaskType = 'refine' | 'generate' | 'story-edit'
 export type TaskStatus = 'queued' | 'running' | 'complete' | 'failed'
 
+export interface TaskContext {
+  returnPath?: string      // Where to navigate when task completes
+  step?: string            // Which step to resume at
+  tempFile?: string        // Path to temp file if needed
+  selectedIds?: string[]   // Pre-selected items
+  [key: string]: any       // Additional context
+}
+
 export interface Task {
   id: string
   type: TaskType
   status: TaskStatus
   version: string
   params: Record<string, any>
+  context?: TaskContext
   result?: any
   error?: string
   created_at: string
   started_at?: string
   completed_at?: string
+  read_at?: string
+  deleted_at?: string
 }
 
 // Parse JSON fields from DB row
@@ -88,22 +99,31 @@ function parseTask(row: any): Task {
   return {
     ...row,
     params: JSON.parse(row.params || '{}'),
+    context: row.context ? JSON.parse(row.context) : undefined,
     result: row.result ? JSON.parse(row.result) : undefined,
   }
 }
 
 // Task operations
 export const tasks = {
-  create(type: TaskType, version: string, params: Record<string, any> = {}): Task {
+  create(type: TaskType, version: string, params: Record<string, any> = {}, context?: TaskContext): Task {
     const db = getDb()
     const id = crypto.randomUUID()
 
     db.prepare(`
-      INSERT INTO tasks (id, type, version, params)
-      VALUES (?, ?, ?, ?)
-    `).run(id, type, version, JSON.stringify(params))
+      INSERT INTO tasks (id, type, version, params, context)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(id, type, version, JSON.stringify(params), context ? JSON.stringify(context) : null)
 
     return this.get(id)!
+  },
+
+  updateContext(id: string, context: TaskContext): Task | null {
+    const db = getDb()
+    db.prepare(`
+      UPDATE tasks SET context = ? WHERE id = ?
+    `).run(JSON.stringify(context), id)
+    return this.get(id)
   },
 
   get(id: string): Task | null {
@@ -116,10 +136,17 @@ export const tasks = {
     type?: TaskType
     status?: TaskStatus | TaskStatus[]
     limit?: number
+    includeDeleted?: boolean
+    includeRead?: boolean
   } = {}): Task[] {
     const db = getDb()
     let sql = 'SELECT * FROM tasks WHERE 1=1'
     const params: any[] = []
+
+    // Exclude soft-deleted by default
+    if (!options.includeDeleted) {
+      sql += ' AND deleted_at IS NULL'
+    }
 
     if (options.type) {
       sql += ' AND type = ?'
@@ -205,5 +232,107 @@ export const tasks = {
       )
     `).run(keepCount)
     return result.changes
+  },
+
+  delete(id: string): boolean {
+    const db = getDb()
+    const result = db.prepare('DELETE FROM tasks WHERE id = ?').run(id)
+    return result.changes > 0
+  },
+
+  markRead(id: string): Task | null {
+    const db = getDb()
+    db.prepare(`
+      UPDATE tasks SET read_at = datetime('now') WHERE id = ?
+    `).run(id)
+    return this.get(id)
+  },
+
+  markAllRead(): number {
+    const db = getDb()
+    const result = db.prepare(`
+      UPDATE tasks
+      SET read_at = datetime('now')
+      WHERE read_at IS NULL
+        AND status IN ('complete', 'failed')
+        AND deleted_at IS NULL
+    `).run()
+    return result.changes
+  },
+
+  softDelete(id: string): Task | null {
+    const db = getDb()
+    db.prepare(`
+      UPDATE tasks SET deleted_at = datetime('now') WHERE id = ?
+    `).run(id)
+    return this.get(id)
+  },
+
+  restore(id: string): Task | null {
+    const db = getDb()
+    db.prepare(`
+      UPDATE tasks SET deleted_at = NULL WHERE id = ?
+    `).run(id)
+    return this.get(id)
+  },
+
+  getUnreadCount(): number {
+    const db = getDb()
+    const result = db.prepare(`
+      SELECT COUNT(*) as count FROM tasks
+      WHERE read_at IS NULL
+        AND status IN ('complete', 'failed')
+        AND deleted_at IS NULL
+    `).get() as { count: number }
+    return result.count
+  }
+}
+
+// Settings operations
+export const settings = {
+  get(key: string): string | null {
+    const db = getDb()
+    const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined
+    return row?.value ?? null
+  },
+
+  getAll(): Record<string, string> {
+    const db = getDb()
+    const rows = db.prepare('SELECT key, value FROM settings').all() as { key: string; value: string }[]
+    return Object.fromEntries(rows.map(r => [r.key, r.value]))
+  },
+
+  set(key: string, value: string): void {
+    const db = getDb()
+    db.prepare(`
+      INSERT INTO settings (key, value, updated_at)
+      VALUES (?, ?, datetime('now'))
+      ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = datetime('now')
+    `).run(key, value, value)
+  },
+
+  setAll(data: Record<string, string>): void {
+    const db = getDb()
+    const stmt = db.prepare(`
+      INSERT INTO settings (key, value, updated_at)
+      VALUES (?, ?, datetime('now'))
+      ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = datetime('now')
+    `)
+
+    db.transaction(() => {
+      for (const [key, value] of Object.entries(data)) {
+        stmt.run(key, value, value)
+      }
+    })()
+  },
+
+  delete(key: string): void {
+    const db = getDb()
+    db.prepare('DELETE FROM settings WHERE key = ?').run(key)
+  },
+
+  clear(): void {
+    const db = getDb()
+    db.prepare('DELETE FROM settings').run()
   }
 }

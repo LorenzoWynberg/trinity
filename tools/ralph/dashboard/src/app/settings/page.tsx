@@ -12,10 +12,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Sun, Moon, Monitor, Zap, Clock, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 export default function SettingsPage() {
-  const { theme, setTheme } = useTheme()
+  const { theme, resolvedTheme, setTheme } = useTheme()
+  // Use resolvedTheme for display (actual applied theme), theme for system detection
+  const currentTheme = theme === 'system' ? 'system' : resolvedTheme
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [versions, setVersions] = useState<string[]>([])
@@ -24,30 +25,46 @@ export default function SettingsPage() {
   const [savingVersion, setSavingVersion] = useState(false)
   const [savingTimezone, setSavingTimezone] = useState(false)
 
+  // Load settings on mount
   useEffect(() => {
     setMounted(true)
-    // Fetch available versions and settings together
-    Promise.all([
-      fetch('/api/versions').then(res => res.json()),
-      fetch('/api/settings').then(res => res.json())
-    ]).then(([versionData, settingsData]) => {
-      const availableVersions = versionData.versions || []
-      setVersions(availableVersions)
 
-      // Resolve 'first' or invalid version to actual first version
-      const savedVersion = settingsData.defaultVersion
-      if (savedVersion && savedVersion !== 'first' && availableVersions.includes(savedVersion)) {
-        setDefaultVersion(savedVersion)
-      } else if (availableVersions.length > 0) {
-        setDefaultVersion(availableVersions[0])
-      }
+    async function loadSettings() {
+      try {
+        const [versionData, settingsData] = await Promise.all([
+          fetch('/api/versions').then(res => res.json()),
+          fetch('/api/settings').then(res => res.json())
+        ])
 
-      // Load timezone
-      if (settingsData.timezone) {
-        setTimezone(settingsData.timezone)
+        const availableVersions = versionData.versions || []
+        setVersions(availableVersions)
+
+        // Resolve 'first' or invalid version to actual first version
+        const savedVersion = settingsData.defaultVersion
+        if (savedVersion && savedVersion !== 'first' && availableVersions.includes(savedVersion)) {
+          setDefaultVersion(savedVersion)
+        } else if (availableVersions.length > 0) {
+          setDefaultVersion(availableVersions[0])
+        }
+
+        // Load timezone
+        if (settingsData.timezone) {
+          setTimezone(settingsData.timezone)
+        }
+
+        // Sync theme from DB to next-themes
+        if (settingsData.theme) {
+          setTheme(settingsData.theme)
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error)
+      } finally {
+        setLoading(false)
       }
-    }).catch(() => {}).finally(() => setLoading(false))
-  }, [])
+    }
+
+    loadSettings()
+  }, [setTheme])
 
   const saveTheme = async (newTheme: string) => {
     setTheme(newTheme)
@@ -142,11 +159,8 @@ export default function SettingsPage() {
                 {themes.map(({ value, label, icon: Icon }) => (
                   <Button
                     key={value}
-                    variant={theme === value ? 'default' : 'outline'}
-                    className={cn(
-                      'gap-2',
-                      theme === value && 'bg-primary'
-                    )}
+                    variant="outline"
+                    active={currentTheme === value}
                     onClick={() => saveTheme(value)}
                   >
                     <Icon className="h-4 w-4" />

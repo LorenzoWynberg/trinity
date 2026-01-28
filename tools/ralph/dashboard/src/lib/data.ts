@@ -2,32 +2,47 @@ import fs from 'fs/promises'
 import path from 'path'
 import type { PRD, State, Metrics, PhaseProgress, EpicProgress, Story, VersionInfo, BlockedInfo, Phase, Epic, KnowledgeChapter, ChapterIndex, KnowledgePage } from './types'
 
+import { settings as settingsDb } from './db'
+
 // Paths relative to project root
 const PROJECT_ROOT = path.join(process.cwd(), '../../..')
 const RALPH_CLI_DIR = path.join(PROJECT_ROOT, 'tools/ralph/cli')
 const PRD_DIR = path.join(RALPH_CLI_DIR, 'prd')
 const DOCS_DIR = path.join(PROJECT_ROOT, 'docs')
 const LOGS_DIR = path.join(PROJECT_ROOT, 'logs')
-const SETTINGS_FILE = path.join(process.cwd(), 'settings.json')
+
+export type Theme = 'light' | 'dark' | 'cyber-light' | 'cyber-dark' | 'system'
+export type GraphDirection = 'horizontal' | 'vertical'
 
 export type Settings = {
-  theme: 'light' | 'dark' | 'system'
-  graphDirection: 'horizontal' | 'vertical'
+  theme: Theme
+  graphDirection: GraphDirection
   showDeadEnds: boolean
+  showExternalDeps: boolean
   defaultVersion: string
+  timezone: string
 }
 
 const defaultSettings: Settings = {
   theme: 'dark',
   graphDirection: 'horizontal',
   showDeadEnds: false,
-  defaultVersion: 'first'
+  showExternalDeps: false,
+  defaultVersion: 'first',
+  timezone: 'UTC'
 }
 
 export async function getSettings(): Promise<Settings> {
   try {
-    const content = await fs.readFile(SETTINGS_FILE, 'utf-8')
-    return { ...defaultSettings, ...JSON.parse(content) }
+    const stored = settingsDb.getAll()
+    return {
+      theme: (stored.theme as Theme) || defaultSettings.theme,
+      graphDirection: (stored.graphDirection as GraphDirection) || defaultSettings.graphDirection,
+      showDeadEnds: stored.showDeadEnds === 'true',
+      showExternalDeps: stored.showExternalDeps === 'true',
+      defaultVersion: stored.defaultVersion || defaultSettings.defaultVersion,
+      timezone: stored.timezone || defaultSettings.timezone,
+    }
   } catch {
     return defaultSettings
   }

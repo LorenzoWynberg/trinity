@@ -5,7 +5,6 @@ import { Sidebar } from "@/components/sidebar"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ToastProvider } from "@/components/toast-provider"
 import { TaskProvider } from "@/components/task-provider"
-import { TaskResultsModal } from "@/components/task-results-modal"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,7 +46,6 @@ export default function RootLayout({
                   {children}
                 </main>
               </div>
-              <TaskResultsModal />
             </TaskProvider>
           </ToastProvider>
         </ThemeProvider>

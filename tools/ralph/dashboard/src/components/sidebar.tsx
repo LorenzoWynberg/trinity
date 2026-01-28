@@ -13,6 +13,7 @@ import {
   Settings,
   GitBranch,
   TerminalSquare,
+  ClipboardList,
   Menu,
   X,
 } from 'lucide-react'
@@ -24,6 +25,7 @@ const navItems = [
   { href: '/stories', label: 'Stories', icon: ListTodo },
   { href: '/graph', label: 'Graph', icon: GitBranch },
   { href: '/terminal', label: 'Terminal', icon: TerminalSquare },
+  { href: '/tasks', label: 'Tasks', icon: ClipboardList },
   { href: '/metrics', label: 'Metrics', icon: BarChart3 },
   { href: '/activity', label: 'Activity', icon: Clock },
   { href: '/knowledge', label: 'Knowledge', icon: BookOpen },
@@ -132,7 +134,7 @@ export function Sidebar() {
       {mounted && (
         <aside
           className={cn(
-            'lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-background border-r flex flex-col transform transition-transform duration-200 ease-in-out',
+            'lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-background cyber-dark:bg-card border-r flex flex-col transform transition-transform duration-200 ease-in-out',
             isOpen ? 'translate-x-0' : '-translate-x-full'
           )}
         >
@@ -141,7 +143,7 @@ export function Sidebar() {
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-64 border-r bg-muted/30 flex-col">
+      <aside className="hidden lg:flex w-64 border-r bg-muted/30 cyber-dark:bg-card flex-col">
         {sidebarContent}
       </aside>
     </>

@@ -1,51 +1,72 @@
 import { NextResponse } from 'next/server'
-import fs from 'fs/promises'
-import path from 'path'
+import { settings as settingsDb } from '@/lib/db'
 
-const SETTINGS_FILE = path.join(process.cwd(), 'settings.json')
+export type Theme = 'light' | 'dark' | 'cyber-light' | 'cyber-dark' | 'system'
+export type GraphDirection = 'horizontal' | 'vertical'
 
-type Settings = {
-  theme: 'light' | 'dark' | 'system'
-  graphDirection: 'horizontal' | 'vertical'
+export interface Settings {
+  theme: Theme
+  graphDirection: GraphDirection
   showDeadEnds: boolean
-  defaultVersion: string // 'first' means use first available version
-  timezone: string // IANA timezone name (e.g., 'America/Costa_Rica') or UTC offset (e.g., 'UTC-6')
+  showExternalDeps: boolean
+  defaultVersion: string
+  timezone: string
 }
 
 const defaultSettings: Settings = {
   theme: 'dark',
   graphDirection: 'horizontal',
   showDeadEnds: false,
+  showExternalDeps: false,
   defaultVersion: 'first',
-  timezone: 'America/Costa_Rica'
+  timezone: 'UTC'
 }
 
-async function getSettings(): Promise<Settings> {
-  try {
-    const content = await fs.readFile(SETTINGS_FILE, 'utf-8')
-    return { ...defaultSettings, ...JSON.parse(content) }
-  } catch {
-    return defaultSettings
+function getSettings(): Settings {
+  const stored = settingsDb.getAll()
+  return {
+    theme: (stored.theme as Theme) || defaultSettings.theme,
+    graphDirection: (stored.graphDirection as GraphDirection) || defaultSettings.graphDirection,
+    showDeadEnds: stored.showDeadEnds === 'true',
+    showExternalDeps: stored.showExternalDeps === 'true',
+    defaultVersion: stored.defaultVersion || defaultSettings.defaultVersion,
+    timezone: stored.timezone || defaultSettings.timezone,
   }
 }
 
-async function saveSettings(settings: Settings): Promise<void> {
-  await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2))
+function saveSettings(settings: Partial<Settings>): void {
+  const data: Record<string, string> = {}
+
+  if (settings.theme !== undefined) data.theme = settings.theme
+  if (settings.graphDirection !== undefined) data.graphDirection = settings.graphDirection
+  if (settings.showDeadEnds !== undefined) data.showDeadEnds = String(settings.showDeadEnds)
+  if (settings.showExternalDeps !== undefined) data.showExternalDeps = String(settings.showExternalDeps)
+  if (settings.defaultVersion !== undefined) data.defaultVersion = settings.defaultVersion
+  if (settings.timezone !== undefined) data.timezone = settings.timezone
+
+  settingsDb.setAll(data)
 }
 
+// GET /api/settings - Get all settings
 export async function GET() {
-  const settings = await getSettings()
-  return NextResponse.json(settings)
+  try {
+    const settings = getSettings()
+    return NextResponse.json(settings)
+  } catch (error: any) {
+    console.error('[settings] GET error:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 }
 
+// POST /api/settings - Update settings
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const currentSettings = await getSettings()
-    const newSettings = { ...currentSettings, ...body }
-    await saveSettings(newSettings)
-    return NextResponse.json(newSettings)
-  } catch {
-    return NextResponse.json({ error: 'Failed to save settings' }, { status: 500 })
+    saveSettings(body)
+    const settings = getSettings()
+    return NextResponse.json(settings)
+  } catch (error: any) {
+    console.error('[settings] POST error:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

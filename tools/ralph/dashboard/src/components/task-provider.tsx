@@ -1,22 +1,24 @@
 'use client'
 
 import { createContext, useContext, useEffect, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
-import { useDashboardStore, type Task, type TaskType } from '@/lib/store'
+import { useTaskStore, type Task, type TaskType, type TaskContext } from '@/lib/task-store'
 
-export type { Task, TaskType }
-export type { TaskStatus } from '@/lib/store'
+export type { Task, TaskType, TaskContext }
+export type { TaskStatus } from '@/lib/task-store'
 
 interface TaskContextValue {
+  // From store
   activeTasks: Task[]
-  recentTasks: Task[]
+  unreadTasks: Task[]
+  unseenCount: number
   isTaskRunning: (type: TaskType) => boolean
   getActiveTask: (type: TaskType) => Task | undefined
-  createTask: (type: TaskType, version: string, params?: Record<string, any>) => Promise<Task>
+
+  // Actions
+  createTask: (type: TaskType, version: string, params?: Record<string, any>, context?: TaskContext) => Promise<Task>
   refreshTasks: () => Promise<void>
-  selectedTask: Task | null
-  setSelectedTask: (task: Task | null) => void
-  unseenCount: number
 }
 
 const TaskContext = createContext<TaskContextValue | null>(null)
@@ -31,8 +33,8 @@ export function useTaskContext() {
 
 // Hook for checking if a specific task type is running
 export function useTaskLoading(type: TaskType): boolean {
-  const { isTaskRunning } = useTaskContext()
-  return isTaskRunning(type)
+  const store = useTaskStore()
+  return store.isTaskRunning(type)
 }
 
 interface TaskProviderProps {
@@ -41,26 +43,24 @@ interface TaskProviderProps {
 
 export function TaskProvider({ children }: TaskProviderProps) {
   const { toast } = useToast()
+  const router = useRouter()
   const previousActiveIdsRef = useRef<Set<string>>(new Set())
   const notificationPermissionRef = useRef<NotificationPermission>('default')
 
-  // Zustand store
+  // Task store
+  const store = useTaskStore()
   const {
-    tasks,
     setTasks,
-    seenTaskIds,
-    markTaskSeen,
-    selectedTaskId,
-    setSelectedTaskId,
+    addPendingTask,
     getActiveTasks,
-    getRecentTasks,
+    getUnreadTasks,
     getUnseenCount,
-  } = useDashboardStore()
+    isTaskRunning,
+  } = store
 
   const activeTasks = getActiveTasks()
-  const recentTasks = getRecentTasks()
+  const unreadTasks = getUnreadTasks()
   const unseenCount = getUnseenCount()
-  const selectedTask = tasks.find(t => t.id === selectedTaskId) || null
 
   // Request notification permission on mount
   useEffect(() => {
@@ -70,6 +70,15 @@ export function TaskProvider({ children }: TaskProviderProps) {
       })
     }
   }, [])
+
+  const navigateToTask = useCallback((task: Task) => {
+    const returnPath = task.context?.returnPath || '/stories'
+
+    if (returnPath) {
+      addPendingTask(task)
+      window.location.href = returnPath
+    }
+  }, [addPendingTask])
 
   const showNotification = useCallback((task: Task) => {
     const title = task.status === 'complete'
@@ -91,7 +100,7 @@ export function TaskProvider({ children }: TaskProviderProps) {
       variant: task.status === 'complete' ? 'default' : 'destructive',
       action: task.status === 'complete' ? (
         <button
-          onClick={() => setSelectedTaskId(task.id)}
+          onClick={() => navigateToTask(task)}
           className="text-xs underline"
         >
           View Results
@@ -109,17 +118,18 @@ export function TaskProvider({ children }: TaskProviderProps) {
 
       notification.onclick = () => {
         window.focus()
-        setSelectedTaskId(task.id)
+        navigateToTask(task)
         notification.close()
       }
     }
-  }, [toast, setSelectedTaskId])
+  }, [toast, navigateToTask])
 
   const refreshTasks = useCallback(async () => {
     try {
       const res = await fetch('/api/tasks?limit=50')
       const data = await res.json()
       const newTasks: Task[] = data.tasks || []
+      const unreadCount: number = data.unreadCount || 0
 
       // Check for newly completed tasks
       const newActiveIds = new Set<string>(
@@ -130,20 +140,19 @@ export function TaskProvider({ children }: TaskProviderProps) {
       // Find tasks that were active but are no longer
       for (const prevId of previousActiveIds) {
         if (!newActiveIds.has(prevId)) {
-          // Task completed - find it
           const completedTask = newTasks.find(t => t.id === prevId)
-          if (completedTask && !seenTaskIds.has(completedTask.id)) {
+          if (completedTask && !completedTask.read_at) {
             showNotification(completedTask)
           }
         }
       }
 
       previousActiveIdsRef.current = newActiveIds
-      setTasks(newTasks)
+      setTasks(newTasks, unreadCount)
     } catch (error) {
       console.error('Failed to fetch tasks:', error)
     }
-  }, [showNotification, setTasks, seenTaskIds])
+  }, [showNotification, setTasks])
 
   // Poll for task updates
   useEffect(() => {
@@ -152,10 +161,6 @@ export function TaskProvider({ children }: TaskProviderProps) {
     return () => clearInterval(interval)
   }, [refreshTasks])
 
-  const isTaskRunning = useCallback((type: TaskType): boolean => {
-    return activeTasks.some(t => t.type === type)
-  }, [activeTasks])
-
   const getActiveTask = useCallback((type: TaskType): Task | undefined => {
     return activeTasks.find(t => t.type === type)
   }, [activeTasks])
@@ -163,12 +168,13 @@ export function TaskProvider({ children }: TaskProviderProps) {
   const createTask = useCallback(async (
     type: TaskType,
     version: string,
-    params: Record<string, any> = {}
+    params: Record<string, any> = {},
+    context?: TaskContext
   ): Promise<Task> => {
     const res = await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, version, params })
+      body: JSON.stringify({ type, version, params, context })
     })
 
     const data = await res.json()
@@ -188,21 +194,15 @@ export function TaskProvider({ children }: TaskProviderProps) {
     return data.task
   }, [refreshTasks, toast])
 
-  const setSelectedTask = useCallback((task: Task | null) => {
-    setSelectedTaskId(task?.id || null)
-  }, [setSelectedTaskId])
-
   return (
     <TaskContext.Provider value={{
       activeTasks,
-      recentTasks,
+      unreadTasks,
+      unseenCount,
       isTaskRunning,
       getActiveTask,
       createTask,
       refreshTasks,
-      selectedTask,
-      setSelectedTask,
-      unseenCount,
     }}>
       {children}
     </TaskContext.Provider>

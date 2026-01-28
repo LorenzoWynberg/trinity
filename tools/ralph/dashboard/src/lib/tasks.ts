@@ -1,6 +1,6 @@
-import { tasks, type Task, type TaskType, type TaskStatus } from './db'
+import { tasks, type Task, type TaskType, type TaskStatus, type TaskContext } from './db'
 
-export type { Task, TaskType, TaskStatus }
+export type { Task, TaskType, TaskStatus, TaskContext }
 
 // Worker state
 let processing = false
@@ -8,9 +8,10 @@ let processing = false
 export async function createTask(
   type: TaskType,
   version: string,
-  params: Record<string, any> = {}
+  params: Record<string, any> = {},
+  context?: TaskContext
 ): Promise<Task> {
-  const task = tasks.create(type, version, params)
+  const task = tasks.create(type, version, params, context)
 
   // Trigger worker to process queue
   processQueue().catch(console.error)
@@ -26,6 +27,7 @@ export function getTasks(options: {
   type?: TaskType
   status?: TaskStatus | TaskStatus[]
   limit?: number
+  includeDeleted?: boolean
 } = {}): Task[] {
   return tasks.list(options)
 }
@@ -58,6 +60,30 @@ export function failTask(id: string, error: string): Task | null {
 
 export function cleanupTasks(): number {
   return tasks.cleanup(50)
+}
+
+export function deleteTask(id: string): boolean {
+  return tasks.delete(id)
+}
+
+export function markTaskRead(id: string): Task | null {
+  return tasks.markRead(id)
+}
+
+export function markAllTasksRead(): number {
+  return tasks.markAllRead()
+}
+
+export function softDeleteTask(id: string): Task | null {
+  return tasks.softDelete(id)
+}
+
+export function restoreTask(id: string): Task | null {
+  return tasks.restore(id)
+}
+
+export function getUnreadCount(): number {
+  return tasks.getUnreadCount()
 }
 
 // Worker to process queue
