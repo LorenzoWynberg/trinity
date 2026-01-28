@@ -47,9 +47,9 @@ Use the Write tool to create the file. Output ONLY valid JSON, no markdown, no e
 
     await fs.writeFile(promptFile, fullPrompt)
 
-    // Run Claude with prompt file as stdin
+    // Run Claude with prompt file as stdin (use cat pipe instead of < for compatibility)
     const { stdout, stderr } = await execAsync(
-      `claude --dangerously-skip-permissions --print < "${promptFile}"`,
+      `cat "${promptFile}" | claude --dangerously-skip-permissions --print`,
       { cwd, timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024 }
     )
 
