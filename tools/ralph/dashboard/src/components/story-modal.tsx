@@ -363,7 +363,7 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
               <div key={s} className="flex items-center">
                 <div className={cn(
                   "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
-                  editStep === s ? "bg-primary text-primary-foreground" :
+                  editStep === s ? "bg-primary text-primary-foreground cyber-dark:bg-accent cyber-dark:text-accent-foreground" :
                     (editStep === 'complete' || (editStep === 'review' && i === 0))
                       ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
                 )}>

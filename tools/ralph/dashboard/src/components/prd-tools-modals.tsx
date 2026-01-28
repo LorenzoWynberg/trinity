@@ -249,7 +249,7 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
             <div key={s} className="flex items-center">
               <div className={cn(
                 "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
-                step === s ? "bg-primary text-primary-foreground" :
+                step === s ? "bg-primary text-primary-foreground cyber-dark:bg-accent cyber-dark:text-accent-foreground" :
                   (step === 'complete' || (step === 'review' && i === 0))
                     ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
               )}>
@@ -579,7 +579,7 @@ export function GenerateStoriesModal({ open, onOpenChange, version }: GenerateMo
             <div key={s} className="flex items-center">
               <div className={cn(
                 "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
-                step === s ? "bg-primary text-primary-foreground" :
+                step === s ? "bg-primary text-primary-foreground cyber-dark:bg-accent cyber-dark:text-accent-foreground" :
                   (step === 'complete' || (step === 'review' && i === 0))
                     ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
               )}>
