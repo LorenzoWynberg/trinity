@@ -30,47 +30,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ refinements: [], summary: 'No stories to refine' })
     }
 
-    // Build prompt - tell Claude to read the file directly
-    const totalStories = stories.length
-    const storyIds = stories.map((s: any) => s.id)
-    const prompt = `You are reviewing PRD stories for clarity and implementability.
+    // Build prompt - just point Claude to the PRD file
+    const prompt = `Read the PRD file at: ${prdFile}
 
-READ THE PRD FILE: ${prdFile}
-
-PROJECT: ${prd.project || 'Unknown'}
-VERSION: ${version}
-TOTAL PENDING STORIES: ${totalStories}
-
-STORY IDs TO REVIEW: ${storyIds.join(', ')}
+Review all stories where passes=false AND merged=false AND skipped=false.
 
 For each story, check:
 1. Are acceptance criteria specific and testable?
-2. Are there vague terms that need clarification? ("settings", "improve", "properly", "handle")
-3. Should this story be split into smaller stories?
-4. Are dependencies complete?
-5. Are tags appropriate?
+2. Are there vague terms? ("settings", "improve", "properly", "handle")
+3. Should it be split into smaller stories?
 
-Output ONLY valid JSON (no markdown, no code blocks):
+Output JSON:
 {
   "refinements": [
     {
       "id": "X.Y.Z",
-      "title": "Original story title",
+      "title": "story title",
       "status": "ok" | "needs_work",
-      "issues": ["issue 1", "issue 2"],
-      "suggested_description": "Clear, specific description of what to implement and why",
-      "suggested_acceptance": ["clearer criterion 1", "clearer criterion 2"],
-      "tags": ["copy", "from", "original"],
-      "depends_on": ["copy", "from", "original"]
+      "issues": ["issue 1"],
+      "suggested_description": "clearer description",
+      "suggested_acceptance": ["criterion 1", "criterion 2"],
+      "tags": ["from", "original"],
+      "depends_on": ["from", "original"]
     }
   ],
-  "summary": "X of ${totalStories} pending stories need refinement"
+  "summary": "X of Y stories need refinement"
 }
 
-IMPORTANT: Copy the original tags and depends_on arrays exactly as they are in the PRD file.
-
-Be pragmatic - only flag real issues that could lead to wrong implementations.
-If a story is fine, set status to "ok" with empty issues/suggestions.`
+Copy tags and depends_on from original. Be pragmatic - only flag real issues.`
 
     // Run Claude with temp files
     const { success, result, error, raw } = await runClaude(prompt)
