@@ -11,15 +11,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Sun, Moon, Monitor, Zap, Clock } from 'lucide-react'
+import { Sun, Moon, Monitor, Zap, Clock, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [versions, setVersions] = useState<string[]>([])
   const [defaultVersion, setDefaultVersion] = useState<string>('first')
   const [timezone, setTimezone] = useState<string>('America/Costa_Rica')
+  const [savingVersion, setSavingVersion] = useState(false)
+  const [savingTimezone, setSavingTimezone] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -43,7 +46,7 @@ export default function SettingsPage() {
       if (settingsData.timezone) {
         setTimezone(settingsData.timezone)
       }
-    }).catch(() => {})
+    }).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
   const saveTheme = async (newTheme: string) => {
@@ -61,6 +64,7 @@ export default function SettingsPage() {
 
   const saveDefaultVersion = async (version: string) => {
     setDefaultVersion(version)
+    setSavingVersion(true)
     try {
       await fetch('/api/settings', {
         method: 'POST',
@@ -69,11 +73,14 @@ export default function SettingsPage() {
       })
     } catch (error) {
       console.error('Failed to save default version:', error)
+    } finally {
+      setSavingVersion(false)
     }
   }
 
   const saveTimezone = async (tz: string) => {
     setTimezone(tz)
+    setSavingTimezone(true)
     try {
       await fetch('/api/settings', {
         method: 'POST',
@@ -82,6 +89,8 @@ export default function SettingsPage() {
       })
     } catch (error) {
       console.error('Failed to save timezone:', error)
+    } finally {
+      setSavingTimezone(false)
     }
   }
 
@@ -161,9 +170,21 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-3 block">Default Version</label>
-              <Select value={defaultVersion} onValueChange={saveDefaultVersion}>
+              <Select value={defaultVersion} onValueChange={saveDefaultVersion} disabled={loading || savingVersion}>
                 <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Select version" />
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Loading...</span>
+                    </div>
+                  ) : savingVersion ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Saving...</span>
+                    </div>
+                  ) : (
+                    <SelectValue placeholder="Select version" />
+                  )}
                 </SelectTrigger>
                 <SelectContent>
                   {versions.map(version => (
@@ -195,9 +216,21 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-3 block">Preferred Timezone</label>
-              <Select value={timezone} onValueChange={saveTimezone}>
+              <Select value={timezone} onValueChange={saveTimezone} disabled={loading || savingTimezone}>
                 <SelectTrigger className="w-[280px]">
-                  <SelectValue placeholder="Select timezone" />
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Loading...</span>
+                    </div>
+                  ) : savingTimezone ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Saving...</span>
+                    </div>
+                  ) : (
+                    <SelectValue placeholder="Select timezone" />
+                  )}
                 </SelectTrigger>
                 <SelectContent>
                   {timezones.map(tz => (
