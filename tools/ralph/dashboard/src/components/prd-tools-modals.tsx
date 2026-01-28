@@ -285,6 +285,7 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
                     Claude will analyze all pending stories in {version} and suggest improvements for unclear acceptance criteria.
                   </p>
                   <Button onClick={handleAnalyze} disabled={loading} size="lg">
+                    <Sparkles className="h-4 w-4" />
                     Start Analysis
                   </Button>
                 </>
@@ -746,6 +747,7 @@ export function GenerateStoriesModal({ open, onOpenChange, version }: GenerateMo
         <DialogFooter className="flex-col sm:flex-row gap-2">
           {step === 'input' && !loading && (
             <Button onClick={handleGenerate} disabled={loading || !description.trim()}>
+              <Wand2 className="h-4 w-4" />
               Generate Stories
             </Button>
           )}
