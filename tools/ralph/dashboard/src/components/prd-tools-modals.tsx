@@ -236,7 +236,7 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
             <Sparkles className="h-5 w-5" />
             Refine Stories ({version})
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="cyber-dark:text-secondary-foreground">
             {step === 'analyze' && 'Analyze pending stories for clarity issues'}
             {step === 'review' && 'Review and select refinements to apply'}
             {step === 'complete' && 'Refinements applied successfully'}
@@ -566,7 +566,7 @@ export function GenerateStoriesModal({ open, onOpenChange, version }: GenerateMo
             <Wand2 className="h-5 w-5" />
             Generate Stories ({version})
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="cyber-dark:text-secondary-foreground">
             {step === 'input' && 'Describe what you want to build'}
             {step === 'review' && 'Review and select stories to add'}
             {step === 'complete' && 'Stories added successfully'}
