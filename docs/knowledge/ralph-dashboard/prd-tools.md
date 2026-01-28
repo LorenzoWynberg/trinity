@@ -63,26 +63,46 @@ Accessed via "Generate" button in Stories header.
 
 Accessed via pencil icon on story modal, or "Edit Story" button on detail page.
 
-**Flow:** Input → Review → Apply
+**Flow:** Input → Review (with previews) → Apply
 
 1. Describe changes you want
-2. Claude suggests updated acceptance criteria
+2. Claude suggests:
+   - `suggested_description` - improved description
+   - `suggested_acceptance` - updated criteria
+   - `suggested_intent` - updated intent (if needed)
 3. Finds related stories (tag overlap ≥2 or dependency relationship)
-4. Review and optionally edit suggestions
-5. Apply to update PRD
+4. **Review rows** show summary for each update:
+   - Story ID and title
+   - "X criteria • description updated" summary
+   - Preview button to see full details
+5. **Preview modal** shows full suggested content:
+   - Suggested description in highlighted box
+   - Numbered acceptance criteria
+   - Reason for update (for related stories)
+   - Iterate section to regenerate with feedback
+6. Select which updates to apply
+7. Click "Apply" → Claude writes to PRD
 
 **API:**
-- `POST /api/prd/story` - Analyze requested changes
+- `POST /api/prd/story` - Analyze requested changes, find related stories
 - `PUT /api/prd/story` - Apply updates to PRD
 
-## AI-Assisted Editing
+## AI-Assisted Iteration
 
-The pencil icon now prompts Claude instead of opening a manual textarea:
+Both Refine and Story Edit support iterative refinement:
 
-1. Click pencil → prompt input appears below suggestions
-2. Type feedback: "be more specific about error handling"
-3. Press Enter → Claude regenerates suggestions for that story
-4. See updated suggestions in place
-5. Repeat until satisfied
+**In Refine modal:**
+1. Click pencil on any refinement card
+2. Type feedback in prompt input
+3. Claude regenerates suggestions for that story
+4. If changes affect related stories, those update too
+
+**In Story Edit preview modal:**
+1. Click Preview on any suggested update
+2. See full description + acceptance criteria
+3. Type feedback in "Want changes?" textarea
+4. Click Regenerate → Claude refines suggestions
+5. Preview updates in place
+6. Related stories update if cascading changes detected
 
 This keeps humans in the loop while letting AI do the heavy lifting.
