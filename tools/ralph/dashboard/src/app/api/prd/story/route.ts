@@ -6,7 +6,7 @@ import fs from 'fs/promises'
 
 const execAsync = promisify(exec)
 
-const PROJECT_ROOT = path.join(process.cwd(), '../../../..')
+const PROJECT_ROOT = path.join(process.cwd(), '../../..')
 const RALPH_CLI_DIR = path.join(PROJECT_ROOT, 'tools/ralph/cli')
 const PRD_DIR = path.join(RALPH_CLI_DIR, 'prd')
 
