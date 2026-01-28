@@ -48,7 +48,8 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [appliedCount, setAppliedCount] = useState(0)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editText, setEditText] = useState('')
+  const [editPrompt, setEditPrompt] = useState('')
+  const [editLoading, setEditLoading] = useState(false)
   const abortControllerRef = useRef<AbortController | null>(null)
 
   const reset = () => {
@@ -65,28 +66,56 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
     setSelectedIds(new Set())
     setAppliedCount(0)
     setEditingId(null)
-    setEditText('')
+    setEditPrompt('')
+    setEditLoading(false)
   }
 
   const startEdit = (ref: Refinement, e: React.MouseEvent) => {
     e.stopPropagation()
     setEditingId(ref.id)
-    setEditText(ref.suggested_acceptance.join('\n'))
+    setEditPrompt('')
   }
 
   const cancelEdit = (e: React.MouseEvent) => {
     e.stopPropagation()
     setEditingId(null)
-    setEditText('')
+    setEditPrompt('')
   }
 
-  const saveEdit = (id: string, e: React.MouseEvent) => {
+  const submitEditPrompt = async (id: string, e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation()
-    setRefinements(prev => prev.map(r =>
-      r.id === id ? { ...r, suggested_acceptance: editText.split('\n').filter(l => l.trim()) } : r
-    ))
-    setEditingId(null)
-    setEditText('')
+    if (!editPrompt.trim() || editLoading) return
+
+    const ref = refinements.find(r => r.id === id)
+    if (!ref) return
+
+    setEditLoading(true)
+    try {
+      const res = await fetch('/api/prd/refine/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storyId: id,
+          currentAcceptance: ref.suggested_acceptance,
+          prompt: editPrompt
+        })
+      })
+      const data = await res.json()
+
+      if (data.error) {
+        setError(data.error)
+      } else if (data.acceptance) {
+        setRefinements(prev => prev.map(r =>
+          r.id === id ? { ...r, suggested_acceptance: data.acceptance } : r
+        ))
+        setEditingId(null)
+        setEditPrompt('')
+      }
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setEditLoading(false)
+    }
   }
 
   const handleClose = () => {
@@ -251,17 +280,8 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-mono font-medium">{ref.id}</span>
                         <div className="flex items-center gap-2">
-                          {editingId === ref.id ? (
-                            <>
-                              <Button variant="ghost" size="sm" onClick={(e) => cancelEdit(e)}>
-                                <X className="h-3 w-3" />
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={(e) => saveEdit(ref.id, e)}>
-                                <Check className="h-3 w-3" />
-                              </Button>
-                            </>
-                          ) : (
-                            <Button variant="ghost" size="sm" onClick={(e) => startEdit(ref, e)}>
+                          {editingId !== ref.id && (
+                            <Button variant="ghost" size="sm" onClick={(e) => startEdit(ref, e)} title="Refine with AI">
                               <Pencil className="h-3 w-3" />
                             </Button>
                           )}
@@ -276,21 +296,33 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
                       {ref.issues.length > 0 && (
                         <p className="text-xs text-muted-foreground mb-2">Issues: {ref.issues.join(', ')}</p>
                       )}
-                      {editingId === ref.id ? (
-                        <Textarea
-                          value={editText}
-                          onChange={e => setEditText(e.target.value)}
-                          rows={4}
-                          className="text-xs"
-                          placeholder="One acceptance criterion per line"
-                          onClick={e => e.stopPropagation()}
-                        />
-                      ) : (
-                        <ul className="list-disc list-inside">
-                          {ref.suggested_acceptance.map((a, i) => (
-                            <li key={i} className="text-xs">{a}</li>
-                          ))}
-                        </ul>
+                      <ul className="list-disc list-inside">
+                        {ref.suggested_acceptance.map((a, i) => (
+                          <li key={i} className="text-xs">{a}</li>
+                        ))}
+                      </ul>
+                      {editingId === ref.id && (
+                        <div className="mt-2 flex gap-2" onClick={e => e.stopPropagation()}>
+                          <Input
+                            value={editPrompt}
+                            onChange={e => setEditPrompt(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && submitEditPrompt(ref.id, e)}
+                            placeholder="e.g., be more specific about error handling..."
+                            className="text-xs flex-1"
+                            disabled={editLoading}
+                            autoFocus
+                          />
+                          <Button
+                            size="sm"
+                            onClick={(e) => submitEditPrompt(ref.id, e)}
+                            disabled={editLoading || !editPrompt.trim()}
+                          >
+                            {editLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={(e) => cancelEdit(e)} disabled={editLoading}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
                       )}
                     </div>
                   ))}

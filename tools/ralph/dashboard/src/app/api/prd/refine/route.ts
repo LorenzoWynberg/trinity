@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { exec } from 'child_process'
-import { promisify } from 'util'
 import path from 'path'
 import fs from 'fs/promises'
-
-const execAsync = promisify(exec)
-
-const PROJECT_ROOT = path.join(process.cwd(), '../../..')
-const RALPH_CLI_DIR = path.join(PROJECT_ROOT, 'tools/ralph/cli')
-const PRD_DIR = path.join(RALPH_CLI_DIR, 'prd')
+import { runClaude, PRD_DIR } from '@/lib/claude'
 
 // POST: Get refinement suggestions from Claude
 export async function POST(request: NextRequest) {
@@ -76,27 +69,11 @@ Output ONLY valid JSON (no markdown, no code blocks):
 Be pragmatic - only flag real issues that could lead to wrong implementations.
 If a story is fine, set status to "ok" with empty issues/suggestions.`
 
-    // Run Claude
-    const { stdout } = await execAsync(
-      `echo ${JSON.stringify(prompt)} | claude --dangerously-skip-permissions --print`,
-      { cwd: RALPH_CLI_DIR, timeout: 120000 }
-    )
+    // Run Claude with temp files
+    const { success, result, error, raw } = await runClaude(prompt)
 
-    // Parse JSON from output
-    let result
-    try {
-      // Try to extract JSON from response
-      const jsonMatch = stdout.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        result = JSON.parse(jsonMatch[0])
-      } else {
-        throw new Error('No JSON found in response')
-      }
-    } catch (parseError) {
-      return NextResponse.json({
-        error: 'Failed to parse Claude response',
-        raw: stdout
-      }, { status: 500 })
+    if (!success) {
+      return NextResponse.json({ error, raw }, { status: 500 })
     }
 
     return NextResponse.json(result)
@@ -106,7 +83,7 @@ If a story is fine, set status to "ok" with empty issues/suggestions.`
   }
 }
 
-// PUT: Apply refinements to PRD
+// PUT: Have Claude apply refinements to PRD
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
@@ -117,30 +94,37 @@ export async function PUT(request: NextRequest) {
     }
 
     const prdFile = path.join(PRD_DIR, `${version}.json`)
-    const prdContent = await fs.readFile(prdFile, 'utf-8')
-    const prd = JSON.parse(prdContent)
 
-    let applied = 0
-    for (const ref of refinements) {
-      if (!ref.id || !ref.suggested_acceptance) continue
+    // Build prompt for Claude to apply the refinements
+    const prompt = `You need to update the PRD file with refined acceptance criteria.
 
-      const storyIndex = prd.stories.findIndex((s: any) => s.id === ref.id)
-      if (storyIndex >= 0) {
-        prd.stories[storyIndex].acceptance = ref.suggested_acceptance
-        applied++
-      }
+PRD FILE: ${prdFile}
+
+REFINEMENTS TO APPLY:
+${JSON.stringify(refinements.map(r => ({
+  id: r.id,
+  new_acceptance: r.suggested_acceptance
+})), null, 2)}
+
+Instructions:
+1. Read the PRD file at the path above
+2. For each refinement, find the story by ID and update its "acceptance" array
+3. Write the updated PRD back to the same file
+4. Preserve all other fields and formatting
+
+After completing, output this JSON:
+{
+  "applied": <number of stories updated>,
+  "success": true
+}`
+
+    const { success, result, error, raw } = await runClaude(prompt, { timeoutMs: 60000 })
+
+    if (!success) {
+      return NextResponse.json({ error, raw }, { status: 500 })
     }
 
-    // Sort stories
-    prd.stories.sort((a: any, b: any) => {
-      if (a.phase !== b.phase) return a.phase - b.phase
-      if (a.epic !== b.epic) return a.epic - b.epic
-      return a.story_number - b.story_number
-    })
-
-    await fs.writeFile(prdFile, JSON.stringify(prd, null, 2))
-
-    return NextResponse.json({ success: true, applied })
+    return NextResponse.json(result)
   } catch (error: any) {
     console.error('Apply refinements error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })

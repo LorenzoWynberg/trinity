@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { exec } from 'child_process'
-import { promisify } from 'util'
 import path from 'path'
 import fs from 'fs/promises'
-
-const execAsync = promisify(exec)
-
-const PROJECT_ROOT = path.join(process.cwd(), '../../..')
-const RALPH_CLI_DIR = path.join(PROJECT_ROOT, 'tools/ralph/cli')
-const PRD_DIR = path.join(RALPH_CLI_DIR, 'prd')
+import { runClaude, PRD_DIR } from '@/lib/claude'
 
 // POST: Generate stories from description
 export async function POST(request: NextRequest) {
@@ -81,26 +74,11 @@ Output ONLY valid JSON (no markdown, no code blocks):
 
 Be specific in acceptance criteria - avoid vague terms.`
 
-    // Run Claude
-    const { stdout } = await execAsync(
-      `echo ${JSON.stringify(prompt)} | claude --dangerously-skip-permissions --print`,
-      { cwd: RALPH_CLI_DIR, timeout: 120000 }
-    )
+    // Run Claude with temp files
+    const { success, result, error, raw } = await runClaude(prompt)
 
-    // Parse JSON from output
-    let result
-    try {
-      const jsonMatch = stdout.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        result = JSON.parse(jsonMatch[0])
-      } else {
-        throw new Error('No JSON found in response')
-      }
-    } catch (parseError) {
-      return NextResponse.json({
-        error: 'Failed to parse Claude response',
-        raw: stdout
-      }, { status: 500 })
+    if (!success) {
+      return NextResponse.json({ error, raw }, { status: 500 })
     }
 
     return NextResponse.json(result)
@@ -110,7 +88,7 @@ Be specific in acceptance criteria - avoid vague terms.`
   }
 }
 
-// PUT: Add generated stories to PRD
+// PUT: Have Claude add generated stories to PRD
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
@@ -121,50 +99,38 @@ export async function PUT(request: NextRequest) {
     }
 
     const prdFile = path.join(PRD_DIR, `${version}.json`)
-    const prdContent = await fs.readFile(prdFile, 'utf-8')
-    const prd = JSON.parse(prdContent)
 
-    let added = 0
-    for (const story of stories) {
-      if (!story.title || !story.phase || !story.epic) continue
+    // Build prompt for Claude to add the stories
+    const prompt = `You need to add new stories to the PRD file.
 
-      // Get next story number for this phase.epic
-      const existing = prd.stories.filter(
-        (s: any) => s.phase === story.phase && s.epic === story.epic
-      )
-      const maxNum = existing.length > 0
-        ? Math.max(...existing.map((s: any) => s.story_number || 0))
-        : 0
-      const storyNum = maxNum + 1
-      const newId = `${story.phase}.${story.epic}.${storyNum}`
+PRD FILE: ${prdFile}
+TARGET VERSION: ${version}
 
-      prd.stories.push({
-        id: newId,
-        title: story.title,
-        intent: story.intent || '',
-        acceptance: story.acceptance || [],
-        phase: story.phase,
-        epic: story.epic,
-        story_number: storyNum,
-        target_version: version,
-        depends_on: story.depends_on || [],
-        tags: story.tags || [],
-        passes: false,
-        merged: false
-      })
-      added++
+NEW STORIES TO ADD:
+${JSON.stringify(stories, null, 2)}
+
+Instructions:
+1. Read the PRD file at the path above
+2. For each new story:
+   - Determine the next story_number for its phase.epic combination
+   - Generate the ID as "{phase}.{epic}.{story_number}"
+   - Add all required fields: id, title, intent, acceptance, phase, epic, story_number, target_version, depends_on, tags, passes (false), merged (false)
+3. Sort all stories by phase, then epic, then story_number
+4. Write the updated PRD back to the same file
+
+After completing, output this JSON:
+{
+  "added": <number of stories added>,
+  "success": true
+}`
+
+    const { success, result, error, raw } = await runClaude(prompt, { timeoutMs: 60000 })
+
+    if (!success) {
+      return NextResponse.json({ error, raw }, { status: 500 })
     }
 
-    // Sort stories
-    prd.stories.sort((a: any, b: any) => {
-      if (a.phase !== b.phase) return a.phase - b.phase
-      if (a.epic !== b.epic) return a.epic - b.epic
-      return a.story_number - b.story_number
-    })
-
-    await fs.writeFile(prdFile, JSON.stringify(prd, null, 2))
-
-    return NextResponse.json({ success: true, added })
+    return NextResponse.json(result)
   } catch (error: any) {
     console.error('Add stories error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
