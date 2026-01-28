@@ -87,9 +87,12 @@ Dashboard uses same pattern via `lib/claude.ts`:
 export async function runClaude(prompt: string): Promise<ClaudeResult> {
   // Write prompt to /tmp/claude-prompt-{uuid}.md
   // Tell Claude to write response to /tmp/claude-response-{uuid}.json
+  // Run claude from PROJECT_ROOT (trinity/)
   // Read and parse response
   // Cleanup both files
 }
 ```
+
+**Key detail:** Dashboard runs Claude from the project root (`PROJECT_ROOT`), not from `tools/ralph/cli`. This ensures Claude has the correct context and can access all project files.
 
 All API routes use this for PRD operations (refine, generate, story edit).

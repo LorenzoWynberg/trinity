@@ -7,7 +7,8 @@ import { randomUUID } from 'crypto'
 
 const execAsync = promisify(exec)
 
-const PROJECT_ROOT = path.join(process.cwd(), '../../..')
+// Dashboard runs from tools/ralph/dashboard, so project root is 3 levels up
+const PROJECT_ROOT = path.resolve(process.cwd(), '../../..')
 export const RALPH_CLI_DIR = path.join(PROJECT_ROOT, 'tools/ralph/cli')
 export const PRD_DIR = path.join(RALPH_CLI_DIR, 'prd')
 
@@ -28,7 +29,7 @@ export async function runClaude(
     timeoutMs?: number
   } = {}
 ): Promise<ClaudeResult> {
-  const { cwd = RALPH_CLI_DIR, timeoutMs = 120000 } = options
+  const { cwd = PROJECT_ROOT, timeoutMs = 120000 } = options
   const requestId = randomUUID()
   const outputFile = path.join(os.tmpdir(), `claude-response-${requestId}.json`)
 
@@ -43,10 +44,9 @@ Use the Write tool to save the JSON. No markdown, no code blocks, just valid JSO
     const promptFile = path.join(os.tmpdir(), `claude-prompt-${requestId}.md`)
     await fs.writeFile(promptFile, fullPrompt)
 
-    // Run Claude with prompt file (use full path)
-    const claudePath = process.env.CLAUDE_PATH || `${process.env.HOME}/.local/bin/claude`
+    // Run Claude with prompt file as stdin
     const { stdout, stderr } = await execAsync(
-      `cat "${promptFile}" | "${claudePath}" --dangerously-skip-permissions --print`,
+      `claude --dangerously-skip-permissions --print < "${promptFile}"`,
       { cwd, timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024 }
     )
 
@@ -62,7 +62,7 @@ Use the Write tool to save the JSON. No markdown, no code blocks, just valid JSO
       return {
         success: false,
         error: 'Claude did not write valid JSON to output file',
-        raw: `stdout: ${stdout?.slice(0, 500)}`
+        raw: `stdout: ${stdout?.slice(0, 500)}\nstderr: ${stderr?.slice(0, 500)}`
       }
     }
   } catch (error: any) {
