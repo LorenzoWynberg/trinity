@@ -3,6 +3,10 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
+import { enableMapSet } from 'immer'
+
+// Enable Immer support for Set/Map
+enableMapSet()
 
 export type TaskType = 'refine' | 'generate' | 'story-edit'
 export type TaskStatus = 'queued' | 'running' | 'complete' | 'failed'
