@@ -618,7 +618,7 @@ export function GenerateStoriesModal({ open, onOpenChange, version }: GenerateMo
                     rows={6}
                     className="text-base"
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground cyber-dark:text-muted-foreground">
                     Be specific about features, behaviors, and requirements. Claude will generate properly formatted PRD stories.
                   </p>
                 </>
