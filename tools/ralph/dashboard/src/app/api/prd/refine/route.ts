@@ -30,16 +30,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ refinements: [], summary: 'No stories to refine' })
     }
 
-    // Build prompt
+    // Build prompt - tell Claude to read the file directly
     const totalStories = stories.length
+    const storyIds = stories.map((s: any) => s.id)
     const prompt = `You are reviewing PRD stories for clarity and implementability.
+
+READ THE PRD FILE: ${prdFile}
 
 PROJECT: ${prd.project || 'Unknown'}
 VERSION: ${version}
 TOTAL PENDING STORIES: ${totalStories}
 
-STORIES TO REVIEW:
-${JSON.stringify(stories, null, 2)}
+STORY IDs TO REVIEW: ${storyIds.join(', ')}
 
 For each story, check:
 1. Are acceptance criteria specific and testable?
@@ -65,7 +67,7 @@ Output ONLY valid JSON (no markdown, no code blocks):
   "summary": "X of ${totalStories} pending stories need refinement"
 }
 
-IMPORTANT: Copy the original tags and depends_on arrays exactly as they are in the input stories.
+IMPORTANT: Copy the original tags and depends_on arrays exactly as they are in the PRD file.
 
 Be pragmatic - only flag real issues that could lead to wrong implementations.
 If a story is fine, set status to "ok" with empty issues/suggestions.`
