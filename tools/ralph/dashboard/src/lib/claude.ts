@@ -47,10 +47,18 @@ Use the Write tool to create the file. Output ONLY valid JSON, no markdown, no e
 
     await fs.writeFile(promptFile, fullPrompt)
 
-    // Run Claude with prompt file as stdin (use cat pipe instead of < for compatibility)
+    // Debug: verify file exists and claude is available
+    try {
+      const debugCheck = await execAsync(`ls -la "${promptFile}" && which claude`, { cwd })
+      console.log('Debug check:', debugCheck.stdout)
+    } catch (debugErr: any) {
+      console.error('Debug check failed:', debugErr.message)
+    }
+
+    // Run Claude with prompt file as stdin
     const { stdout, stderr } = await execAsync(
       `cat "${promptFile}" | claude --dangerously-skip-permissions --print`,
-      { cwd, timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024 }
+      { cwd, timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024, env: { ...process.env, PATH: process.env.PATH + ':/Users/dev-wynberg/.local/bin' } }
     )
 
     // Read the output file
