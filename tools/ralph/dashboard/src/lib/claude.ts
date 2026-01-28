@@ -1,6 +1,9 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import path from 'path'
+import fs from 'fs/promises'
+import os from 'os'
+import { randomUUID } from 'crypto'
 
 const execAsync = promisify(exec)
 
@@ -16,8 +19,7 @@ export type ClaudeResult = {
 }
 
 /**
- * Run Claude and parse JSON from stdout
- * Uses echo | claude pattern that was working before
+ * Run Claude with temp file for input, parse JSON from stdout
  */
 export async function runClaude(
   prompt: string,
@@ -27,17 +29,20 @@ export async function runClaude(
   } = {}
 ): Promise<ClaudeResult> {
   const { cwd = RALPH_CLI_DIR, timeoutMs = 120000 } = options
+  const promptFile = path.join(os.tmpdir(), `claude-prompt-${randomUUID()}.md`)
 
   try {
-    // Run Claude with echo pipe (original working pattern)
-    const { stdout } = await execAsync(
-      `echo ${JSON.stringify(prompt)} | claude --dangerously-skip-permissions --print`,
-      { cwd, timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024 }
+    // Write prompt to temp file (avoids shell escaping/size limits)
+    await fs.writeFile(promptFile, prompt)
+
+    // Run Claude with temp file as stdin, capture stdout
+    const { stdout, stderr } = await execAsync(
+      `claude --dangerously-skip-permissions --print < "${promptFile}"`,
+      { cwd, timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024, shell: '/bin/bash' }
     )
 
-    // Parse JSON from output
+    // Parse JSON from stdout
     try {
-      // Try to extract JSON from response
       const jsonMatch = stdout.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         const result = JSON.parse(jsonMatch[0])
@@ -60,7 +65,10 @@ export async function runClaude(
     return {
       success: false,
       error: error.message,
-      raw: error.stderr || error.stdout
+      raw: error.stderr || error.stdout || 'no output'
     }
+  } finally {
+    // Cleanup
+    await fs.unlink(promptFile).catch(() => {})
   }
 }
