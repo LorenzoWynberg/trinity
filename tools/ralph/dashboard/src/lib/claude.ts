@@ -44,11 +44,19 @@ Use the Write tool to save the JSON. No markdown, no code blocks, just valid JSO
     const promptFile = path.join(os.tmpdir(), `claude-prompt-${requestId}.md`)
     await fs.writeFile(promptFile, fullPrompt)
 
+    console.log('[runClaude] Request ID:', requestId)
+    console.log('[runClaude] Prompt file:', promptFile)
+    console.log('[runClaude] Output file:', outputFile)
+    console.log('[runClaude] CWD:', cwd)
+    console.log('[runClaude] Prompt length:', fullPrompt.length)
+
     // Run Claude with prompt file as stdin
     const { stdout, stderr } = await execAsync(
       `claude --dangerously-skip-permissions --print < "${promptFile}"`,
       { cwd, timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024 }
     )
+
+    console.log('[runClaude] Claude finished, stdout length:', stdout?.length, 'stderr length:', stderr?.length)
 
     // Cleanup prompt file
     await fs.unlink(promptFile).catch(() => {})
@@ -66,6 +74,12 @@ Use the Write tool to save the JSON. No markdown, no code blocks, just valid JSO
       }
     }
   } catch (error: any) {
+    console.error('[runClaude] Command failed:', error.message)
+    console.error('[runClaude] Exit code:', error.code)
+    console.error('[runClaude] Signal:', error.signal)
+    console.error('[runClaude] Killed:', error.killed)
+    console.error('[runClaude] Stdout:', error.stdout?.slice(0, 500))
+    console.error('[runClaude] Stderr:', error.stderr?.slice(0, 500))
     return {
       success: false,
       error: error.message,

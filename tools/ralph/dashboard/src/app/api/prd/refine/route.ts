@@ -5,8 +5,10 @@ import { runClaude, PRD_DIR } from '@/lib/claude'
 
 // POST: Get refinement suggestions from Claude
 export async function POST(request: NextRequest) {
+  console.log('[refine] POST request received')
   try {
     const body = await request.json()
+    console.log('[refine] Body:', JSON.stringify(body))
     const { version, storyId } = body
 
     if (!version) {
@@ -14,8 +16,10 @@ export async function POST(request: NextRequest) {
     }
 
     const prdFile = path.join(PRD_DIR, `${version}.json`)
+    console.log('[refine] PRD file path:', prdFile)
     const prdContent = await fs.readFile(prdFile, 'utf-8')
     const prd = JSON.parse(prdContent)
+    console.log('[refine] PRD loaded, story count:', prd.stories?.length)
 
     // Get stories to refine
     let stories
@@ -59,10 +63,13 @@ Output JSON:
 
 Copy tags and depends_on from original. Be pragmatic - only flag real issues.`
 
-    // Run Claude with temp files
-    const { success, result, error, raw } = await runClaude(prompt)
+    // Run Claude with temp files - use longer timeout for analyzing many stories
+    console.log('[refine] Calling runClaude, prompt length:', prompt.length)
+    const { success, result, error, raw } = await runClaude(prompt, { timeoutMs: 600000 }) // 10 minutes
+    console.log('[refine] runClaude returned, success:', success)
 
     if (!success) {
+      console.log('[refine] Error:', error)
       return NextResponse.json({ error, raw }, { status: 500 })
     }
 
