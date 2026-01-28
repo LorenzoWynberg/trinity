@@ -5,6 +5,7 @@ use re
 use ./ui
 use ./prd
 use ./metrics
+use ./state
 
 # Configuration (set by init)
 var project-root = ""
@@ -490,6 +491,7 @@ fn run-flow {|story-id branch-name story-title current-iteration &state-pr-url="
       var commit = (merge $branch-name)
       if (not (eq $commit "")) {
         prd:mark-merged $story-id $commit
+        state:set-last-completed $story-id  # Track for smart story selection
         metrics:record-merge $story-id  # Track merge metric
         clear-feedback-history  # Clear on successful merge
       }
@@ -517,6 +519,7 @@ fn run-flow {|story-id branch-name story-title current-iteration &state-pr-url="
     var commit = (merge $branch-name)
     if (not (eq $commit "")) {
       prd:mark-merged $story-id $commit
+      state:set-last-completed $story-id  # Track for smart story selection
       metrics:record-merge $story-id  # Track merge metric
       clear-feedback-history  # Clear on successful merge
     }

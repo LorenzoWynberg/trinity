@@ -31,8 +31,14 @@ fn write {|state|
   put $state | to-json > $state-file
 }
 
-# Reset state to initial values
+# Reset state to initial values (preserves last_completed for context retention)
 fn reset {
+  var old-state = (read)
+  var last-completed = $nil
+  if (has-key $old-state last_completed) {
+    set last-completed = $old-state[last_completed]
+  }
+
   var state = [
     &version=(num 1)
     &current_story=$nil
@@ -46,8 +52,26 @@ fn reset {
     &last_error=$nil
     &failure_count=(num 0)
     &checkpoints=[]
+    &last_completed=$last-completed
   ]
   write $state
+}
+
+# Set the last completed story (for smart story selection)
+fn set-last-completed {|story-id|
+  var state = (read)
+  set state[last_completed] = $story-id
+  write $state
+}
+
+# Get the last completed story
+fn get-last-completed {
+  var state = (read)
+  if (has-key $state last_completed) {
+    put $state[last_completed]
+  } else {
+    put ""
+  }
 }
 
 # Record a failure with error message

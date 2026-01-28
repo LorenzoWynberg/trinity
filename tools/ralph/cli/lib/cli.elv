@@ -275,6 +275,10 @@ fn get-config {
     &auto-handle-duplicates=$auto-handle-duplicates
     &auto-add-reverse-deps=$auto-add-reverse-deps
     &auto-update-related=$auto-update-related
+    &refine-prd-mode=$refine-prd-mode
+    &refine-prd-target=$refine-prd-target
+    &add-stories-mode=$add-stories-mode
+    &add-stories-description=$add-stories-description
     &single-story-id=$single-story-id
     &one-shot-mode=$one-shot-mode
   ]

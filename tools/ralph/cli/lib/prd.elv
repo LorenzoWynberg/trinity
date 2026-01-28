@@ -446,10 +446,14 @@ fn show-nothing-runnable {
 }
 
 # Get next available story (respects dependencies - deps must be MERGED)
-fn get-next-story {
+# Uses smart selection: scores candidates by proximity, tag overlap, blocker value
+# Optional last-completed parameter for context retention scoring
+fn get-next-story {|&last-completed=""|
   # Get stories that haven't passed yet (available for work)
   var candidates = [(jq -r '.stories[] | select(.passes != true) | "\(.id)|\(.depends_on // [] | join(","))"' $prd-file)]
 
+  # Filter to only runnable candidates (deps met)
+  var runnable = []
   for candidate $candidates {
     var parts = [(str:split "|" $candidate)]
     var sid = $parts[0]
@@ -463,13 +467,35 @@ fn get-next-story {
     }
 
     if $deps-met {
-      put $sid
-      return
+      set runnable = [$@runnable $sid]
     }
   }
 
-  # No story found
-  put ""
+  # No runnable stories
+  if (== (count $runnable) 0) {
+    put ""
+    return
+  }
+
+  # If only one candidate, return it
+  if (== (count $runnable) 1) {
+    put $runnable[0]
+    return
+  }
+
+  # Score all runnable candidates
+  var best-id = ""
+  var best-score = -1.0
+
+  for sid $runnable {
+    var result = (score-story $sid $last-completed)
+    if (> $result[score] $best-score) {
+      set best-score = $result[score]
+      set best-id = $sid
+    }
+  }
+
+  put $best-id
 }
 
 # Check if all stories are merged (truly complete)
@@ -715,7 +741,7 @@ fn get-versions {
 
 # Get next available story for a specific version
 # (used when --target-version is specified)
-fn get-next-story-for-version {|version|
+fn get-next-story-for-version {|version &last-completed=""|
   var file = (get-version-file $version)
   if (not (path:is-regular $file)) {
     put ""
@@ -729,7 +755,7 @@ fn get-next-story-for-version {|version|
   set current-version = $version
 
   # Use the standard get-next-story with cross-version dep support
-  var result = (get-next-story)
+  var result = (get-next-story &last-completed=$last-completed)
 
   # Restore
   set prd-file = $saved-file
@@ -1258,6 +1284,158 @@ fn get-story-deps {|story-id|
     set result = [(jq -r '.stories[] | select(.id == "'$story-id'") | .depends_on[]?' $prd-file)]
   } catch _ { }
   put $@result
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SMART STORY SELECTION
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Scoring model (higher = better):
+#   tree_proximity * 5.0   - Same epic (1.0), same phase (0.5), other (0.0)
+#   tag_overlap * 3.0      - Jaccard similarity with last-completed story
+#   blocker_value * 2.0    - How many stories would this unblock
+#   priority * 1.0         - User-defined priority (default 0)
+#   inverse_complexity * 0.5 - Simpler stories break ties
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Calculate tree proximity score between two stories
+# Returns: 1.0 (same epic), 0.5 (same phase), 0.0 (different phase)
+fn calc-tree-proximity {|story-a story-b|
+  if (or (eq $story-a "") (eq $story-b "")) {
+    put 0.0
+    return
+  }
+
+  var a-phase = (num (get-story-phase $story-a))
+  var a-epic = (num (get-story-epic $story-a))
+  var b-phase = (num (get-story-phase $story-b))
+  var b-epic = (num (get-story-epic $story-b))
+
+  if (and (== $a-phase $b-phase) (== $a-epic $b-epic)) {
+    put 1.0
+  } elif (== $a-phase $b-phase) {
+    put 0.5
+  } else {
+    put 0.0
+  }
+}
+
+# Calculate Jaccard similarity between two tag sets
+# Returns: 0.0 to 1.0 (intersection / union)
+fn calc-tag-overlap {|tags-a-json tags-b-json|
+  # Handle empty/null cases
+  if (or (eq $tags-a-json "[]") (eq $tags-a-json "null") (eq $tags-a-json "")) {
+    put 0.0
+    return
+  }
+  if (or (eq $tags-b-json "[]") (eq $tags-b-json "null") (eq $tags-b-json "")) {
+    put 0.0
+    return
+  }
+
+  # Use jq to calculate Jaccard similarity
+  var result = (echo $tags-a-json | jq --argjson b $tags-b-json '
+    . as $a |
+    ($a + $b | unique) as $union |
+    if ($union | length) == 0 then 0
+    else
+      ([$a[] | select(. as $t | $b | index($t))] | length) / ($union | length)
+    end
+  ')
+  put (num $result)
+}
+
+# Count how many stories would be unblocked if this story is merged
+# Higher = more valuable to complete
+fn calc-blocker-value {|story-id|
+  var count = 0
+  var all-stories = [(jq -r '.stories[] | select(.passes != true) | .id' $prd-file)]
+
+  for sid $all-stories {
+    if (eq $sid $story-id) {
+      continue
+    }
+    var deps = [(jq -r '.stories[] | select(.id == "'$sid'") | .depends_on // [] | .[]' $prd-file)]
+    for dep $deps {
+      if (eq $dep $story-id) {
+        set count = (+ $count 1)
+        break
+      }
+    }
+  }
+  put $count
+}
+
+# Get story priority (default 0, higher = more important)
+fn get-story-priority {|story-id|
+  var priority = (jq -r '.stories[] | select(.id == "'$story-id'") | .priority // 0' $prd-file)
+  put (num $priority)
+}
+
+# Estimate story complexity based on acceptance criteria count
+# Returns inverse: simpler = higher score (for tie-breaking)
+fn calc-inverse-complexity {|story-id|
+  var ac-count = (num (jq '[.stories[] | select(.id == "'$story-id'") | .acceptance // [] | length] | .[0] // 0' $prd-file))
+  # Normalize: 1 AC = 1.0, 10 AC = 0.1
+  if (== $ac-count 0) {
+    put 1.0
+  } else {
+    put (/ 1.0 $ac-count)
+  }
+}
+
+# Calculate composite score for a story
+# last-completed: story ID of last merged story (for context retention)
+fn score-story {|story-id last-completed|
+  # Tree proximity: same epic/phase as last completed
+  var proximity = (calc-tree-proximity $story-id $last-completed)
+
+  # Tag overlap with last completed
+  var tags-a = (get-story-tags $story-id)
+  var tags-b = ""
+  if (not (eq $last-completed "")) {
+    set tags-b = (get-story-tags $last-completed)
+  } else {
+    set tags-b = "[]"
+  }
+  var tag-overlap = (calc-tag-overlap $tags-a $tags-b)
+
+  # Blocker value: how many stories depend on this one
+  var blocker-value = (calc-blocker-value $story-id)
+  # Normalize to 0-1 range (assume max 10 dependents)
+  var blocker-score = (/ (num $blocker-value) 10.0)
+  if (> $blocker-score 1.0) {
+    set blocker-score = 1.0
+  }
+
+  # User priority
+  var priority = (get-story-priority $story-id)
+  # Normalize to 0-1 range (assume max priority 10)
+  var priority-score = (/ $priority 10.0)
+  if (> $priority-score 1.0) {
+    set priority-score = 1.0
+  }
+
+  # Inverse complexity (simpler = higher)
+  var inv-complexity = (calc-inverse-complexity $story-id)
+
+  # Weighted sum
+  var score = (+
+    (* $proximity 5.0)
+    (* $tag-overlap 3.0)
+    (* $blocker-score 2.0)
+    (* $priority-score 1.0)
+    (* $inv-complexity 0.5)
+  )
+
+  put [
+    &story_id=$story-id
+    &score=$score
+    &proximity=$proximity
+    &tag_overlap=$tag-overlap
+    &blocker_value=$blocker-value
+    &priority=$priority
+  ]
 }
 
 # Get overall progress stats

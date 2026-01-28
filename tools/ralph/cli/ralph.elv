@@ -112,10 +112,11 @@ if $config[plan-mode] {
   if $current-state[current_story] {
     set story-id = $current-state[current_story]
   } else {
+    var last-completed = (state:get-last-completed)
     if (not (eq $config[target-version] "")) {
-      set story-id = (prd:get-next-story-for-version $config[target-version])
+      set story-id = (prd:get-next-story-for-version $config[target-version] &last-completed=$last-completed)
     } else {
-      set story-id = (prd:get-next-story)
+      set story-id = (prd:get-next-story &last-completed=$last-completed)
     }
     if (eq $story-id "") {
       ui:warn "No stories available to plan"
@@ -331,11 +332,12 @@ while (< $current-iteration $config[max-iterations]) {
         ui:status "Working on specified story: "$story-id
       } else {
         ui:status "Finding next story..."
+        var last-completed = (state:get-last-completed)
         if (not (eq $config[target-version] "")) {
           ui:dim "  Filtering for version: "$config[target-version]
-          set story-id = (prd:get-next-story-for-version $config[target-version])
+          set story-id = (prd:get-next-story-for-version $config[target-version] &last-completed=$last-completed)
         } else {
-          set story-id = (prd:get-next-story)
+          set story-id = (prd:get-next-story &last-completed=$last-completed)
         }
         if (eq $story-id "") {
           # Distinguish between "all complete" and "blocked"
