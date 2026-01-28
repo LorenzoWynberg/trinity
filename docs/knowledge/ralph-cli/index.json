@@ -6,6 +6,7 @@
     { "slug": "index", "title": "Overview" },
     { "slug": "cli-reference", "title": "CLI Reference" },
     { "slug": "recovery", "title": "Recovery & Resume" },
+    { "slug": "smart-story-selection", "title": "Smart Story Selection" },
     { "slug": "common-workflows", "title": "Workflows" },
     { "slug": "prompt-system", "title": "Prompt System" },
     { "slug": "prd-structure", "title": "PRD Structure" },
