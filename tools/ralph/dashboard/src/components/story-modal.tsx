@@ -632,7 +632,7 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
 
         {/* Footer with navigation buttons */}
         {isEditing && (
-          <DialogFooter className="pt-4 border-t flex-col sm:flex-row gap-2">
+          <DialogFooter className="pt-4 flex-col sm:flex-row gap-2">
             {editStep === 'input' && !loading && (
               <>
                 <Button variant="outline" onClick={() => { resetEdit(); onOpenChange(false) }}>Cancel</Button>
