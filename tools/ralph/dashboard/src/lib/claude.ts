@@ -1,9 +1,6 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import path from 'path'
-import fs from 'fs/promises'
-import os from 'os'
-import { randomUUID } from 'crypto'
 
 const execAsync = promisify(exec)
 
@@ -19,11 +16,8 @@ export type ClaudeResult = {
 }
 
 /**
- * Run Claude with temp files for reliable I/O
- *
- * Writes prompt to a temp file and instructs Claude to write JSON response
- * to another temp file. This avoids shell escaping issues and unreliable
- * stdout parsing.
+ * Run Claude and parse JSON from stdout
+ * Uses echo | claude pattern that was working before
  */
 export async function runClaude(
   prompt: string,
@@ -33,56 +27,40 @@ export async function runClaude(
   } = {}
 ): Promise<ClaudeResult> {
   const { cwd = RALPH_CLI_DIR, timeoutMs = 120000 } = options
-  const requestId = randomUUID()
-  const tmpDir = os.tmpdir()
-  const promptFile = path.join(tmpDir, `claude-prompt-${requestId}.md`)
-  const outputFile = path.join(tmpDir, `claude-response-${requestId}.json`)
 
   try {
-    // Write prompt to temp file with output instruction
-    const fullPrompt = `${prompt}
-
-CRITICAL: You MUST write your JSON response to this exact file path: ${outputFile}
-Use the Write tool to create the file. Output ONLY valid JSON, no markdown, no explanation, no code blocks.`
-
-    await fs.writeFile(promptFile, fullPrompt)
-
-    // Debug: verify file exists and claude is available
-    try {
-      const debugCheck = await execAsync(`ls -la "${promptFile}" && which claude`, { cwd })
-      console.log('Debug check:', debugCheck.stdout)
-    } catch (debugErr: any) {
-      console.error('Debug check failed:', debugErr.message)
-    }
-
-    // Run Claude with prompt file as stdin
-    const { stdout, stderr } = await execAsync(
-      `cat "${promptFile}" | claude --dangerously-skip-permissions --print`,
-      { cwd, timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024, env: { ...process.env, PATH: process.env.PATH + ':/Users/dev-wynberg/.local/bin' } }
+    // Run Claude with echo pipe (original working pattern)
+    const { stdout } = await execAsync(
+      `echo ${JSON.stringify(prompt)} | claude --dangerously-skip-permissions --print`,
+      { cwd, timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024 }
     )
 
-    // Read the output file
+    // Parse JSON from output
     try {
-      const outputContent = await fs.readFile(outputFile, 'utf-8')
-      const result = JSON.parse(outputContent)
-      return { success: true, result }
-    } catch (readError: any) {
-      // Output file doesn't exist or isn't valid JSON
+      // Try to extract JSON from response
+      const jsonMatch = stdout.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        const result = JSON.parse(jsonMatch[0])
+        return { success: true, result }
+      } else {
+        return {
+          success: false,
+          error: 'No JSON found in response',
+          raw: stdout.slice(0, 1000)
+        }
+      }
+    } catch (parseError: any) {
       return {
         success: false,
-        error: `Claude did not write valid JSON to output file`,
-        raw: `stdout: ${stdout?.slice(0, 500)}\nstderr: ${stderr?.slice(0, 500)}`
+        error: `Failed to parse JSON: ${parseError.message}`,
+        raw: stdout.slice(0, 1000)
       }
     }
   } catch (error: any) {
     return {
       success: false,
       error: error.message,
-      raw: `stderr: ${error.stderr?.slice(0, 500) || 'none'}\nstdout: ${error.stdout?.slice(0, 500) || 'none'}`
+      raw: error.stderr || error.stdout
     }
-  } finally {
-    // Cleanup temp files (ignore errors)
-    await fs.unlink(promptFile).catch(() => {})
-    await fs.unlink(outputFile).catch(() => {})
   }
 }
