@@ -25,10 +25,12 @@ const statusConfig: Record<StoryStatus, { label: string; className: string }> = 
   blocked: { label: 'Blocked', className: 'bg-red-500' },
 }
 
-type RelatedUpdate = {
+type SuggestedUpdate = {
   id: string
-  reason: string
-  suggestedAcceptance: string[]
+  title?: string
+  reason?: string
+  suggested_description?: string
+  suggested_acceptance: string[]
 }
 
 type StoryModalProps = {
@@ -47,16 +49,22 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
   const [error, setError] = useState<string | null>(null)
 
   // Analysis results
+  const [updatedDescription, setUpdatedDescription] = useState<string>('')
   const [updatedAcceptance, setUpdatedAcceptance] = useState<string[]>([])
   const [updatedIntent, setUpdatedIntent] = useState<string>('')
-  const [relatedUpdates, setRelatedUpdates] = useState<RelatedUpdate[]>([])
+  const [relatedUpdates, setRelatedUpdates] = useState<SuggestedUpdate[]>([])
   const [summary, setSummary] = useState<string>('')
   const [selectedUpdates, setSelectedUpdates] = useState<Set<string>>(new Set())
   const [appliedCount, setAppliedCount] = useState(0)
+  const [previewStory, setPreviewStory] = useState<SuggestedUpdate | null>(null)
 
   // Inline editing state
   const [editingCardId, setEditingCardId] = useState<string | null>(null)
   const [editCardText, setEditCardText] = useState('')
+
+  // Preview iteration state
+  const [iterateFeedback, setIterateFeedback] = useState('')
+  const [iterating, setIterating] = useState(false)
 
   if (!story) return null
 
@@ -67,6 +75,7 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
   const resetEdit = () => {
     setEditStep(startInEditMode ? 'input' : 'view')
     setRequestedChanges('')
+    setUpdatedDescription('')
     setUpdatedAcceptance([])
     setUpdatedIntent('')
     setRelatedUpdates([])
@@ -76,6 +85,9 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
     setError(null)
     setEditingCardId(null)
     setEditCardText('')
+    setPreviewStory(null)
+    setIterateFeedback('')
+    setIterating(false)
   }
 
   const startEditCard = (id: string, acceptance: string[], e: React.MouseEvent) => {
@@ -97,7 +109,7 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
       setUpdatedAcceptance(newAcceptance)
     } else {
       setRelatedUpdates(prev => prev.map(r =>
-        r.id === id ? { ...r, suggestedAcceptance: newAcceptance } : r
+        r.id === id ? { ...r, suggested_acceptance: newAcceptance } : r
       ))
     }
     setEditingCardId(null)
@@ -124,12 +136,24 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
       if (data.error) {
         setError(data.error)
       } else {
-        setUpdatedAcceptance(data.updatedStory?.acceptance || [])
-        setUpdatedIntent(data.updatedStory?.intent || '')
-        setRelatedUpdates(data.relatedUpdates || [])
+        // New API format: target + related_updates
+        setUpdatedDescription(data.target?.suggested_description || '')
+        setUpdatedAcceptance(data.target?.suggested_acceptance || [])
+        setUpdatedIntent(data.target?.suggested_intent || '')
         setSummary(data.summary || '')
+
+        // Map related_updates to our format
+        const related: SuggestedUpdate[] = (data.related_updates || []).map((r: any) => ({
+          id: r.id,
+          title: r.title,
+          reason: r.reason,
+          suggested_description: r.suggested_description,
+          suggested_acceptance: r.suggested_acceptance || []
+        }))
+        setRelatedUpdates(related)
+
         // Pre-select all updates
-        const ids = new Set([story.id, ...(data.relatedUpdates || []).map((r: RelatedUpdate) => r.id)])
+        const ids = new Set([story.id, ...related.map(r => r.id)])
         setSelectedUpdates(ids)
         setEditStep('review')
       }
@@ -147,11 +171,12 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
     const updates: any[] = []
 
     // Add main story update if selected
-    if (selectedUpdates.has(story.id) && updatedAcceptance.length > 0) {
+    if (selectedUpdates.has(story.id) && (updatedAcceptance.length > 0 || updatedDescription)) {
       updates.push({
         id: story.id,
-        acceptance: updatedAcceptance,
-        intent: updatedIntent || undefined
+        suggested_description: updatedDescription || undefined,
+        suggested_acceptance: updatedAcceptance,
+        suggested_intent: updatedIntent || undefined
       })
     }
 
@@ -160,7 +185,8 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
       if (selectedUpdates.has(rel.id)) {
         updates.push({
           id: rel.id,
-          acceptance: rel.suggestedAcceptance
+          suggested_description: rel.suggested_description,
+          suggested_acceptance: rel.suggested_acceptance
         })
       }
     }
@@ -193,6 +219,124 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
       else next.add(id)
       return next
     })
+  }
+
+  const handleIterate = async () => {
+    if (!previewStory || !iterateFeedback.trim()) return
+    setIterating(true)
+    setError(null)
+
+    try {
+      // Build all current refinements for related story detection
+      const allRefinements = [
+        {
+          id: story.id,
+          title: story.title,
+          status: 'needs_work' as const,
+          issues: [],
+          suggested_description: updatedDescription,
+          suggested_acceptance: updatedAcceptance,
+          tags: story.tags,
+          depends_on: story.depends_on
+        },
+        ...relatedUpdates.map(r => ({
+          id: r.id,
+          title: r.title || '',
+          status: 'needs_work' as const,
+          issues: [],
+          suggested_description: r.suggested_description || '',
+          suggested_acceptance: r.suggested_acceptance,
+          tags: [] as string[],
+          depends_on: [] as string[]
+        }))
+      ]
+
+      const res = await fetch('/api/prd/refine/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storyId: previewStory.id,
+          title: previewStory.title,
+          currentDescription: previewStory.suggested_description,
+          currentAcceptance: previewStory.suggested_acceptance,
+          userFeedback: iterateFeedback,
+          tags: previewStory.id === story.id ? story.tags : [],
+          depends_on: previewStory.id === story.id ? story.depends_on : [],
+          allRefinements
+        })
+      })
+      const data = await res.json()
+
+      if (data.error) {
+        setError(data.error)
+      } else {
+        // Update the target story
+        if (data.target) {
+          if (previewStory.id === story.id) {
+            setUpdatedDescription(data.target.suggested_description || updatedDescription)
+            setUpdatedAcceptance(data.target.suggested_acceptance || updatedAcceptance)
+          } else {
+            setRelatedUpdates(prev => prev.map(r =>
+              r.id === previewStory.id
+                ? {
+                    ...r,
+                    suggested_description: data.target.suggested_description || r.suggested_description,
+                    suggested_acceptance: data.target.suggested_acceptance || r.suggested_acceptance
+                  }
+                : r
+            ))
+          }
+          // Update preview
+          setPreviewStory({
+            ...previewStory,
+            suggested_description: data.target.suggested_description || previewStory.suggested_description,
+            suggested_acceptance: data.target.suggested_acceptance || previewStory.suggested_acceptance
+          })
+        }
+
+        // Handle any related updates from the iteration
+        if (data.related_updates?.length > 0) {
+          for (const update of data.related_updates) {
+            if (update.id === story.id) {
+              setUpdatedDescription(update.suggested_description || updatedDescription)
+              setUpdatedAcceptance(update.suggested_acceptance || updatedAcceptance)
+            } else {
+              // Check if this story is already in relatedUpdates
+              const exists = relatedUpdates.some(r => r.id === update.id)
+              if (exists) {
+                setRelatedUpdates(prev => prev.map(r =>
+                  r.id === update.id
+                    ? {
+                        ...r,
+                        reason: update.reason || r.reason,
+                        suggested_description: update.suggested_description || r.suggested_description,
+                        suggested_acceptance: update.suggested_acceptance || r.suggested_acceptance
+                      }
+                    : r
+                ))
+              } else {
+                // Add new related update
+                setRelatedUpdates(prev => [...prev, {
+                  id: update.id,
+                  title: update.title,
+                  reason: update.reason,
+                  suggested_description: update.suggested_description,
+                  suggested_acceptance: update.suggested_acceptance || []
+                }])
+                // Auto-select it
+                setSelectedUpdates(prev => new Set([...prev, update.id]))
+              }
+            }
+          }
+        }
+
+        setIterateFeedback('')
+      }
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setIterating(false)
+    }
   }
 
   const isEditing = editStep !== 'view'
@@ -273,113 +417,96 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
           {editStep === 'review' && (
             <div className="space-y-3 py-2">
               {summary && <p className="text-sm text-muted-foreground">{summary}</p>}
-              <p className="text-xs font-medium">Click to select/deselect updates:</p>
+              <p className="text-xs font-medium">Select updates to apply:</p>
 
-              {/* Main story update */}
+              {/* Main story update row */}
               <div
                 className={cn(
-                  "p-3 rounded-md border transition-all",
-                  editingCardId !== story.id && "cursor-pointer hover:border-primary",
+                  "p-3 rounded-md border transition-all cursor-pointer hover:border-primary",
                   selectedUpdates.has(story.id) && "ring-2 ring-primary"
                 )}
-                onClick={() => editingCardId !== story.id && toggleUpdate(story.id)}
+                onClick={() => toggleUpdate(story.id)}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-mono text-sm">{story.id} (this story)</span>
-                  <div className="flex items-center gap-2">
-                    {editingCardId === story.id ? (
-                      <>
-                        <Button variant="ghost" size="sm" onClick={(e) => cancelEditCard(e)}>
-                          <X className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={(e) => saveEditCard(story.id, e)}>
-                          <Check className="h-3 w-3" />
-                        </Button>
-                      </>
-                    ) : (
-                      <Button variant="ghost" size="sm" onClick={(e) => startEditCard(story.id, updatedAcceptance, e)}>
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                    )}
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm font-medium">{story.id}</span>
+                      <Badge variant="outline" className="text-[10px]">this story</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 truncate">{story.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {updatedAcceptance.length} criteria • {updatedDescription ? 'description updated' : 'no description change'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 ml-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setPreviewStory({
+                          id: story.id,
+                          title: story.title,
+                          suggested_description: updatedDescription,
+                          suggested_acceptance: updatedAcceptance
+                        })
+                      }}
+                    >
+                      Preview
+                    </Button>
                     <div className={cn(
-                      "w-4 h-4 rounded border flex items-center justify-center",
+                      "w-5 h-5 rounded border flex items-center justify-center shrink-0",
                       selectedUpdates.has(story.id) ? "bg-primary border-primary" : "border-muted-foreground"
                     )}>
-                      {selectedUpdates.has(story.id) && <CheckCircle className="h-3 w-3 text-primary-foreground" />}
+                      {selectedUpdates.has(story.id) && <Check className="h-3 w-3 text-primary-foreground" />}
                     </div>
                   </div>
                 </div>
-                {editingCardId === story.id ? (
-                  <Textarea
-                    value={editCardText}
-                    onChange={e => setEditCardText(e.target.value)}
-                    rows={4}
-                    className="text-xs"
-                    placeholder="One acceptance criterion per line"
-                    onClick={e => e.stopPropagation()}
-                  />
-                ) : (
-                  <ul className="list-disc list-inside">
-                    {updatedAcceptance.map((a, i) => (
-                      <li key={i} className="text-xs">{a}</li>
-                    ))}
-                  </ul>
-                )}
               </div>
 
-              {/* Related updates */}
+              {/* Related updates rows */}
               {relatedUpdates.map(rel => (
                 <div
                   key={rel.id}
                   className={cn(
-                    "p-3 rounded-md border transition-all bg-amber-500/10",
-                    editingCardId !== rel.id && "cursor-pointer hover:border-amber-500",
+                    "p-3 rounded-md border transition-all cursor-pointer hover:border-amber-500 bg-amber-500/10",
                     selectedUpdates.has(rel.id) && "ring-2 ring-primary"
                   )}
-                  onClick={() => editingCardId !== rel.id && toggleUpdate(rel.id)}
+                  onClick={() => toggleUpdate(rel.id)}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-mono text-sm">{rel.id}</span>
-                    <div className="flex items-center gap-2">
-                      {editingCardId === rel.id ? (
-                        <>
-                          <Button variant="ghost" size="sm" onClick={(e) => cancelEditCard(e)}>
-                            <X className="h-3 w-3" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={(e) => saveEditCard(rel.id, e)}>
-                            <Check className="h-3 w-3" />
-                          </Button>
-                        </>
-                      ) : (
-                        <Button variant="ghost" size="sm" onClick={(e) => startEditCard(rel.id, rel.suggestedAcceptance, e)}>
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                      )}
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm font-medium">{rel.id}</span>
+                        <Badge variant="outline" className="text-[10px] border-amber-500 text-amber-600">related</Badge>
+                      </div>
+                      {rel.title && <p className="text-xs text-muted-foreground mt-1 truncate">{rel.title}</p>}
+                      {rel.reason && <p className="text-xs text-amber-600 mt-0.5 truncate">{rel.reason}</p>}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {rel.suggested_acceptance.length} criteria • {rel.suggested_description ? 'description updated' : 'no description change'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 ml-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setPreviewStory(rel)
+                        }}
+                      >
+                        Preview
+                      </Button>
                       <div className={cn(
-                        "w-4 h-4 rounded border flex items-center justify-center",
+                        "w-5 h-5 rounded border flex items-center justify-center shrink-0",
                         selectedUpdates.has(rel.id) ? "bg-primary border-primary" : "border-muted-foreground"
                       )}>
-                        {selectedUpdates.has(rel.id) && <CheckCircle className="h-3 w-3 text-primary-foreground" />}
+                        {selectedUpdates.has(rel.id) && <Check className="h-3 w-3 text-primary-foreground" />}
                       </div>
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-2">{rel.reason}</p>
-                  {editingCardId === rel.id ? (
-                    <Textarea
-                      value={editCardText}
-                      onChange={e => setEditCardText(e.target.value)}
-                      rows={3}
-                      className="text-xs"
-                      placeholder="One acceptance criterion per line"
-                      onClick={e => e.stopPropagation()}
-                    />
-                  ) : (
-                    <ul className="list-disc list-inside">
-                      {rel.suggestedAcceptance.map((a, i) => (
-                        <li key={i} className="text-xs">{a}</li>
-                      ))}
-                    </ul>
-                  )}
                 </div>
               ))}
             </div>
@@ -516,6 +643,78 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
               <Button onClick={() => { resetEdit(); onOpenChange(false) }}>Done</Button>
             )}
           </DialogFooter>
+        )}
+
+        {/* Preview Modal */}
+        {previewStory && (
+          <Dialog open={!!previewStory} onOpenChange={(o) => !o && setPreviewStory(null)}>
+            <DialogContent className="md:!max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+              <DialogHeader>
+                <div className="flex items-center gap-2">
+                  <DialogTitle className="font-mono text-base">{previewStory.id}</DialogTitle>
+                  <Badge variant="outline">Suggested Changes</Badge>
+                </div>
+                {previewStory.title && (
+                  <p className="text-sm text-muted-foreground mt-1">{previewStory.title}</p>
+                )}
+              </DialogHeader>
+
+              <div className="flex-1 overflow-y-auto space-y-4 py-2">
+                {previewStory.reason && (
+                  <div className="bg-amber-500/10 p-3 rounded-md">
+                    <h4 className="text-xs font-medium text-amber-600 mb-1">Why this update is suggested</h4>
+                    <p className="text-sm">{previewStory.reason}</p>
+                  </div>
+                )}
+
+                {previewStory.suggested_description && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Suggested Description</h4>
+                    <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
+                      {previewStory.suggested_description}
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Suggested Acceptance Criteria</h4>
+                  <ul className="space-y-2">
+                    {previewStory.suggested_acceptance.map((ac, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm bg-muted/50 p-2 rounded-md">
+                        <span className="bg-primary/10 text-primary text-xs font-mono px-1.5 py-0.5 rounded shrink-0">
+                          {i + 1}
+                        </span>
+                        <span>{ac}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 space-y-3">
+                <h4 className="text-sm font-medium">Want changes? Describe them below:</h4>
+                <Textarea
+                  placeholder="e.g., Make criteria more specific, add error handling, split into smaller tasks..."
+                  value={iterateFeedback}
+                  onChange={e => setIterateFeedback(e.target.value)}
+                  rows={2}
+                  className="text-sm"
+                />
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => { setPreviewStory(null); setIterateFeedback('') }}>
+                    Close
+                  </Button>
+                  <Button
+                    onClick={handleIterate}
+                    disabled={iterating || !iterateFeedback.trim()}
+                  >
+                    {iterating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Regenerate
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </DialogContent>
     </Dialog>

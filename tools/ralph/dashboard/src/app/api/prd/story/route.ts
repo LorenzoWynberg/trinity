@@ -39,35 +39,54 @@ export async function POST(request: NextRequest) {
     // Build prompt for Claude
     const prompt = `You are updating a PRD story based on user feedback.
 
-CURRENT STORY:
-${JSON.stringify(story, null, 2)}
+TARGET STORY:
+- ID: ${story.id}
+- Title: ${story.title}
+- Current Description: ${story.description || '(none)'}
+- Current Intent: ${story.intent || '(none)'}
+- Tags: ${(story.tags || []).join(', ') || '(none)'}
+- Depends On: ${(story.depends_on || []).join(', ') || '(none)'}
+
+Current Acceptance Criteria:
+${(story.acceptance || []).map((a: string, i: number) => `${i + 1}. ${a}`).join('\n')}
 
 USER REQUESTED CHANGES:
 ${requestedChanges}
 
-RELATED STORIES (same tags or dependencies):
-${JSON.stringify(relatedStories.map((s: any) => ({ id: s.id, title: s.title, tags: s.tags, acceptance: s.acceptance })), null, 2)}
+RELATED STORIES (share tags or dependencies - may need updates for consistency):
+${JSON.stringify(relatedStories.map((s: any) => ({
+  id: s.id,
+  title: s.title,
+  description: s.description,
+  tags: s.tags,
+  depends_on: s.depends_on,
+  acceptance: s.acceptance
+})), null, 2)}
 
 Tasks:
-1. Generate updated acceptance criteria for the target story based on the requested changes
+1. Generate updated description and acceptance criteria for the target story
 2. Check if any related stories need updates to stay consistent
-3. Be specific - avoid vague terms
+3. Be specific - avoid vague terms like "properly", "handle", "settings"
 
 Output ONLY valid JSON (no markdown, no code blocks):
 {
-  "updatedStory": {
-    "acceptance": ["updated criterion 1", "updated criterion 2"],
-    "intent": "updated intent if needed, or keep original"
+  "target": {
+    "suggested_description": "Updated description based on changes",
+    "suggested_acceptance": ["specific criterion 1", "specific criterion 2"],
+    "suggested_intent": "Updated intent if needed"
   },
-  "relatedUpdates": [
+  "related_updates": [
     {
       "id": "X.Y.Z",
-      "reason": "Why this story needs updating",
-      "suggestedAcceptance": ["updated criterion 1"]
+      "reason": "Why this story needs updating due to changes in ${storyId}",
+      "suggested_description": "Updated description if changed",
+      "suggested_acceptance": ["updated criteria if changed"]
     }
   ],
-  "summary": "Brief description of changes made"
-}`
+  "summary": "Brief description of what changed and why"
+}
+
+Only include related_updates for stories that actually need changes.`
 
     // Run Claude with temp files
     const { success, result, error, raw } = await runClaude(prompt)
@@ -76,10 +95,22 @@ Output ONLY valid JSON (no markdown, no code blocks):
       return NextResponse.json({ error, raw }, { status: 500 })
     }
 
+    // Enrich related_updates with title from original stories
+    const enrichedRelatedUpdates = (result.related_updates || []).map((update: any) => {
+      const originalStory = relatedStories.find((s: any) => s.id === update.id)
+      return {
+        ...update,
+        title: originalStory?.title || update.title
+      }
+    })
+
     return NextResponse.json({
       storyId,
       currentStory: story,
-      ...result
+      relatedStories: relatedStories.map((s: any) => ({ id: s.id, title: s.title })),
+      target: result.target,
+      related_updates: enrichedRelatedUpdates,
+      summary: result.summary
     })
   } catch (error: any) {
     console.error('Story analysis error:', error)
@@ -109,7 +140,10 @@ ${JSON.stringify(updates, null, 2)}
 
 Instructions:
 1. Read the PRD file at the path above
-2. For each update, find the story by ID and update its fields (acceptance, intent, etc.)
+2. For each update, find the story by ID and update:
+   - "description" field with suggested_description (if provided)
+   - "acceptance" array with suggested_acceptance (if provided)
+   - "intent" field with suggested_intent (if provided)
 3. Write the updated PRD back to the same file
 4. Preserve all other fields and formatting
 
