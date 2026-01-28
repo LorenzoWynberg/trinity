@@ -1,34 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runClaude } from '@/lib/claude'
 
-// POST: Refine acceptance criteria based on user prompt
+// POST: Regenerate suggestions for a single story based on user feedback
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { storyId, currentAcceptance, prompt } = body
+    const { storyId, title, currentDescription, currentAcceptance, userFeedback } = body
 
-    if (!storyId || !currentAcceptance || !prompt) {
+    if (!storyId || !userFeedback) {
       return NextResponse.json(
-        { error: 'storyId, currentAcceptance, and prompt are required' },
+        { error: 'storyId and userFeedback are required' },
         { status: 400 }
       )
     }
 
-    const claudePrompt = `You are refining acceptance criteria for a PRD story.
+    const claudePrompt = `You are refining suggestions for a PRD story based on user feedback.
 
 STORY ID: ${storyId}
+STORY TITLE: ${title || 'Unknown'}
 
-CURRENT ACCEPTANCE CRITERIA:
-${currentAcceptance.map((a: string, i: number) => `${i + 1}. ${a}`).join('\n')}
+CURRENT SUGGESTED DESCRIPTION:
+${currentDescription || '(none)'}
 
-USER REQUEST:
-${prompt}
+CURRENT SUGGESTED ACCEPTANCE CRITERIA:
+${(currentAcceptance || []).map((a: string, i: number) => `${i + 1}. ${a}`).join('\n')}
 
-Update the acceptance criteria based on the user's request. Keep criteria specific and testable.
+USER FEEDBACK:
+${userFeedback}
+
+Based on the user's feedback, generate improved suggestions. Keep them specific and testable.
 
 Output format (JSON only, no markdown):
 {
-  "acceptance": ["updated criterion 1", "updated criterion 2", "..."]
+  "suggested_description": "Updated description based on feedback",
+  "suggested_acceptance": ["updated criterion 1", "updated criterion 2", "..."]
 }`
 
     const { success, result, error, raw } = await runClaude(claudePrompt, { timeoutMs: 60000 })
@@ -37,7 +42,10 @@ Output format (JSON only, no markdown):
       return NextResponse.json({ error, raw }, { status: 500 })
     }
 
-    return NextResponse.json({ acceptance: result.acceptance })
+    return NextResponse.json({
+      suggested_description: result.suggested_description,
+      suggested_acceptance: result.suggested_acceptance
+    })
   } catch (error: any) {
     console.error('Refine edit error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })

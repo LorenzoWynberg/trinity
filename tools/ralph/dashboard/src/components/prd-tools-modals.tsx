@@ -17,8 +17,10 @@ import { cn } from '@/lib/utils'
 
 type Refinement = {
   id: string
+  title: string  // Original title for context
   status: 'ok' | 'needs_work'
   issues: string[]
+  suggested_description: string
   suggested_acceptance: string[]
 }
 
@@ -96,17 +98,24 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           storyId: id,
+          title: ref.title,
+          currentDescription: ref.suggested_description,
           currentAcceptance: ref.suggested_acceptance,
-          prompt: editPrompt
+          userFeedback: editPrompt
         })
       })
       const data = await res.json()
 
       if (data.error) {
         setError(data.error)
-      } else if (data.acceptance) {
+      } else {
+        // Update this refinement's suggestions
         setRefinements(prev => prev.map(r =>
-          r.id === id ? { ...r, suggested_acceptance: data.acceptance } : r
+          r.id === id ? {
+            ...r,
+            suggested_description: data.suggested_description,
+            suggested_acceptance: data.suggested_acceptance
+          } : r
         ))
         setEditingId(null)
         setEditPrompt('')
@@ -278,7 +287,10 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
                       onClick={() => editingId !== ref.id && toggleId(ref.id)}
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-mono font-medium">{ref.id}</span>
+                        <div>
+                          <span className="font-mono font-medium">{ref.id}</span>
+                          {ref.title && <span className="text-xs text-muted-foreground ml-2">— {ref.title}</span>}
+                        </div>
                         <div className="flex items-center gap-2">
                           {editingId !== ref.id && (
                             <Button variant="ghost" size="sm" onClick={(e) => startEdit(ref, e)} title="Refine with AI">
@@ -296,11 +308,20 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
                       {ref.issues.length > 0 && (
                         <p className="text-xs text-muted-foreground mb-2">Issues: {ref.issues.join(', ')}</p>
                       )}
-                      <ul className="list-disc list-inside">
-                        {ref.suggested_acceptance.map((a, i) => (
-                          <li key={i} className="text-xs">{a}</li>
-                        ))}
-                      </ul>
+                      {ref.suggested_description && (
+                        <div className="mb-2">
+                          <p className="text-xs font-medium text-muted-foreground">Description:</p>
+                          <p className="text-xs">{ref.suggested_description}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">Acceptance Criteria:</p>
+                        <ul className="list-disc list-inside">
+                          {ref.suggested_acceptance.map((a, i) => (
+                            <li key={i} className="text-xs">{a}</li>
+                          ))}
+                        </ul>
+                      </div>
                       {editingId === ref.id && (
                         <div className="mt-2 flex gap-2" onClick={e => e.stopPropagation()}>
                           <Input

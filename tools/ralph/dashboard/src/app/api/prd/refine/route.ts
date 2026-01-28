@@ -53,14 +53,11 @@ Output ONLY valid JSON (no markdown, no code blocks):
   "refinements": [
     {
       "id": "X.Y.Z",
+      "title": "Original story title",
       "status": "ok" | "needs_work",
       "issues": ["issue 1", "issue 2"],
-      "suggested_acceptance": ["clearer criterion 1", "clearer criterion 2"],
-      "suggested_split": [
-        {"title": "Smaller story 1", "acceptance": ["..."]},
-        {"title": "Smaller story 2", "acceptance": ["..."]}
-      ],
-      "suggested_tags": ["tag1", "tag2"]
+      "suggested_description": "Clear, specific description of what to implement and why",
+      "suggested_acceptance": ["clearer criterion 1", "clearer criterion 2"]
     }
   ],
   "summary": "X of ${totalStories} pending stories need refinement"
@@ -96,19 +93,22 @@ export async function PUT(request: NextRequest) {
     const prdFile = path.join(PRD_DIR, `${version}.json`)
 
     // Build prompt for Claude to apply the refinements
-    const prompt = `You need to update the PRD file with refined acceptance criteria.
+    const prompt = `You need to update the PRD file with refined story content.
 
 PRD FILE: ${prdFile}
 
 REFINEMENTS TO APPLY:
 ${JSON.stringify(refinements.map(r => ({
   id: r.id,
+  new_description: r.suggested_description,
   new_acceptance: r.suggested_acceptance
 })), null, 2)}
 
 Instructions:
 1. Read the PRD file at the path above
-2. For each refinement, find the story by ID and update its "acceptance" array
+2. For each refinement, find the story by ID and update:
+   - "description" field with new_description (if provided)
+   - "acceptance" array with new_acceptance
 3. Write the updated PRD back to the same file
 4. Preserve all other fields and formatting
 
