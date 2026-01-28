@@ -68,7 +68,9 @@ Use the Write tool to create the file. Output ONLY valid JSON, no markdown, no e
       }
     }
   } catch (error: any) {
-    return { success: false, error: error.message }
+    // Capture both stdout and stderr for debugging
+    const errorMsg = error.stderr || error.stdout || error.message
+    return { success: false, error: errorMsg }
   } finally {
     // Cleanup temp files (ignore errors)
     await fs.unlink(promptFile).catch(() => {})
