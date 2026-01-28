@@ -400,16 +400,28 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
           {/* Step: Input */}
           {editStep === 'input' && (
             <div className="space-y-4 py-2">
-              <div>
-                <h4 className="text-sm font-medium mb-1">{story.title}</h4>
-                <p className="text-xs text-muted-foreground">Describe changes for {story.id}</p>
-              </div>
-              <Textarea
-                placeholder="What changes do you want to make to this story?&#10;&#10;Example: Add specific validation rules, split into smaller tasks, clarify acceptance criteria..."
-                value={requestedChanges}
-                onChange={e => setRequestedChanges(e.target.value)}
-                rows={4}
-              />
+              {loading ? (
+                <div className="text-center py-6">
+                  <Loader2 className="h-10 w-10 mx-auto text-primary mb-3 animate-spin" />
+                  <p className="font-medium mb-1">Analyzing changes...</p>
+                  <p className="text-sm text-muted-foreground">
+                    Claude is reviewing your request. This may take a minute.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <h4 className="text-sm font-medium mb-1">{story.title}</h4>
+                    <p className="text-xs text-muted-foreground">Describe changes for {story.id}</p>
+                  </div>
+                  <Textarea
+                    placeholder="What changes do you want to make to this story?&#10;&#10;Example: Add specific validation rules, split into smaller tasks, clarify acceptance criteria..."
+                    value={requestedChanges}
+                    onChange={e => setRequestedChanges(e.target.value)}
+                    rows={4}
+                  />
+                </>
+              )}
             </div>
           )}
 
@@ -620,19 +632,23 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
 
         {/* Footer with navigation buttons */}
         {isEditing && (
-          <DialogFooter className="pt-4 border-t">
-            {editStep === 'input' && (
+          <DialogFooter className="pt-4 border-t flex-col sm:flex-row gap-2">
+            {editStep === 'input' && !loading && (
               <>
                 <Button variant="outline" onClick={resetEdit}>Cancel</Button>
                 <Button onClick={handleAnalyze} disabled={loading || !requestedChanges.trim()}>
-                  {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Analyze
                 </Button>
               </>
             )}
             {editStep === 'review' && (
               <>
-                <Button variant="outline" onClick={() => setEditStep('input')}>Back</Button>
+                {loading && (
+                  <p className="text-xs text-muted-foreground mr-auto">
+                    Applying updates to PRD...
+                  </p>
+                )}
+                <Button variant="outline" onClick={() => setEditStep('input')} disabled={loading}>Back</Button>
                 <Button onClick={handleApply} disabled={loading || selectedUpdates.size === 0}>
                   {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Apply {selectedUpdates.size} Update{selectedUpdates.size !== 1 ? 's' : ''}
@@ -699,9 +715,15 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
                   onChange={e => setIterateFeedback(e.target.value)}
                   rows={2}
                   className="text-sm"
+                  disabled={iterating}
                 />
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => { setPreviewStory(null); setIterateFeedback('') }}>
+                <div className="flex items-center justify-end gap-2">
+                  {iterating && (
+                    <p className="text-xs text-muted-foreground mr-auto">
+                      Regenerating suggestions...
+                    </p>
+                  )}
+                  <Button variant="outline" onClick={() => { setPreviewStory(null); setIterateFeedback('') }} disabled={iterating}>
                     Close
                   </Button>
                   <Button

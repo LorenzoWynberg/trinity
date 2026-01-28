@@ -270,14 +270,25 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
 
           {step === 'analyze' && (
             <div className="text-center py-8">
-              <Sparkles className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground mb-4">
-                Claude will analyze all pending stories in {version} and suggest improvements for unclear acceptance criteria.
-              </p>
-              <Button onClick={handleAnalyze} disabled={loading} size="lg">
-                {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                Start Analysis
-              </Button>
+              {loading ? (
+                <>
+                  <Loader2 className="h-12 w-12 mx-auto text-primary mb-4 animate-spin" />
+                  <p className="text-lg font-medium mb-2">Analyzing stories...</p>
+                  <p className="text-muted-foreground text-sm">
+                    Claude is reviewing all pending stories. This may take a few minutes for large PRDs.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground mb-4">
+                    Claude will analyze all pending stories in {version} and suggest improvements for unclear acceptance criteria.
+                  </p>
+                  <Button onClick={handleAnalyze} disabled={loading} size="lg">
+                    Start Analysis
+                  </Button>
+                </>
+              )}
             </div>
           )}
 
@@ -380,10 +391,15 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
           {step === 'review' && needsWorkCount > 0 && (
             <>
-              <Button variant="outline" onClick={() => setStep('analyze')}>
+              {loading && (
+                <p className="text-xs text-muted-foreground mr-auto">
+                  Applying refinements to PRD...
+                </p>
+              )}
+              <Button variant="outline" onClick={() => setStep('analyze')} disabled={loading}>
                 <ChevronLeft className="h-4 w-4 mr-1" /> Back
               </Button>
               <Button onClick={handleApply} disabled={loading || selectedIds.size === 0}>
@@ -584,16 +600,28 @@ export function GenerateStoriesModal({ open, onOpenChange, version }: GenerateMo
 
           {step === 'input' && (
             <div className="space-y-4">
-              <Textarea
-                placeholder="Describe what you want to build...&#10;&#10;Example: Add user authentication with OAuth support for Google and GitHub, including login/logout flows and session management"
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                rows={6}
-                className="text-base"
-              />
-              <p className="text-xs text-muted-foreground">
-                Be specific about features, behaviors, and requirements. Claude will generate properly formatted PRD stories.
-              </p>
+              {loading ? (
+                <div className="text-center py-8">
+                  <Loader2 className="h-12 w-12 mx-auto text-primary mb-4 animate-spin" />
+                  <p className="text-lg font-medium mb-2">Generating stories...</p>
+                  <p className="text-muted-foreground text-sm">
+                    Claude is creating stories based on your description. This may take a minute or two.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <Textarea
+                    placeholder="Describe what you want to build...&#10;&#10;Example: Add user authentication with OAuth support for Google and GitHub, including login/logout flows and session management"
+                    value={description}
+                    onChange={e => setDescription(e.target.value)}
+                    rows={6}
+                    className="text-base"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Be specific about features, behaviors, and requirements. Claude will generate properly formatted PRD stories.
+                  </p>
+                </>
+              )}
             </div>
           )}
 
@@ -715,16 +743,20 @@ export function GenerateStoriesModal({ open, onOpenChange, version }: GenerateMo
           )}
         </div>
 
-        <DialogFooter>
-          {step === 'input' && (
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          {step === 'input' && !loading && (
             <Button onClick={handleGenerate} disabled={loading || !description.trim()}>
-              {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               Generate Stories
             </Button>
           )}
           {step === 'review' && (
             <>
-              <Button variant="outline" onClick={() => setStep('input')}>
+              {loading && (
+                <p className="text-xs text-muted-foreground mr-auto">
+                  Adding stories to PRD...
+                </p>
+              )}
+              <Button variant="outline" onClick={() => setStep('input')} disabled={loading}>
                 <ChevronLeft className="h-4 w-4 mr-1" /> Back
               </Button>
               <Button onClick={handleAdd} disabled={loading || selectedIdxs.size === 0}>
