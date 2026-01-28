@@ -6,7 +6,7 @@ import fs from 'fs/promises'
 
 const execAsync = promisify(exec)
 
-const PROJECT_ROOT = path.join(process.cwd(), '../../../..')
+const PROJECT_ROOT = path.join(process.cwd(), '../../..')
 const RALPH_CLI_DIR = path.join(PROJECT_ROOT, 'tools/ralph/cli')
 const PRD_DIR = path.join(RALPH_CLI_DIR, 'prd')
 
@@ -38,10 +38,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Build prompt
+    const totalStories = stories.length
     const prompt = `You are reviewing PRD stories for clarity and implementability.
 
 PROJECT: ${prd.project || 'Unknown'}
 VERSION: ${version}
+TOTAL PENDING STORIES: ${totalStories}
 
 STORIES TO REVIEW:
 ${JSON.stringify(stories, null, 2)}
@@ -68,7 +70,7 @@ Output ONLY valid JSON (no markdown, no code blocks):
       "suggested_tags": ["tag1", "tag2"]
     }
   ],
-  "summary": "X of Y stories need refinement"
+  "summary": "X of ${totalStories} pending stories need refinement"
 }
 
 Be pragmatic - only flag real issues that could lead to wrong implementations.

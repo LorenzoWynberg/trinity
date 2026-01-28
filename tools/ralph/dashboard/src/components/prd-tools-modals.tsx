@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -49,8 +49,14 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
   const [appliedCount, setAppliedCount] = useState(0)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const reset = () => {
+    // Abort any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
     setStep('analyze')
     setLoading(false)
     setError(null)
@@ -92,16 +98,20 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
     setLoading(true)
     setError(null)
 
+    // Create abort controller for this request
+    abortControllerRef.current = new AbortController()
+
     try {
       const res = await fetch('/api/prd/refine', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ version })
+        body: JSON.stringify({ version }),
+        signal: abortControllerRef.current.signal
       })
       const data = await res.json()
 
       if (data.error) {
-        setError(data.error)
+        setError(data.raw ? `${data.error}\n\nRaw output:\n${data.raw.slice(0, 500)}...` : data.error)
       } else {
         setRefinements(data.refinements || [])
         setSummary(data.summary || '')
@@ -112,9 +122,13 @@ export function RefineStoriesModal({ open, onOpenChange, version }: RefineModalP
         setStep('review')
       }
     } catch (e: any) {
-      setError(e.message)
+      // Don't show error if request was aborted (user closed modal)
+      if (e.name !== 'AbortError') {
+        setError(e.message)
+      }
     } finally {
       setLoading(false)
+      abortControllerRef.current = null
     }
   }
 
@@ -333,8 +347,14 @@ export function GenerateStoriesModal({ open, onOpenChange, version }: GenerateMo
   const [addedCount, setAddedCount] = useState(0)
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const [editStory, setEditStory] = useState<GeneratedStory | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const reset = () => {
+    // Abort any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
     setStep('input')
     setLoading(false)
     setError(null)
@@ -382,11 +402,15 @@ export function GenerateStoriesModal({ open, onOpenChange, version }: GenerateMo
     setLoading(true)
     setError(null)
 
+    // Create abort controller for this request
+    abortControllerRef.current = new AbortController()
+
     try {
       const res = await fetch('/api/prd/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ version, description })
+        body: JSON.stringify({ version, description }),
+        signal: abortControllerRef.current.signal
       })
       const data = await res.json()
 
@@ -399,9 +423,13 @@ export function GenerateStoriesModal({ open, onOpenChange, version }: GenerateMo
         setStep('review')
       }
     } catch (e: any) {
-      setError(e.message)
+      // Don't show error if request was aborted (user closed modal)
+      if (e.name !== 'AbortError') {
+        setError(e.message)
+      }
     } finally {
       setLoading(false)
+      abortControllerRef.current = null
     }
   }
 
