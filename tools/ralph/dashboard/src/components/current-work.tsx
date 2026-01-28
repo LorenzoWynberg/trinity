@@ -1,22 +1,41 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { State, Story } from '@/lib/types'
-import { GitBranch, Clock } from 'lucide-react'
+import { GitBranch, Clock, CheckCircle2 } from 'lucide-react'
+import Link from 'next/link'
 
 interface CurrentWorkProps {
   state: State | null
   story: Story | undefined
+  lastCompletedStory?: Story | undefined
 }
 
-export function CurrentWork({ state, story }: CurrentWorkProps) {
+export function CurrentWork({ state, story, lastCompletedStory }: CurrentWorkProps) {
   if (!state?.current_story) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Current Work</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <p className="text-muted-foreground">No story in progress</p>
+          {state?.last_completed && (
+            <div className="flex items-center gap-2 text-sm">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              <span className="text-muted-foreground">Last completed:</span>
+              <Link
+                href={`/stories/${state.last_completed}`}
+                className="font-mono text-primary hover:underline"
+              >
+                {state.last_completed}
+              </Link>
+              {lastCompletedStory && (
+                <span className="text-muted-foreground truncate max-w-[200px]">
+                  — {lastCompletedStory.title}
+                </span>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     )

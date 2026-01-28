@@ -17,6 +17,9 @@ export interface Story {
   pr_url?: string
   target_version?: string
   external_deps?: { name: string; description: string }[]
+  // Smart selection fields
+  priority?: number  // User-defined priority (0-10), higher = more important
+  tags?: string[]    // Tags for cross-cutting concerns and clustering
   // Enriched fields (added at load time)
   phase_name?: string
   epic_name?: string
@@ -69,6 +72,11 @@ export interface State {
   attempts: number
   error: string | null
   checkpoints: string[]
+  // Smart selection fields
+  last_completed?: string | null  // Last merged story (for context retention scoring)
+  // Failure tracking
+  last_error?: string | null      // Most recent error message
+  failure_count?: number          // Consecutive failures with same error
 }
 
 // Metrics Types

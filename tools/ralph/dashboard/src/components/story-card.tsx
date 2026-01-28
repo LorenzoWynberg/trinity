@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { Story, StoryStatus } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { ArrowUp, Tag } from 'lucide-react';
 
 interface StoryCardProps {
   story: Story;
@@ -27,9 +28,17 @@ export function StoryCard({ story, status }: StoryCardProps) {
       <Card className="hover:border-primary transition-colors cursor-pointer h-full cyber-light:border-l-4 cyber-light:border-l-cyan-400 cyber-dark:hover:border-yellow-400">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
-            <CardTitle className="text-sm font-mono cyber-light:text-pink-600 cyber-dark:text-foreground">
-              Story {story.id}
-            </CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm font-mono cyber-light:text-pink-600 cyber-dark:text-foreground">
+                Story {story.id}
+              </CardTitle>
+              {story.priority && story.priority > 0 && (
+                <Badge variant="outline" className="text-[10px] px-1 py-0 gap-0.5 text-orange-500 border-orange-500/50">
+                  <ArrowUp className="h-2.5 w-2.5" />
+                  {story.priority}
+                </Badge>
+              )}
+            </div>
             <Badge className={cn('text-xs', config.className)}>
               {config.label}
             </Badge>
@@ -53,6 +62,25 @@ export function StoryCard({ story, status }: StoryCardProps) {
             </div>
             {story.depends_on && story.depends_on.length > 0 && (
               <div>Deps: {story.depends_on.join(', ')}</div>
+            )}
+            {story.tags && story.tags.length > 0 && (
+              <div className="flex items-center gap-1 flex-wrap">
+                <Tag className="h-3 w-3 text-muted-foreground/50" />
+                {story.tags.slice(0, 3).map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant="secondary"
+                    className="text-[10px] px-1 py-0 bg-muted/50"
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+                {story.tags.length > 3 && (
+                  <span className="text-[10px] text-muted-foreground/50">
+                    +{story.tags.length - 3}
+                  </span>
+                )}
+              </div>
             )}
           </div>
           {story.acceptance && story.acceptance.length > 0 && (

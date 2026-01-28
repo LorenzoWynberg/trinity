@@ -16,6 +16,8 @@ import {
   ExternalLink,
   CheckCircle2,
   Circle,
+  ArrowUp,
+  Tag,
 } from 'lucide-react';
 
 export const revalidate = 5;
@@ -114,6 +116,12 @@ export default async function StoryDetailPage({
             {story.id}
           </h1>
           <Badge className={config.className}>{config.label}</Badge>
+          {story.priority && story.priority > 0 && (
+            <Badge variant="outline" className="gap-1 text-orange-500 border-orange-500/50">
+              <ArrowUp className="h-3 w-3" />
+              Priority {story.priority}
+            </Badge>
+          )}
           <StoryEditButton
             story={story}
             status={status}
@@ -141,6 +149,20 @@ export default async function StoryDetailPage({
             <code>{branchName}</code>
           </div>
         </div>
+        {story.tags && story.tags.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <Tag className="h-4 w-4 text-muted-foreground" />
+            {story.tags.map((tag) => (
+              <Badge
+                key={tag}
+                variant="secondary"
+                className="text-xs"
+              >
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
 
       {story.intent && (

@@ -71,6 +71,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const stats = getTotalStats(prd, metrics)
   const phases = getPhaseProgress(prd)
   const currentStory = state?.current_story ? getStoryById(prd, state.current_story) : undefined
+  const lastCompletedStory = state?.last_completed ? getStoryById(prd, state.last_completed) : undefined
   const blocked = getBlockedStories(prd)
   const unmergedPassed = getUnmergedPassed(prd)
 
@@ -135,7 +136,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </Card>
 
         {/* Current Work */}
-        <CurrentWork state={state} story={currentStory} />
+        <CurrentWork state={state} story={currentStory} lastCompletedStory={lastCompletedStory} />
       </div>
 
       {/* Blocked Stories */}
