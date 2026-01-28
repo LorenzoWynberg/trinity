@@ -13,6 +13,28 @@ var gotchas-dir = ""
 var base-branch = "dev"
 var compaction-threshold-days = 30
 
+# Run Claude with temp file for reliable prompt handling
+# (Local copy to avoid circular dependency with claude.elv)
+fn run-claude {|prompt|
+  var prompt-file = (mktemp -t claude-prompt-XXXXXX)
+  echo $prompt > $prompt-file
+
+  var output = ""
+  var success = $true
+  var err = ""
+
+  try {
+    set output = (claude --dangerously-skip-permissions --print < $prompt-file 2>&1 | slurp)
+  } catch e {
+    set success = $false
+    set err = (to-string $e[reason])
+  } finally {
+    rm -f $prompt-file
+  }
+
+  put [&success=$success &output=$output &error=$err]
+}
+
 # Initialize module
 fn init {|root &base="dev"|
   set project-root = $root
@@ -203,13 +225,12 @@ TASK:
 Output ONLY the compacted content (no explanations, no metadata). Start directly with the first header or content.'
   }
 
-  var result = ""
-  try {
-    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
-  } catch e {
-    ui:warn "Compaction failed for "$filename": "(to-string $e[reason])
+  var claude-result = (run-claude $prompt)
+  if (not $claude-result[success]) {
+    ui:warn "Compaction failed for "$filename": "$claude-result[error]
     return
   }
+  var result = $claude-result[output]
 
   if (eq (str:trim-space $result) "") {
     ui:warn "Empty result from compaction, keeping original"
@@ -409,13 +430,12 @@ New file names should be lowercase, descriptive, and end in .md (e.g., agents.md
 
 Only extract genuinely useful content. Be concise but complete.'
 
-  var result = ""
-  try {
-    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
-  } catch e {
-    ui:warn "Extraction failed: "(to-string $e[reason])
+  var claude-result = (run-claude $prompt)
+  if (not $claude-result[success]) {
+    ui:warn "Extraction failed: "$claude-result[error]
     return
   }
+  var result = $claude-result[output]
 
   if (str:contains $result "<no-extractions/>") {
     ui:dim "  No notable extractions from this story"
@@ -563,13 +583,12 @@ Otherwise:
 
 Be concise. Only extract if this is genuinely reusable knowledge.'
 
-  var result = ""
-  try {
-    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
-  } catch e {
-    ui:warn "Feedback extraction failed: "(to-string $e[reason])
+  var claude-result = (run-claude $prompt)
+  if (not $claude-result[success]) {
+    ui:warn "Feedback extraction failed: "$claude-result[error]
     return
   }
+  var result = $claude-result[output]
 
   if (str:contains $result "<no-extraction/>") {
     ui:dim "  Feedback was story-specific, no reusable pattern"

@@ -6,6 +6,7 @@ use ./ui
 use ./prd
 use ./metrics
 use ./state
+use ./claude
 
 # Configuration (set by init)
 var project-root = ""
@@ -136,10 +137,11 @@ Format for new/updated descriptions (markdown):
 Output ONLY 'DESCRIPTION_COMPLETE' or the full updated description. No other text."
 
   # Call Claude
+  var claude-result = (claude:run-claude $prompt)
   var result = ""
-  try {
-    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
-  } catch _ { }
+  if $claude-result[success] {
+    set result = $claude-result[output]
+  }
 
   # Check if Claude says it's already complete
   if (str:contains $result "DESCRIPTION_COMPLETE") {

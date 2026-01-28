@@ -6,6 +6,7 @@ use re
 use path
 use ./ui
 use ./prd
+use ./claude
 
 # Configuration (set by init)
 var project-root = ""
@@ -180,16 +181,15 @@ After making changes, commit and output: <hotfix-complete/>"
   ui:status "Running Claude with feedback..."
 
   # Run Claude
-  var claude-output = ""
-  try {
-    set claude-output = (echo $prompt | claude --dangerously-skip-permissions --print --output-format stream-json 2>&1 | slurp)
-  } catch e {
+  var claude-result = (claude:run-claude $prompt &stream-json=$true)
+  if (not $claude-result[success]) {
     # Checkout back to base branch
     git -C $project-root checkout $base-branch 2>/dev/null
     git -C $project-root branch -D $hotfix-branch 2>/dev/null
-    put [&success=$false &error="Claude failed: "(to-string $e[reason])]
+    put [&success=$false &error="Claude failed: "$claude-result[error]]
     return
   }
+  var claude-output = $claude-result[output]
 
   # Check for hotfix-complete signal
   if (not (str:contains $claude-output "<hotfix-complete/>")) {

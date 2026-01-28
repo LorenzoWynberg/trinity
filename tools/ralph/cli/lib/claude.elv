@@ -40,6 +40,42 @@ fn init {|root sdir template timeout quiet max-iter &auto-handle-dup=$false &aut
   }
 }
 
+# Run Claude with temp file for reliable prompt handling
+# Avoids shell escaping issues and size limits
+# Returns: [&success=bool &output=string &error=string]
+fn run-claude {|prompt &timeout=$nil &stream-json=$false|
+  var prompt-file = (mktemp -t claude-prompt-XXXXXX)
+
+  # Write prompt to temp file (avoids shell escaping issues)
+  echo $prompt > $prompt-file
+
+  var output = ""
+  var err = ""
+  var success = $true
+
+  try {
+    var flags = [--dangerously-skip-permissions --print]
+    if $stream-json {
+      set flags = [$@flags --output-format stream-json]
+    }
+
+    # Use timeout if specified
+    if (not (eq $timeout $nil)) {
+      set output = (timeout $timeout claude $@flags < $prompt-file 2>&1 | slurp)
+    } else {
+      set output = (claude $@flags < $prompt-file 2>&1 | slurp)
+    }
+  } catch e {
+    set success = $false
+    set err = (to-string $e[reason])
+  } finally {
+    # Cleanup temp file
+    rm -f $prompt-file
+  }
+
+  put [&success=$success &output=$output &error=$err]
+}
+
 # Pre-flight checks before starting
 # Returns true if all checks pass, false otherwise
 fn preflight-checks {
@@ -519,14 +555,13 @@ type(scope): brief description
 - Change 2
 </commit-message>'
 
-  var result = ""
-  try {
-    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
-  } catch e {
+  var claude-result = (run-claude $prompt)
+  if (not $claude-result[success]) {
     # Fallback to simple message
     put "feat: "$story-id" - "$story-title
     return
   }
+  var result = $claude-result[output]
 
   # Extract commit message from tags
   if (str:contains $result "<commit-message>") {
@@ -595,11 +630,13 @@ OR
 
 Be pragmatic - minor ambiguity is OK if the intent is clear. Only flag things that could lead to implementing the wrong thing.'
 
-  var result = ""
-  var result-raw = [(echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null)]
-  if (> (count $result-raw) 0) {
-    set result = (str:join "\n" $result-raw)
+  var claude-result = (run-claude $prompt)
+  if (not $claude-result[success]) {
+    ui:warn "Validation check failed, proceeding anyway"
+    put [&valid=$true &questions=""]
+    return
   }
+  var result = $claude-result[output]
 
   if (eq $result "") {
     ui:warn "Validation check failed, proceeding anyway"
@@ -712,13 +749,12 @@ Output JSON:
 Be pragmatic - only flag real issues that could lead to wrong implementations.
 If a story is fine, set status to "ok" with empty issues/suggestions.'
 
-  var result = ""
-  try {
-    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
-  } catch e {
-    ui:error "Refinement failed: "(to-string $e[reason])
+  var claude-result = (run-claude $prompt)
+  if (not $claude-result[success]) {
+    ui:error "Refinement failed: "$claude-result[error]
     return
   }
+  var result = $claude-result[output]
 
   # Display results
   echo $result
@@ -832,13 +868,12 @@ Output JSON:
 
 Be specific in acceptance criteria - avoid vague terms.'
 
-  var result = ""
-  try {
-    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
-  } catch e {
-    ui:error "Story generation failed: "(to-string $e[reason])
+  var claude-result = (run-claude $prompt)
+  if (not $claude-result[success]) {
+    ui:error "Story generation failed: "$claude-result[error]
     return
   }
+  var result = $claude-result[output]
 
   # Display results
   echo $result
@@ -961,14 +996,13 @@ Output JSON only:
 - If no duplicate: {"duplicate": null, "similarity": "none", "reason": "Proposed story covers different functionality"}
 '
 
-  var result = ""
-  try {
-    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
-  } catch e {
+  var claude-result = (run-claude $prompt)
+  if (not $claude-result[success]) {
     # On error, assume no duplicate
     put [&duplicate=$nil &similarity="" &reason="Error checking"]
     return
   }
+  var result = $claude-result[output]
 
   # Extract JSON from response
   var json-result = ""
@@ -1103,13 +1137,12 @@ Output JSON only:
 }
 '
 
-  var result = ""
-  try {
-    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
-  } catch e {
+  var claude-result = (run-claude $prompt)
+  if (not $claude-result[success]) {
     put []
     return
   }
+  var result = $claude-result[output]
 
   # Extract JSON from response
   var json-result = ""
@@ -1291,13 +1324,12 @@ Rules:
 - Create new stories for functionality revealed by the report but not covered
 - Keep acceptance criteria specific, testable, referencing concrete details'
 
-  var result = ""
-  try {
-    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
-  } catch e {
+  var claude-result = (run-claude $prompt)
+  if (not $claude-result[success]) {
     put ""
     return
   }
+  var result = $claude-result[output]
 
   # Extract JSON from response
   var json-block = ""
@@ -1421,13 +1453,12 @@ Rules:
 - Use same phase/epic as '$story-id' unless clearly belongs elsewhere
 - Preserve valid existing criteria when updating'
 
-  var result = ""
-  try {
-    set result = (echo $prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
-  } catch e {
-    ui:error "Failed to analyze PRD: "(to-string $e[reason])
+  var claude-result = (run-claude $prompt)
+  if (not $claude-result[success]) {
+    ui:error "Failed to analyze PRD: "$claude-result[error]
     return
   }
+  var result = $claude-result[output]
 
   # Extract JSON from response
   var json-block = ""
@@ -1788,14 +1819,13 @@ Rules:
 - No new story creation in Phase B (only updates to existing)
 - Only update if the report directly and clearly affects the story'
 
-  var related-result = ""
-  try {
-    set related-result = (echo $related-prompt | claude --dangerously-skip-permissions --print 2>/dev/null | slurp)
-  } catch e {
-    ui:warn "  Failed to analyze related stories: "(to-string $e[reason]) > /dev/tty
+  var claude-related = (run-claude $related-prompt)
+  if (not $claude-related[success]) {
+    ui:warn "  Failed to analyze related stories: "$claude-related[error] > /dev/tty
     ui:divider-end > /dev/tty
     return
   }
+  var related-result = $claude-related[output]
 
   # Extract JSON from response
   var related-json = ""
