@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { TaskIndicator } from '@/components/task-indicator'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -92,7 +93,10 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t">
+      <div className="p-4 border-t space-y-2">
+        <div className="px-3">
+          <TaskIndicator />
+        </div>
         <Link
           href="/settings"
           className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground cyber-light:hover:text-primary cyber-dark:text-foreground cyber-dark:hover:text-yellow-400 transition-colors"

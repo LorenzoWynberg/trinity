@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { SplitButton } from '@/components/ui/split-button'
-import { Sparkles, Wand2 } from 'lucide-react'
+import { Sparkles, Wand2, Loader2 } from 'lucide-react'
 import { RefineStoriesModal, GenerateStoriesModal } from '@/components/prd-tools-modals'
+import { useTaskContext } from '@/components/task-provider'
 
 type StoriesHeaderProps = {
   totalStories: number
@@ -14,6 +15,10 @@ type StoriesHeaderProps = {
 export function StoriesHeader({ totalStories, phaseCount, version }: StoriesHeaderProps) {
   const [refineOpen, setRefineOpen] = useState(false)
   const [generateOpen, setGenerateOpen] = useState(false)
+  const { isTaskRunning } = useTaskContext()
+
+  const refineRunning = isTaskRunning('refine')
+  const generateRunning = isTaskRunning('generate')
 
   return (
     <>
@@ -25,11 +30,21 @@ export function StoriesHeader({ totalStories, phaseCount, version }: StoriesHead
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <SplitButton size="sm" icon={<Sparkles className="h-4 w-4" />} onClick={() => setRefineOpen(true)}>
-            Refine
+          <SplitButton
+            size="sm"
+            icon={refineRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            onClick={() => setRefineOpen(true)}
+            disabled={refineRunning}
+          >
+            {refineRunning ? 'Refining...' : 'Refine'}
           </SplitButton>
-          <SplitButton size="sm" icon={<Wand2 className="h-4 w-4" />} onClick={() => setGenerateOpen(true)}>
-            Generate
+          <SplitButton
+            size="sm"
+            icon={generateRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+            onClick={() => setGenerateOpen(true)}
+            disabled={generateRunning}
+          >
+            {generateRunning ? 'Generating...' : 'Generate'}
           </SplitButton>
         </div>
       </div>

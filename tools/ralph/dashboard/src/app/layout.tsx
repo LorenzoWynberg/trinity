@@ -3,6 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { Sidebar } from "@/components/sidebar"
 import { ThemeProvider } from "@/components/theme-provider"
+import { ToastProvider } from "@/components/toast-provider"
+import { TaskProvider } from "@/components/task-provider"
+import { TaskResultsModal } from "@/components/task-results-modal"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,12 +39,17 @@ export default function RootLayout({
           disableTransitionOnChange
           themes={['light', 'dark', 'cyber-light', 'cyber-dark', 'system']}
         >
-          <div className="flex h-screen bg-background text-foreground">
-            <Sidebar />
-            <main className="flex-1 overflow-auto pt-16 md:pt-0">
-              {children}
-            </main>
-          </div>
+          <ToastProvider>
+            <TaskProvider>
+              <div className="flex h-screen bg-background text-foreground">
+                <Sidebar />
+                <main className="flex-1 overflow-auto pt-16 md:pt-0">
+                  {children}
+                </main>
+              </div>
+              <TaskResultsModal />
+            </TaskProvider>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>
