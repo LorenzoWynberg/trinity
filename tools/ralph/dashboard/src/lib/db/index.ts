@@ -44,11 +44,16 @@ function runMigrations(db: Database.Database) {
     const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, file), 'utf-8')
 
     db.transaction(() => {
-      // Split by semicolons and run each statement
-      const statements = sql
+      // Remove comments and split by semicolons
+      const cleanSql = sql
+        .split('\n')
+        .map(line => line.replace(/--.*$/, '').trim())
+        .join('\n')
+
+      const statements = cleanSql
         .split(';')
         .map(s => s.trim())
-        .filter(s => s.length > 0 && !s.startsWith('--'))
+        .filter(s => s.length > 0)
 
       for (const stmt of statements) {
         db.exec(stmt)
