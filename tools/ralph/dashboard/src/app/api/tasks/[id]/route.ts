@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const task = await getTask(id)
+    const task = getTask(id)
 
     if (!task) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 })

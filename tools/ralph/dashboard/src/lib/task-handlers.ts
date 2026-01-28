@@ -103,44 +103,79 @@ Be specific with acceptance criteria. Match existing style.`
 
 export async function runStoryEditTask(task: Task): Promise<any> {
   const { version, params } = task
-  const { storyId, requestedChanges, story, relatedStories } = params
+  const { storyId, requestedChanges } = params
   const prdFile = path.join(PRD_DIR, `${version}.json`)
 
-  const prompt = `You are refining a PRD story based on user feedback.
+  // Read PRD to get story and related stories
+  const prdContent = await fs.readFile(prdFile, 'utf-8')
+  const prd = JSON.parse(prdContent)
 
-STORY TO UPDATE:
-ID: ${story.id}
-Title: ${story.title}
-Current Description: ${story.description || 'None'}
-Current Acceptance: ${JSON.stringify(story.acceptance)}
-Tags: ${JSON.stringify(story.tags || [])}
-Depends On: ${JSON.stringify(story.depends_on || [])}
+  const story = prd.stories.find((s: any) => s.id === storyId)
+  if (!story) {
+    throw new Error(`Story ${storyId} not found`)
+  }
+
+  // Find related stories (same tags, dependents, dependencies)
+  const storyTags = new Set(story.tags || [])
+  const relatedStories = prd.stories.filter((s: any) => {
+    if (s.id === storyId) return false
+    const overlap = (s.tags || []).filter((t: string) => storyTags.has(t))
+    if (overlap.length >= 2) return true
+    if (s.depends_on?.includes(storyId)) return true
+    if (story.depends_on?.includes(s.id)) return true
+    return false
+  })
+
+  const prompt = `You are updating a PRD story based on user feedback.
+
+TARGET STORY:
+- ID: ${story.id}
+- Title: ${story.title}
+- Current Description: ${story.description || '(none)'}
+- Current Intent: ${story.intent || '(none)'}
+- Tags: ${(story.tags || []).join(', ') || '(none)'}
+- Depends On: ${(story.depends_on || []).join(', ') || '(none)'}
+
+Current Acceptance Criteria:
+${(story.acceptance || []).map((a: string, i: number) => `${i + 1}. ${a}`).join('\n')}
 
 USER REQUESTED CHANGES:
 ${requestedChanges}
 
-RELATED STORIES (share tags or dependencies):
-${relatedStories?.map((s: any) => `- ${s.id}: ${s.title} [tags: ${s.tags?.join(', ')}]`).join('\n') || 'None'}
+RELATED STORIES (share tags or dependencies - may need updates for consistency):
+${JSON.stringify(relatedStories.map((s: any) => ({
+  id: s.id,
+  title: s.title,
+  description: s.description,
+  tags: s.tags,
+  depends_on: s.depends_on,
+  acceptance: s.acceptance
+})), null, 2)}
 
-Analyze the requested changes and suggest updates. Output JSON:
+Tasks:
+1. Generate updated description and acceptance criteria for the target story
+2. Check if any related stories need updates to stay consistent
+3. Be specific - avoid vague terms like "properly", "handle", "settings"
+
+Output ONLY valid JSON (no markdown, no code blocks):
 {
   "target": {
-    "suggested_description": "Updated description",
-    "suggested_acceptance": ["Criterion 1", "Criterion 2"]
+    "suggested_description": "Updated description based on changes",
+    "suggested_acceptance": ["specific criterion 1", "specific criterion 2"],
+    "suggested_intent": "Updated intent if needed"
   },
   "related_updates": [
     {
       "id": "X.Y.Z",
-      "title": "Story title",
-      "reason": "Why this needs updating",
-      "suggested_description": "Updated description",
-      "suggested_acceptance": ["Criterion 1"]
+      "reason": "Why this story needs updating due to changes in ${storyId}",
+      "suggested_description": "Updated description if changed",
+      "suggested_acceptance": ["updated criteria if changed"]
     }
   ],
-  "summary": "Brief summary of changes"
+  "summary": "Brief description of what changed and why"
 }
 
-Only include related_updates if changes to target genuinely affect them.`
+Only include related_updates for stories that actually need changes.`
 
   const { success, result, error } = await runClaude(prompt)
 
@@ -148,5 +183,21 @@ Only include related_updates if changes to target genuinely affect them.`
     throw new Error(error || 'Claude failed')
   }
 
-  return { ...result, storyId, currentStory: story, relatedStories }
+  // Enrich related_updates with title from original stories
+  const enrichedRelatedUpdates = (result.related_updates || []).map((update: any) => {
+    const originalStory = relatedStories.find((s: any) => s.id === update.id)
+    return {
+      ...update,
+      title: originalStory?.title || update.title
+    }
+  })
+
+  return {
+    storyId,
+    currentStory: story,
+    relatedStories: relatedStories.map((s: any) => ({ id: s.id, title: s.title })),
+    target: result.target,
+    related_updates: enrichedRelatedUpdates,
+    summary: result.summary
+  }
 }

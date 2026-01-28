@@ -42,3 +42,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 ngrok.yml
+
+# database
+dashboard.db
+dashboard.db-wal
+dashboard.db-shm
+tasks.json

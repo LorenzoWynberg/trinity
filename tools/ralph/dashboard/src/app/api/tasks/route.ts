@@ -20,11 +20,11 @@ export async function GET(request: NextRequest) {
     let tasks
 
     if (active === 'true') {
-      tasks = await getActiveTasks()
+      tasks = getActiveTasks()
     } else if (type && !status) {
-      tasks = await getTasksByType(type)
+      tasks = getTasksByType(type)
     } else {
-      tasks = await getTasks({
+      tasks = getTasks({
         type: type || undefined,
         status: status ? status.split(',') as any : undefined,
         limit: limit ? parseInt(limit) : undefined
@@ -54,7 +54,11 @@ export async function POST(request: NextRequest) {
     const task = await createTask(type, version, params || {})
 
     // Cleanup old tasks periodically
-    cleanupTasks().catch(console.error)
+    try {
+      cleanupTasks()
+    } catch (e) {
+      console.error('[tasks] cleanup error:', e)
+    }
 
     return NextResponse.json({ task })
   } catch (error: any) {

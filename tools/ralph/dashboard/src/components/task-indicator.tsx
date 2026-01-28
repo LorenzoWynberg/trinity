@@ -125,7 +125,7 @@ export function TaskIndicator() {
                 <Icon className="h-4 w-4" />
                 <span className="flex-1 truncate">{getTaskLabel(task.type)}</span>
                 <span className="text-xs text-muted-foreground">
-                  {formatTime(task.completedAt || task.createdAt)}
+                  {formatTime(task.completed_at || task.created_at)}
                 </span>
               </DropdownMenuItem>
             )

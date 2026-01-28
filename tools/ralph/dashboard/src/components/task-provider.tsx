@@ -1,23 +1,11 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
+import { createContext, useContext, useEffect, useCallback, useRef } from 'react'
 import { useToast } from '@/hooks/use-toast'
+import { useDashboardStore, type Task, type TaskType } from '@/lib/store'
 
-export type TaskType = 'refine' | 'generate' | 'story-edit'
-export type TaskStatus = 'queued' | 'running' | 'complete' | 'failed'
-
-export interface Task {
-  id: string
-  type: TaskType
-  status: TaskStatus
-  version: string
-  params: Record<string, any>
-  createdAt: string
-  startedAt?: string
-  completedAt?: string
-  result?: any
-  error?: string
-}
+export type { Task, TaskType }
+export type { TaskStatus } from '@/lib/store'
 
 interface TaskContextValue {
   activeTasks: Task[]
@@ -28,6 +16,7 @@ interface TaskContextValue {
   refreshTasks: () => Promise<void>
   selectedTask: Task | null
   setSelectedTask: (task: Task | null) => void
+  unseenCount: number
 }
 
 const TaskContext = createContext<TaskContextValue | null>(null)
@@ -51,12 +40,27 @@ interface TaskProviderProps {
 }
 
 export function TaskProvider({ children }: TaskProviderProps) {
-  const [activeTasks, setActiveTasks] = useState<Task[]>([])
-  const [recentTasks, setRecentTasks] = useState<Task[]>([])
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const { toast } = useToast()
   const previousActiveIdsRef = useRef<Set<string>>(new Set())
   const notificationPermissionRef = useRef<NotificationPermission>('default')
+
+  // Zustand store
+  const {
+    tasks,
+    setTasks,
+    seenTaskIds,
+    markTaskSeen,
+    selectedTaskId,
+    setSelectedTaskId,
+    getActiveTasks,
+    getRecentTasks,
+    getUnseenCount,
+  } = useDashboardStore()
+
+  const activeTasks = getActiveTasks()
+  const recentTasks = getRecentTasks()
+  const unseenCount = getUnseenCount()
+  const selectedTask = tasks.find(t => t.id === selectedTaskId) || null
 
   // Request notification permission on mount
   useEffect(() => {
@@ -87,7 +91,7 @@ export function TaskProvider({ children }: TaskProviderProps) {
       variant: task.status === 'complete' ? 'default' : 'destructive',
       action: task.status === 'complete' ? (
         <button
-          onClick={() => setSelectedTask(task)}
+          onClick={() => setSelectedTaskId(task.id)}
           className="text-xs underline"
         >
           View Results
@@ -105,47 +109,41 @@ export function TaskProvider({ children }: TaskProviderProps) {
 
       notification.onclick = () => {
         window.focus()
-        setSelectedTask(task)
+        setSelectedTaskId(task.id)
         notification.close()
       }
     }
-  }, [toast])
+  }, [toast, setSelectedTaskId])
 
   const refreshTasks = useCallback(async () => {
     try {
-      const [activeRes, recentRes] = await Promise.all([
-        fetch('/api/tasks?active=true'),
-        fetch('/api/tasks?status=complete,failed&limit=10')
-      ])
-
-      const activeData = await activeRes.json()
-      const recentData = await recentRes.json()
-
-      const newActiveTasks = activeData.tasks || []
-      const newRecentTasks = recentData.tasks || []
+      const res = await fetch('/api/tasks?limit=50')
+      const data = await res.json()
+      const newTasks: Task[] = data.tasks || []
 
       // Check for newly completed tasks
-      const newActiveIds = new Set<string>(newActiveTasks.map((t: Task) => t.id))
+      const newActiveIds = new Set<string>(
+        newTasks.filter(t => t.status === 'queued' || t.status === 'running').map(t => t.id)
+      )
       const previousActiveIds = previousActiveIdsRef.current
 
       // Find tasks that were active but are no longer
       for (const prevId of previousActiveIds) {
         if (!newActiveIds.has(prevId)) {
-          // Task completed - find it in recent tasks
-          const completedTask = newRecentTasks.find((t: Task) => t.id === prevId)
-          if (completedTask) {
+          // Task completed - find it
+          const completedTask = newTasks.find(t => t.id === prevId)
+          if (completedTask && !seenTaskIds.has(completedTask.id)) {
             showNotification(completedTask)
           }
         }
       }
 
       previousActiveIdsRef.current = newActiveIds
-      setActiveTasks(newActiveTasks)
-      setRecentTasks(newRecentTasks)
+      setTasks(newTasks)
     } catch (error) {
       console.error('Failed to fetch tasks:', error)
     }
-  }, [showNotification])
+  }, [showNotification, setTasks, seenTaskIds])
 
   // Poll for task updates
   useEffect(() => {
@@ -190,6 +188,10 @@ export function TaskProvider({ children }: TaskProviderProps) {
     return data.task
   }, [refreshTasks, toast])
 
+  const setSelectedTask = useCallback((task: Task | null) => {
+    setSelectedTaskId(task?.id || null)
+  }, [setSelectedTaskId])
+
   return (
     <TaskContext.Provider value={{
       activeTasks,
@@ -199,7 +201,8 @@ export function TaskProvider({ children }: TaskProviderProps) {
       createTask,
       refreshTasks,
       selectedTask,
-      setSelectedTask
+      setSelectedTask,
+      unseenCount,
     }}>
       {children}
     </TaskContext.Provider>
