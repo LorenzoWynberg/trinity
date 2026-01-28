@@ -9,6 +9,7 @@
     { "slug": "smart-story-selection", "title": "Smart Story Selection" },
     { "slug": "common-workflows", "title": "Workflows" },
     { "slug": "prompt-system", "title": "Prompt System" },
+    { "slug": "claude-communication", "title": "Claude Communication" },
     { "slug": "prd-structure", "title": "PRD Structure" },
     { "slug": "story-validation", "title": "Story Validation" },
     { "slug": "duplicate-detection", "title": "Duplicate Detection" },
