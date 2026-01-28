@@ -1,6 +1,49 @@
-# Background Tasks
+# Tasks
 
 The dashboard supports running Claude-powered operations as background tasks. Users can start a task and continue working - they'll be notified when it completes.
+
+## Tasks Page
+
+**Route:** `/tasks`
+
+A full task management interface showing all background tasks with filtering and actions.
+
+### Features
+
+- **Status filter** - All, Unread, Read, Queued, Running, Complete, Failed
+- **Type filter** - All, Refine, Generate, Story Edit
+- **Show Deleted toggle** - View soft-deleted tasks
+- **Task table** showing:
+  - Status icon (spinner for running, checkmark for complete, etc.)
+  - Task type with "New" badge for unread
+  - Version
+  - Status badge
+  - Created/Completed timestamps
+  - Actions: View Results, Mark as Read, Delete, Restore
+
+### Actions
+
+| Action | Description |
+|--------|-------------|
+| View Results | Navigate to Stories page and open results modal |
+| Mark as Read | Set `read_at` timestamp, remove "New" badge |
+| Delete | Soft delete (set `deleted_at`) |
+| Restore | Undelete a soft-deleted task |
+
+## Task Indicator
+
+The header shows a task indicator button:
+- **Running state** - Spinner + task type name + queue count
+- **Idle state** - Clock icon + "Tasks" label
+- **Unread badge** - Red/accent badge with count (9+ if over 9)
+
+Dropdown shows:
+- Running tasks with spinner/clock icons
+- Unread completed tasks with checkmark/X icons
+- "Mark all read" button
+- Click any completed task to view results
+
+## Background Task Architecture
 
 ## Architecture
 

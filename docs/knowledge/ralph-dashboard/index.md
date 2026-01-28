@@ -16,6 +16,7 @@ The dashboard is a Next.js app for viewing PRD status, running Ralph, and managi
 | [Stories](stories.md) | PRD stories grouped by phase/epic |
 | [Graph](graph.md) | Dependency visualization |
 | [Terminal](terminal.md) | Interactive shell for running Ralph |
+| [Tasks](tasks.md) | Background task management |
 | [Metrics](metrics.md) | Token usage and cost tracking |
 | [Activity](activity.md) | Daily activity logs |
 | [Knowledge & Gotchas](knowledge-gotchas.md) | Documentation viewer |
