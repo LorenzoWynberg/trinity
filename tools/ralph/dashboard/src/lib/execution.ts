@@ -23,6 +23,7 @@ import { getNextStory, getRunnableStories, getScoredStories, type StoryScore } f
 import * as state from './run-state'
 import * as git from './git'
 import * as prd from './db/prd'
+import { settings } from './db'
 
 const execAsync = promisify(exec)
 
@@ -120,10 +121,14 @@ async function buildPrompt(
 ): Promise<string> {
   const template = await loadPromptTemplate()
 
+  // Get dashboard URL from settings, default to localhost:3000
+  const dashboardUrl = settings.get('dashboardUrl') || 'http://localhost:3000'
+
   let prompt = template
     .replace('{{STORY_ID}}', story.id)
     .replace('{{BRANCH}}', branch)
     .replace('{{ATTEMPT}}', String(attempt))
+    .replace(/\{\{DASHBOARD_URL\}\}/g, dashboardUrl)
 
   // Add story details
   prompt = prompt.replace('{{STORY_SECTION}}', getStoryPromptSection(story))
@@ -226,6 +231,29 @@ function checkStoryStatus(storyId: string): { complete: boolean; blocked: boolea
   }
 
   return { complete: false, blocked: false }
+}
+
+/**
+ * Poll for story completion with timeout
+ * Claude may take a moment to call the signal API after execution
+ */
+async function waitForSignal(
+  storyId: string,
+  timeoutMs: number = 30000,
+  pollIntervalMs: number = 1000
+): Promise<{ complete: boolean; blocked: boolean; message?: string }> {
+  const startTime = Date.now()
+
+  while (Date.now() - startTime < timeoutMs) {
+    const status = checkStoryStatus(storyId)
+    if (status.complete || status.blocked) {
+      return status
+    }
+    await new Promise(resolve => setTimeout(resolve, pollIntervalMs))
+  }
+
+  // Timeout - check one final time
+  return checkStoryStatus(storyId)
 }
 
 /**
@@ -508,8 +536,8 @@ export async function runIteration(
 
     await fs.unlink(outputFile).catch(() => {})
 
-    // Check status from database (Claude calls /api/signal to update)
-    const storyStatus = checkStoryStatus(storyId)
+    // Poll for signal from Claude (waits up to 30s for API call)
+    const storyStatus = await waitForSignal(storyId, 30000, 1000)
 
     if (storyStatus.complete) {
       await state.saveCheckpoint(storyId, 'claude_complete')
@@ -522,6 +550,17 @@ export async function runIteration(
           type: 'log',
           timestamp: new Date().toISOString(),
           data: { message: `Story blocked: ${storyStatus.message || 'Unknown reason'}` }
+        }
+      }
+    } else {
+      // No signal received - Claude may have exited without signaling
+      return {
+        status: 'error',
+        storyId,
+        event: {
+          type: 'error',
+          timestamp: new Date().toISOString(),
+          data: { message: 'Claude exited without signaling completion. Check if story was implemented.' }
         }
       }
     }

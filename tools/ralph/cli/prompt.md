@@ -44,12 +44,12 @@ When done, signal completion via the dashboard API:
 
 ```bash
 # Story complete - call this after committing and pushing
-curl -X POST http://localhost:3000/api/signal \
+curl -X POST {{DASHBOARD_URL}}/api/signal \
   -H "Content-Type: application/json" \
   -d '{"storyId": "{{CURRENT_STORY}}", "action": "complete"}'
 
 # Story blocked - call this if you cannot proceed
-curl -X POST http://localhost:3000/api/signal \
+curl -X POST {{DASHBOARD_URL}}/api/signal \
   -H "Content-Type: application/json" \
   -d '{"storyId": "{{CURRENT_STORY}}", "action": "blocked", "message": "Reason why blocked"}'
 ```

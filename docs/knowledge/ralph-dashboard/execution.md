@@ -178,7 +178,7 @@ This replaces the old XML signal parsing from Claude output. Claude uses curl to
 1. Dashboard starts Claude with story prompt
 2. Claude implements story, commits, pushes
 3. Claude calls POST /api/signal with action=complete
-4. Dashboard detects story.passes=true
+4. Dashboard polls for up to 30s waiting for story.passes=true
 5. Dashboard proceeds to PR/merge flow
 ```
 
@@ -186,6 +186,17 @@ If Claude gets blocked:
 ```
 1. Claude encounters blocker (missing dep, unclear requirement)
 2. Claude calls POST /api/signal with action=blocked
-3. Dashboard updates run_state.status=blocked
+3. Dashboard detects run_state.status=blocked via polling
 4. Dashboard shows blocked UI with error message
 ```
+
+If Claude exits without signaling:
+```
+1. Dashboard polls for 30s, no signal received
+2. Dashboard shows error: "Claude exited without signaling completion"
+3. User can manually check if work was done
+```
+
+## Configuration
+
+The dashboard URL is configurable via the `dashboardUrl` setting (default: `http://localhost:3000`). This URL is injected into the prompt so Claude knows where to send signals.

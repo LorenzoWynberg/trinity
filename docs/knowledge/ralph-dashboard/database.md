@@ -289,7 +289,7 @@ GET /api/signal?storyId=X
 
 ### Claude Usage
 
-When Claude finishes a story, it calls:
+When Claude finishes a story, it calls (URL injected from `dashboardUrl` setting):
 
 ```bash
 # Mark complete
@@ -301,6 +301,14 @@ curl -X POST http://localhost:3000/api/signal \
 curl -X POST http://localhost:3000/api/signal \
   -H "Content-Type: application/json" \
   -d '{"storyId": "v0.1:1.1.1", "action": "blocked", "message": "Missing API key"}'
+```
+
+### Configuration
+
+Set the dashboard URL in settings if not running on localhost:3000:
+
+```typescript
+settings.set('dashboardUrl', 'http://localhost:3001')
 ```
 
 ### How It Works
