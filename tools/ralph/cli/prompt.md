@@ -2,6 +2,8 @@
 
 **Context:** Version {{VERSION}} | Branch: {{BRANCH}} | Attempt: {{ATTEMPT}}
 
+{{STORY_DETAILS}}
+
 {{FEEDBACK}}
 
 ## Workflow

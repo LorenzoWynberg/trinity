@@ -106,6 +106,22 @@ function getStoryPromptSection(story: Story): string {
 }
 
 /**
+ * Get recent activity logs for context
+ */
+async function getRecentActivityLogs(): Promise<string> {
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    const logPath = path.join(PROJECT_ROOT, `logs/activity/trinity/${today}.md`)
+    const content = await fs.readFile(logPath, 'utf-8')
+    // Return last 50 lines max
+    const lines = content.split('\n')
+    return lines.slice(-50).join('\n')
+  } catch {
+    return '(No recent activity logs)'
+  }
+}
+
+/**
  * Build the prompt for Claude
  */
 async function buildPrompt(
@@ -121,38 +137,42 @@ async function buildPrompt(
 ): Promise<string> {
   const template = await loadPromptTemplate()
 
-  // Get dashboard URL from settings, default to localhost:3000
+  // Get settings
   const dashboardUrl = settings.get('dashboardUrl') || 'http://localhost:3000'
+  const timezone = settings.get('timezone') || 'UTC'
 
-  let prompt = template
-    .replace('{{STORY_ID}}', story.id)
-    .replace('{{BRANCH}}', branch)
-    .replace('{{ATTEMPT}}', String(attempt))
-    .replace(/\{\{DASHBOARD_URL\}\}/g, dashboardUrl)
+  // Get recent activity logs
+  const recentLogs = await getRecentActivityLogs()
 
-  // Add story details
-  prompt = prompt.replace('{{STORY_SECTION}}', getStoryPromptSection(story))
-
-  // Add optional context sections
-  let extraContext = ''
-
+  // Build feedback section from all context
+  let feedbackSection = ''
   if (options.clarification) {
-    extraContext += `\n## Clarification from User\n${options.clarification}\n`
+    feedbackSection += `## Clarification from User\n${options.clarification}\n\n`
   }
-
   if (options.feedback) {
-    extraContext += `\n## Feedback from Code Review\n${options.feedback}\n`
+    feedbackSection += `## Feedback from Code Review\n${options.feedback}\n\n`
   }
-
   if (options.externalDepsReport) {
-    extraContext += `\n## External Dependencies Report\n${options.externalDepsReport}\n`
+    feedbackSection += `## External Dependencies Report\n${options.externalDepsReport}\n\n`
   }
-
   if (options.previousFailure) {
-    extraContext += `\n## Previous Failure Context\nThe previous attempt failed with: ${options.previousFailure}\nPlease address this issue in your implementation.\n`
+    feedbackSection += `## Previous Failure\n${options.previousFailure}\nPlease address this issue.\n\n`
   }
 
-  prompt = prompt.replace('{{EXTRA_CONTEXT}}', extraContext)
+  // Build story details section
+  const storyDetails = getStoryPromptSection(story)
+
+  // Replace all placeholders
+  const prompt = template
+    .replace(/\{\{CURRENT_STORY\}\}/g, story.id)
+    .replace(/\{\{VERSION\}\}/g, story.target_version || 'v0.1')
+    .replace(/\{\{BRANCH\}\}/g, branch)
+    .replace(/\{\{ATTEMPT\}\}/g, String(attempt))
+    .replace(/\{\{DASHBOARD_URL\}\}/g, dashboardUrl)
+    .replace(/\{\{TIMEZONE\}\}/g, timezone)
+    .replace(/\{\{STORY_DETAILS\}\}/g, storyDetails)
+    .replace(/\{\{FEEDBACK\}\}/g, feedbackSection)
+    .replace(/\{\{RECENT_ACTIVITY_LOGS\}\}/g, recentLogs)
 
   return prompt
 }
