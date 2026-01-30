@@ -11,7 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Sun, Moon, Monitor, Zap, Clock, Loader2 } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Sun, Moon, Monitor, Zap, Clock, Loader2, Globe } from 'lucide-react'
 
 export default function SettingsPage() {
   const { theme, resolvedTheme, setTheme } = useTheme()
@@ -21,9 +22,11 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [versions, setVersions] = useState<string[]>([])
   const [defaultVersion, setDefaultVersion] = useState<string>('first')
-  const [timezone, setTimezone] = useState<string>('America/Costa_Rica')
+  const [timezone, setTimezone] = useState<string>('Africa/Johannesburg')
+  const [dashboardUrl, setDashboardUrl] = useState<string>('http://localhost:3000')
   const [savingVersion, setSavingVersion] = useState(false)
   const [savingTimezone, setSavingTimezone] = useState(false)
+  const [savingDashboardUrl, setSavingDashboardUrl] = useState(false)
 
   // Load settings on mount
   useEffect(() => {
@@ -50,6 +53,11 @@ export default function SettingsPage() {
         // Load timezone
         if (settingsData.timezone) {
           setTimezone(settingsData.timezone)
+        }
+
+        // Load dashboard URL
+        if (settingsData.dashboardUrl) {
+          setDashboardUrl(settingsData.dashboardUrl)
         }
 
         // Sync theme from DB to next-themes
@@ -111,7 +119,24 @@ export default function SettingsPage() {
     }
   }
 
+  const saveDashboardUrl = async (url: string) => {
+    setDashboardUrl(url)
+    setSavingDashboardUrl(true)
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dashboardUrl: url }),
+      })
+    } catch (error) {
+      console.error('Failed to save dashboard URL:', error)
+    } finally {
+      setSavingDashboardUrl(false)
+    }
+  }
+
   const timezones = [
+    { value: 'Africa/Johannesburg', label: 'South Africa (UTC+2)' },
     { value: 'America/Costa_Rica', label: 'Costa Rica (UTC-6)' },
     { value: 'America/New_York', label: 'New York (UTC-5/-4)' },
     { value: 'America/Chicago', label: 'Chicago (UTC-6/-5)' },
@@ -256,6 +281,50 @@ export default function SettingsPage() {
               </Select>
               <p className="text-sm text-muted-foreground mt-2">
                 Claude will use this timezone when writing activity logs
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            Execution
+          </CardTitle>
+          <CardDescription>
+            Configure how Claude connects to the dashboard
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-3 block">Dashboard URL</label>
+              <div className="flex gap-2">
+                <Input
+                  value={dashboardUrl}
+                  onChange={(e) => setDashboardUrl(e.target.value)}
+                  placeholder="http://localhost:3000"
+                  className="w-[300px]"
+                  disabled={loading}
+                />
+                <Button
+                  onClick={() => saveDashboardUrl(dashboardUrl)}
+                  disabled={loading || savingDashboardUrl}
+                >
+                  {savingDashboardUrl ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save'
+                  )}
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                URL Claude uses to signal story completion. Change if running on a different port.
               </p>
             </div>
           </div>

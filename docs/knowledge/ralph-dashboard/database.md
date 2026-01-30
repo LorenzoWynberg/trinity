@@ -277,10 +277,7 @@ POST /api/signal
     storyId: string,
     action: 'complete' | 'blocked' | 'progress',
     message?: string,
-    prUrl?: string,
-    inputTokens?: number,
-    outputTokens?: number,
-    durationSeconds?: number
+    prUrl?: string
   }
 
 GET /api/signal?storyId=X

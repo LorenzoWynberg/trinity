@@ -14,17 +14,13 @@ interface SignalBody {
   action: 'complete' | 'blocked' | 'progress'
   message?: string
   prUrl?: string
-  // Token usage for metrics
-  inputTokens?: number
-  outputTokens?: number
-  durationSeconds?: number
 }
 
 // POST /api/signal - Claude signals story status
 export async function POST(request: NextRequest) {
   try {
     const body: SignalBody = await request.json()
-    const { storyId, action, message, prUrl, inputTokens, outputTokens, durationSeconds } = body
+    const { storyId, action, message, prUrl } = body
 
     if (!storyId || !action) {
       return NextResponse.json({ error: 'storyId and action are required' }, { status: 400 })
@@ -35,8 +31,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Story ${storyId} not found` }, { status: 404 })
     }
 
-    const runState = prd.runState.get()
-
     switch (action) {
       case 'complete': {
         // Mark story as passed
@@ -45,15 +39,6 @@ export async function POST(request: NextRequest) {
         // Update PR URL if provided
         if (prUrl) {
           prd.stories.setPrUrl(storyId, prUrl)
-        }
-
-        // Log execution if we have metrics
-        if (inputTokens || outputTokens || durationSeconds) {
-          const logId = prd.executionLog.start(storyId, runState.attempts || 1)
-          prd.executionLog.complete(logId, {
-            input: inputTokens || 0,
-            output: outputTokens || 0
-          }, durationSeconds || 0)
         }
 
         // Save checkpoint
@@ -75,10 +60,6 @@ export async function POST(request: NextRequest) {
         if (message) {
           await state.recordFailure(message)
         }
-
-        // Log execution as blocked
-        const logId = prd.executionLog.start(storyId, runState.attempts || 1)
-        prd.executionLog.block(logId, message || 'Story blocked')
 
         // Update run state
         prd.runState.update({
