@@ -4,6 +4,7 @@ import type { PRD, State, Metrics, PhaseProgress, EpicProgress, Story, VersionIn
 
 import { settings as settingsDb } from './db'
 import * as prd from './db/prd'
+import type { RunStatus } from './types'
 
 // Paths relative to project root
 const PROJECT_ROOT = path.join(process.cwd(), '../../..')
@@ -129,15 +130,18 @@ export async function getVersionsWithMetadata(): Promise<{ version: string; titl
 export async function getState(): Promise<State | null> {
   try {
     const state = prd.runState.get()
+    // Get current story to fetch branch/pr_url from it
+    const currentStory = state.current_story ? prd.stories.get(state.current_story) : null
+
     return {
       version: 1,
       current_story: state.current_story,
-      status: (state.status as 'idle' | 'in_progress' | 'blocked') || 'idle',
+      status: (state.status as RunStatus) || 'idle',
       error: state.last_error,
       started_at: null,
-      branch: state.branch,
+      branch: currentStory?.working_branch || null,
       attempts: state.attempts,
-      pr_url: state.pr_url,
+      pr_url: currentStory?.pr_url || null,
       last_updated: null,
       checkpoints: []
     }
@@ -148,20 +152,20 @@ export async function getState(): Promise<State | null> {
 
 export async function getMetrics(): Promise<Metrics | null> {
   try {
-    const totals = prd.storyMetrics.getTotals()
+    const totals = prd.executionLog.getTotals()
     const allStories = prd.stories.list()
     const passedCount = allStories.filter(s => s.passes).length
     const mergedCount = allStories.filter(s => s.merged).length
 
     return {
-      total_tokens: totals.total_tokens,
+      total_tokens: totals.total_input_tokens + totals.total_output_tokens,
       total_input_tokens: totals.total_input_tokens,
       total_output_tokens: totals.total_output_tokens,
       total_duration_seconds: totals.total_duration_seconds,
       stories_passed: passedCount,
       stories_prd: allStories.length,
       stories_merged: mergedCount,
-      stories: [] // Per-story metrics not needed for dashboard display
+      stories: [] // Per-story metrics derived from execution_log if needed
     }
   } catch {
     return null

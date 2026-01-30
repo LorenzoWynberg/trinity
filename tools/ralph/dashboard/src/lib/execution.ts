@@ -308,7 +308,13 @@ export async function runIteration(
   // Check if already working on a story
   let storyId = currentState.current_story
   let story: Story | undefined
-  let branch = currentState.branch
+  let branch: string | null | undefined = null
+
+  // If resuming, get branch from the story
+  if (storyId) {
+    story = prd.stories.find(s => s.id === storyId)
+    branch = story?.working_branch
+  }
 
   if (!storyId) {
     // Select next story

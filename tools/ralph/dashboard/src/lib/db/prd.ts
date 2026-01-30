@@ -137,9 +137,10 @@ export const stories = {
     db.prepare(`
       INSERT INTO stories (
         id, version_id, phase, epic, story_number, title, intent, description,
-        acceptance, depends_on, tags, passes, merged, skipped, branch, pr_url,
-        merge_commit, external_deps, external_deps_report
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        acceptance, depends_on, tags, passes, merged, skipped,
+        target_branch, working_branch, pr_url, merge_commit,
+        external_deps, external_deps_report
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         title = excluded.title,
         intent = excluded.intent,
@@ -150,7 +151,8 @@ export const stories = {
         passes = excluded.passes,
         merged = excluded.merged,
         skipped = excluded.skipped,
-        branch = excluded.branch,
+        target_branch = excluded.target_branch,
+        working_branch = excluded.working_branch,
         pr_url = excluded.pr_url,
         merge_commit = excluded.merge_commit,
         external_deps = excluded.external_deps,
@@ -171,7 +173,8 @@ export const stories = {
       story.passes ? 1 : 0,
       story.merged ? 1 : 0,
       story.skipped ? 1 : 0,
-      story.branch || null,
+      story.target_branch || 'dev',
+      story.working_branch || null,
       story.pr_url || null,
       story.merge_commit || null,
       JSON.stringify(story.external_deps || []),
@@ -184,9 +187,10 @@ export const stories = {
     const stmt = db.prepare(`
       INSERT INTO stories (
         id, version_id, phase, epic, story_number, title, intent, description,
-        acceptance, depends_on, tags, passes, merged, skipped, branch, pr_url,
-        merge_commit, external_deps, external_deps_report
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        acceptance, depends_on, tags, passes, merged, skipped,
+        target_branch, working_branch, pr_url, merge_commit,
+        external_deps, external_deps_report
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         title = excluded.title,
         intent = excluded.intent,
@@ -197,7 +201,8 @@ export const stories = {
         passes = excluded.passes,
         merged = excluded.merged,
         skipped = excluded.skipped,
-        branch = excluded.branch,
+        target_branch = excluded.target_branch,
+        working_branch = excluded.working_branch,
         pr_url = excluded.pr_url,
         merge_commit = excluded.merge_commit,
         external_deps = excluded.external_deps,
@@ -222,7 +227,8 @@ export const stories = {
           story.passes ? 1 : 0,
           story.merged ? 1 : 0,
           story.skipped ? 1 : 0,
-          story.branch || null,
+          story.target_branch || 'dev',
+          story.working_branch || null,
           story.pr_url || null,
           story.merge_commit || null,
           JSON.stringify(story.external_deps || []),
@@ -264,17 +270,25 @@ export const stories = {
   markSkipped(id: string): void {
     const db = getDb()
     db.prepare(`UPDATE stories SET skipped = 1, updated_at = datetime('now') WHERE id = ?`).run(id)
+  },
+
+  setWorkingBranch(id: string, branch: string): void {
+    const db = getDb()
+    db.prepare(`UPDATE stories SET working_branch = ?, updated_at = datetime('now') WHERE id = ?`).run(branch, id)
+  },
+
+  setPrUrl(id: string, prUrl: string): void {
+    const db = getDb()
+    db.prepare(`UPDATE stories SET pr_url = ?, updated_at = datetime('now') WHERE id = ?`).run(prUrl, id)
   }
 }
 
-// Run state operations
+// Run state operations (simplified - git details now on story)
 export const runState = {
   get(): {
     current_story: string | null
     status: string
-    branch: string | null
     attempts: number
-    pr_url: string | null
     last_completed: string | null
     last_error: string | null
   } {
@@ -283,9 +297,7 @@ export const runState = {
     return {
       current_story: row?.current_story || null,
       status: row?.status || 'idle',
-      branch: row?.branch || null,
       attempts: row?.attempts || 0,
-      pr_url: row?.pr_url || null,
       last_completed: row?.last_completed || null,
       last_error: row?.last_error || null
     }
@@ -294,9 +306,7 @@ export const runState = {
   update(updates: Partial<{
     current_story: string | null
     status: string
-    branch: string | null
     attempts: number
-    pr_url: string | null
     last_completed: string | null
     last_error: string | null
   }>): void {
@@ -312,17 +322,9 @@ export const runState = {
       fields.push('status = ?')
       values.push(updates.status)
     }
-    if ('branch' in updates) {
-      fields.push('branch = ?')
-      values.push(updates.branch)
-    }
     if ('attempts' in updates) {
       fields.push('attempts = ?')
       values.push(updates.attempts)
-    }
-    if ('pr_url' in updates) {
-      fields.push('pr_url = ?')
-      values.push(updates.pr_url)
     }
     if ('last_completed' in updates) {
       fields.push('last_completed = ?')
@@ -346,9 +348,7 @@ export const runState = {
       UPDATE run_state SET
         current_story = NULL,
         status = 'idle',
-        branch = NULL,
         attempts = 0,
-        pr_url = NULL,
         last_error = NULL,
         last_updated = datetime('now')
       WHERE id = 1
@@ -387,44 +387,85 @@ export const checkpoints = {
   }
 }
 
-// Story metrics operations
-export const storyMetrics = {
-  get(storyId: string): { tokens: number; input_tokens: number; output_tokens: number; duration_seconds: number } | null {
+// Execution log operations (replaces story_metrics)
+export const executionLog = {
+  start(storyId: string, attempt: number = 1): number {
     const db = getDb()
-    const row = db.prepare('SELECT * FROM story_metrics WHERE story_id = ?').get(storyId) as any
-    if (!row) return null
-    return {
-      tokens: row.tokens,
-      input_tokens: row.input_tokens,
-      output_tokens: row.output_tokens,
-      duration_seconds: row.duration_seconds
-    }
+    const result = db.prepare(`
+      INSERT INTO execution_log (story_id, attempt, status)
+      VALUES (?, ?, 'running')
+    `).run(storyId, attempt)
+    return result.lastInsertRowid as number
   },
 
-  record(storyId: string, data: { tokens?: number; input_tokens?: number; output_tokens?: number; duration_seconds?: number }): void {
+  complete(id: number, tokens: { input: number; output: number }, durationSeconds: number): void {
     const db = getDb()
     db.prepare(`
-      INSERT INTO story_metrics (story_id, tokens, input_tokens, output_tokens, duration_seconds, completed_at)
-      VALUES (?, ?, ?, ?, ?, datetime('now'))
-      ON CONFLICT(story_id) DO UPDATE SET
-        tokens = tokens + excluded.tokens,
-        input_tokens = input_tokens + excluded.input_tokens,
-        output_tokens = output_tokens + excluded.output_tokens,
-        duration_seconds = duration_seconds + excluded.duration_seconds,
-        completed_at = datetime('now')
-    `).run(storyId, data.tokens || 0, data.input_tokens || 0, data.output_tokens || 0, data.duration_seconds || 0)
+      UPDATE execution_log
+      SET status = 'complete',
+          finished_at = datetime('now'),
+          duration_seconds = ?,
+          input_tokens = ?,
+          output_tokens = ?
+      WHERE id = ?
+    `).run(durationSeconds, tokens.input, tokens.output, id)
   },
 
-  getTotals(): { total_tokens: number; total_input_tokens: number; total_output_tokens: number; total_duration_seconds: number; stories_count: number } {
+  fail(id: number, errorMessage: string): void {
+    const db = getDb()
+    db.prepare(`
+      UPDATE execution_log
+      SET status = 'error',
+          finished_at = datetime('now'),
+          error_message = ?
+      WHERE id = ?
+    `).run(errorMessage, id)
+  },
+
+  block(id: number, reason: string): void {
+    const db = getDb()
+    db.prepare(`
+      UPDATE execution_log
+      SET status = 'blocked',
+          finished_at = datetime('now'),
+          error_message = ?
+      WHERE id = ?
+    `).run(reason, id)
+  },
+
+  getForStory(storyId: string): {
+    id: number
+    attempt: number
+    started_at: string
+    finished_at: string | null
+    duration_seconds: number | null
+    input_tokens: number
+    output_tokens: number
+    status: string
+    error_message: string | null
+  }[] {
+    const db = getDb()
+    return db.prepare(`
+      SELECT * FROM execution_log WHERE story_id = ? ORDER BY started_at DESC
+    `).all(storyId) as any[]
+  },
+
+  getTotals(): {
+    total_runs: number
+    total_input_tokens: number
+    total_output_tokens: number
+    total_duration_seconds: number
+    completed_stories: number
+  } {
     const db = getDb()
     const row = db.prepare(`
       SELECT
-        COALESCE(SUM(tokens), 0) as total_tokens,
+        COUNT(*) as total_runs,
         COALESCE(SUM(input_tokens), 0) as total_input_tokens,
         COALESCE(SUM(output_tokens), 0) as total_output_tokens,
         COALESCE(SUM(duration_seconds), 0) as total_duration_seconds,
-        COUNT(*) as stories_count
-      FROM story_metrics
+        COUNT(DISTINCT CASE WHEN status = 'complete' THEN story_id END) as completed_stories
+      FROM execution_log
     `).get() as any
     return row
   }
@@ -447,7 +488,8 @@ function parseStoryRow(row: any): Story {
     passes: row.passes === 1,
     merged: row.merged === 1,
     skipped: row.skipped === 1,
-    branch: row.branch,
+    target_branch: row.target_branch || 'dev',
+    working_branch: row.working_branch,
     pr_url: row.pr_url,
     merge_commit: row.merge_commit,
     external_deps: JSON.parse(row.external_deps || '[]'),

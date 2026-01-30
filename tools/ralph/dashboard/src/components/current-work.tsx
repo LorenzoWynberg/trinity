@@ -41,17 +41,20 @@ export function CurrentWork({ state, story, lastCompletedStory }: CurrentWorkPro
     )
   }
 
-  const statusColor = {
+  const statusColor: Record<string, string> = {
     idle: 'bg-gray-500',
-    in_progress: 'bg-blue-500',
+    running: 'bg-blue-500',
+    paused: 'bg-yellow-500',
+    waiting_gate: 'bg-orange-500',
     blocked: 'bg-red-500'
-  }[state.status] || 'bg-gray-500'
+  }
+  const currentColor = statusColor[state.status] || 'bg-gray-500'
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg">Current Work</CardTitle>
-        <Badge className={statusColor}>{state.status.replace('_', ' ')}</Badge>
+        <Badge className={currentColor}>{state.status.replace('_', ' ')}</Badge>
       </CardHeader>
       <CardContent className="space-y-3">
         <div>

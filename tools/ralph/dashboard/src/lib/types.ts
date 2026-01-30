@@ -13,7 +13,8 @@ export interface Story {
   merged?: boolean
   skipped?: boolean
   skip_reason?: string
-  branch?: string
+  target_branch?: string
+  working_branch?: string
   merge_commit?: string
   pr_url?: string
   target_version?: string
@@ -63,10 +64,12 @@ export interface VersionInfo {
 }
 
 // State Types
+export type RunStatus = 'idle' | 'running' | 'paused' | 'waiting_gate' | 'blocked'
+
 export interface State {
   version: number
   current_story: string | null
-  status: 'idle' | 'in_progress' | 'blocked'
+  status: RunStatus
   branch: string | null
   pr_url: string | null
   started_at: string | null
