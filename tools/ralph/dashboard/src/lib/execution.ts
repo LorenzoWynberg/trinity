@@ -22,6 +22,7 @@ import type { Story, PRD } from './types'
 import { getNextStory, getRunnableStories, getScoredStories, type StoryScore } from './scoring'
 import * as state from './run-state'
 import * as git from './git'
+import * as prd from './db/prd'
 
 const execAsync = promisify(exec)
 
@@ -70,12 +71,8 @@ export interface ValidationResult {
   questions?: string[]
 }
 
-export interface ClaudeSignals {
-  complete: boolean
-  blocked: boolean
-  allComplete: boolean
-  message?: string
-}
+// Claude signals via API now - no need to parse output
+// See /api/signal endpoint
 
 /**
  * Load prompt template
@@ -214,33 +211,21 @@ async function runClaude(
 }
 
 /**
- * Check Claude output for signals
+ * Check story status from database (Claude calls /api/signal to update)
  */
-async function checkSignals(outputFile: string, _storyId: string): Promise<ClaudeSignals> {
-  try {
-    const content = await fs.readFile(outputFile, 'utf-8')
+function checkStoryStatus(storyId: string): { complete: boolean; blocked: boolean; message?: string } {
+  const story = prd.stories.get(storyId)
+  const runStateData = prd.runState.get()
 
-    // Check for completion signals
-    const completeMatch = content.match(/<story-complete>([^<]+)<\/story-complete>/i)
-    const blockedMatch = content.match(/<story-blocked>([^<]*)<\/story-blocked>/i)
-    const allCompleteMatch = content.includes('<promise>COMPLETE</promise>')
-
-    if (completeMatch) {
-      return { complete: true, blocked: false, allComplete: false }
-    }
-
-    if (blockedMatch) {
-      return { complete: false, blocked: true, allComplete: false, message: blockedMatch[1] }
-    }
-
-    if (allCompleteMatch) {
-      return { complete: false, blocked: false, allComplete: true }
-    }
-
-    return { complete: false, blocked: false, allComplete: false }
-  } catch {
-    return { complete: false, blocked: false, allComplete: false }
+  if (story?.passes) {
+    return { complete: true, blocked: false }
   }
+
+  if (runStateData.status === 'blocked') {
+    return { complete: false, blocked: true, message: runStateData.last_error || undefined }
+  }
+
+  return { complete: false, blocked: false }
 }
 
 /**
@@ -521,30 +506,22 @@ export async function runIteration(
       }
     }
 
-    const signals = await checkSignals(outputFile, storyId)
     await fs.unlink(outputFile).catch(() => {})
 
-    if (signals.complete) {
+    // Check status from database (Claude calls /api/signal to update)
+    const storyStatus = checkStoryStatus(storyId)
+
+    if (storyStatus.complete) {
       await state.saveCheckpoint(storyId, 'claude_complete')
       await state.clearFailure()
-    } else if (signals.blocked) {
-      await state.recordFailure(signals.message || 'Story blocked')
+    } else if (storyStatus.blocked) {
       return {
         status: 'blocked',
         storyId,
         event: {
           type: 'log',
           timestamp: new Date().toISOString(),
-          data: { message: `Story blocked: ${signals.message}` }
-        }
-      }
-    } else if (signals.allComplete) {
-      return {
-        status: 'complete',
-        event: {
-          type: 'complete',
-          timestamp: new Date().toISOString(),
-          data: { message: 'All stories complete!' }
+          data: { message: `Story blocked: ${storyStatus.message || 'Unknown reason'}` }
         }
       }
     }

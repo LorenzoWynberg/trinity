@@ -265,6 +265,53 @@ prd.getPRD('v0.1')               // Full PRD with enriched stories
 prd.getAllPRDs()                 // Combined across versions
 ```
 
+## Signal API
+
+Claude signals story completion via HTTP instead of file-based signals.
+
+### Endpoints
+
+```
+POST /api/signal
+  body: {
+    storyId: string,
+    action: 'complete' | 'blocked' | 'progress',
+    message?: string,
+    prUrl?: string,
+    inputTokens?: number,
+    outputTokens?: number,
+    durationSeconds?: number
+  }
+
+GET /api/signal?storyId=X
+  returns: { storyId, passes, merged, skipped, working_branch, pr_url }
+```
+
+### Claude Usage
+
+When Claude finishes a story, it calls:
+
+```bash
+# Mark complete
+curl -X POST http://localhost:3000/api/signal \
+  -H "Content-Type: application/json" \
+  -d '{"storyId": "v0.1:1.1.1", "action": "complete"}'
+
+# Mark blocked
+curl -X POST http://localhost:3000/api/signal \
+  -H "Content-Type: application/json" \
+  -d '{"storyId": "v0.1:1.1.1", "action": "blocked", "message": "Missing API key"}'
+```
+
+### How It Works
+
+1. Claude runs implementation as normal
+2. On completion, Claude calls `/api/signal` with status
+3. API updates `stories.passes` and `execution_log`
+4. Dashboard polls database to detect completion
+
+This replaces the old XML signal parsing from Claude output.
+
 ## Seeding Data
 
 Import PRD data from JSON files:

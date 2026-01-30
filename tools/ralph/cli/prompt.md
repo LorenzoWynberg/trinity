@@ -10,11 +10,11 @@ Create these 5 tasks upfront using TaskCreate. Work through them sequentially.
 
 | # | Task Subject | Instructions | Done When |
 |---|--------------|--------------|-----------|
-| 1 | Understand {{CURRENT_STORY}} | `instructions/context.md` | You know what to build |
+| 1 | Understand {{CURRENT_STORY}} | Read story, understand requirements | You know what to build |
 | 2 | Plan approach | Outline in task description | Approach is clear |
-| 3 | Implement {{CURRENT_STORY}} | `instructions/implementation.md` | Code written |
+| 3 | Implement {{CURRENT_STORY}} | Write code, tests | Code written |
 | 4 | Verify build & tests | Run verification commands | Build passes |
-| 5 | Complete & signal | `instructions/completion.md` | signal.json written |
+| 5 | Commit & signal completion | Commit changes, call signal API | API called |
 
 **Task descriptions should include:**
 - Phase 1: Key requirements from story, relevant docs read
@@ -35,11 +35,26 @@ Create these 5 tasks upfront using TaskCreate. Work through them sequentially.
 
 | Purpose | Path |
 |---------|------|
-| Your story | `tools/ralph/cli/prd/{{VERSION}}.json` |
 | Project rules | `CLAUDE.md` |
 | Activity log | `logs/activity/trinity/YYYY-MM-DD.md` |
-| Progress | `tools/ralph/cli/progress.txt` |
-| Signal (end) | `tools/ralph/cli/signal.json` |
+
+## Signaling Completion
+
+When done, signal completion via the dashboard API:
+
+```bash
+# Story complete - call this after committing and pushing
+curl -X POST http://localhost:3000/api/signal \
+  -H "Content-Type: application/json" \
+  -d '{"storyId": "{{CURRENT_STORY}}", "action": "complete"}'
+
+# Story blocked - call this if you cannot proceed
+curl -X POST http://localhost:3000/api/signal \
+  -H "Content-Type: application/json" \
+  -d '{"storyId": "{{CURRENT_STORY}}", "action": "blocked", "message": "Reason why blocked"}'
+```
+
+**Important:** Always call the signal API as your final action. The dashboard monitors this to know when you're done.
 
 ## Recent Activity
 {{RECENT_ACTIVITY_LOGS}}

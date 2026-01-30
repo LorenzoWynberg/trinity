@@ -157,3 +157,35 @@ Controls execution:
   "gateResponse": { "type": "validation", "response": { "action": "clarify", "clarification": "..." } }
 }
 ```
+
+### POST `/api/signal`
+
+Claude calls this to signal story completion:
+```json
+{
+  "storyId": "v0.1:1.1.1",
+  "action": "complete" | "blocked" | "progress",
+  "message": "Optional status message",
+  "prUrl": "Optional PR URL"
+}
+```
+
+This replaces the old XML signal parsing from Claude output. Claude uses curl to call this endpoint as its final action when completing a story.
+
+## Signal Flow
+
+```
+1. Dashboard starts Claude with story prompt
+2. Claude implements story, commits, pushes
+3. Claude calls POST /api/signal with action=complete
+4. Dashboard detects story.passes=true
+5. Dashboard proceeds to PR/merge flow
+```
+
+If Claude gets blocked:
+```
+1. Claude encounters blocker (missing dep, unclear requirement)
+2. Claude calls POST /api/signal with action=blocked
+3. Dashboard updates run_state.status=blocked
+4. Dashboard shows blocked UI with error message
+```
