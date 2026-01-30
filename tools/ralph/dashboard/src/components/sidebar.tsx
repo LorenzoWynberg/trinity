@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TaskIndicator } from '@/components/task-indicator'
+import { useMounted } from '@/hooks/use-mounted'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -37,16 +38,16 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
-
-  // Wait for mount to avoid hydration mismatch
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useMounted()
+  const prevPathnameRef = useRef(pathname)
 
   // Close sidebar when route changes on mobile
   useEffect(() => {
-    setIsOpen(false)
+    if (prevPathnameRef.current !== pathname) {
+      prevPathnameRef.current = pathname
+      // Use requestAnimationFrame to defer setState (proper pattern for responding to prop changes)
+      requestAnimationFrame(() => setIsOpen(false))
+    }
   }, [pathname])
 
   // Close sidebar on escape key

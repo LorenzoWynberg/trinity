@@ -46,7 +46,6 @@ export function calcTagOverlap(tagsA: string[] | undefined, tagsB: string[] | un
 
   if (a.length === 0 || b.length === 0) return 0.0
 
-  const setA = new Set(a)
   const setB = new Set(b)
 
   // Intersection

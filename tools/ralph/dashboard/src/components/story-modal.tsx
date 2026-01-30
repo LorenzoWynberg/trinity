@@ -120,7 +120,7 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
               </div>
               {isRunning ? (
                 <p className="text-sm text-muted-foreground">
-                  A story edit task is already running. You'll be notified when it completes.
+                  A story edit task is already running. You&apos;ll be notified when it completes.
                 </p>
               ) : (
                 <>
@@ -131,7 +131,7 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
                     rows={4}
                   />
                   <p className="text-xs text-muted-foreground">
-                    This runs in the background — you'll get a notification when it's done.
+                    This runs in the background — you&apos;ll get a notification when it&apos;s done.
                   </p>
                 </>
               )}

@@ -66,7 +66,7 @@ Use the Write tool to save the JSON. No markdown, no code blocks, just valid JSO
       const outputContent = await fs.readFile(outputFile, 'utf-8')
       const result = JSON.parse(outputContent)
       return { success: true, result }
-    } catch (readError: any) {
+    } catch {
       return {
         success: false,
         error: 'Claude did not write valid JSON to output file',

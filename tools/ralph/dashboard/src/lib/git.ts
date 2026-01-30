@@ -22,10 +22,11 @@ interface GitResult {
  */
 async function runGit(args: string, cwd: string = PROJECT_ROOT): Promise<GitResult> {
   try {
-    const { stdout, stderr } = await execAsync(`git ${args}`, { cwd })
+    const { stdout } = await execAsync(`git ${args}`, { cwd })
     return { success: true, output: stdout.trim() }
-  } catch (error: any) {
-    return { success: false, error: error.message || error.stderr }
+  } catch (error: unknown) {
+    const err = error as { message?: string; stderr?: string }
+    return { success: false, error: err.message || err.stderr }
   }
 }
 

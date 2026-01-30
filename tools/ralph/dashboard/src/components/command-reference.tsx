@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Info, Copy, Check } from 'lucide-react'
+import { useMounted } from '@/hooks/use-mounted'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -144,11 +145,7 @@ function CopyableCommand({ command }: { command: string }) {
 }
 
 export function CommandReference() {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useMounted()
 
   if (!mounted) {
     return (

@@ -1,7 +1,6 @@
 'use client'
 
 import { createContext, useContext, useEffect, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
 import { useTaskStore, type Task, type TaskType, type TaskContext } from '@/lib/task-store'
 
@@ -43,7 +42,6 @@ interface TaskProviderProps {
 
 export function TaskProvider({ children }: TaskProviderProps) {
   const { toast } = useToast()
-  const router = useRouter()
   const previousActiveIdsRef = useRef<Set<string>>(new Set())
   const notificationPermissionRef = useRef<NotificationPermission>('default')
 

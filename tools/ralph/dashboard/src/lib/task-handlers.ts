@@ -37,7 +37,7 @@ Output JSON:
 
 Copy tags and depends_on from original. Be pragmatic - only flag real issues.`
 
-  const { success, result, error, raw } = await runClaude(prompt)
+  const { success, result, error } = await runClaude(prompt)
 
   if (!success) {
     throw new Error(error || 'Claude failed')

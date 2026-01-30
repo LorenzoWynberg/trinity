@@ -18,12 +18,11 @@ import {
   NodeChange,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { useTheme } from 'next-themes'
 import { ArrowRight, ArrowDown, Save, Trash2, Loader2, Star, Maximize, Minimize, SlidersHorizontal } from 'lucide-react'
 import { StoryNode } from '@/components/story-node'
 import { VersionNode } from '@/components/version-node'
 import { StoryModal } from '@/components/story-modal'
-import { useGraphData, calculateAutoPositions, resolveDependency, GraphLayoutData } from '@/hooks/use-graph-data'
+import { useGraphData, resolveDependency, GraphLayoutData } from '@/hooks/use-graph-data'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -48,7 +47,6 @@ const nodeTypes = {
 }
 
 function GraphContent() {
-  const { resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [selectedVersion, setSelectedVersion] = useState<string>('all')
   const [isVersionLoading, setIsVersionLoading] = useState(false)
@@ -473,8 +471,6 @@ function GraphContent() {
 
     // Create edges with version-relative depth
     ancestors.forEach(ancestorId => {
-      const ancestorVersion = nodeVersions.get(ancestorId)
-
       // Version node: create edges FROM leaf stories TO version
       if (ancestorId.startsWith('version:')) {
         const ver = ancestorId.replace('version:', '')

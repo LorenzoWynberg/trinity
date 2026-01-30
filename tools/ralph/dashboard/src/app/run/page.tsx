@@ -26,7 +26,7 @@ interface ExecutionStatus {
 
 export default function RunPage() {
   const [modalOpen, setModalOpen] = useState(false)
-  const [versions, setVersions] = useState<string[]>([])
+  const [, setVersions] = useState<string[]>([])
   const [selectedVersion, setSelectedVersion] = useState('v0.1')
   const [status, setStatus] = useState<ExecutionStatus | null>(null)
 

@@ -24,9 +24,7 @@ import {
   AlertCircle,
   ChevronRight,
   ExternalLink,
-  GitBranch,
   Bot,
-  Settings2,
   Square,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -91,7 +89,7 @@ export function RunModal({ open, onOpenChange, initialVersion = 'v0.1' }: RunMod
 
   // Story state (populated when running)
   const [currentStory, setCurrentStory] = useState<Story | null>(null)
-  const [branch, setBranch] = useState<string | null>(null)
+  const [_branch, setBranch] = useState<string | null>(null)
   const [prUrl, setPrUrl] = useState<string | null>(null)
 
   // Gate state

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { SplitButton } from '@/components/ui/split-button'
 import { Sparkles, Wand2, Loader2 } from 'lucide-react'
 import { RefineStoriesModal, GenerateStoriesModal, StoryEditModal } from '@/components/prd-tools-modals'
@@ -20,17 +20,25 @@ export function StoriesHeader({ totalStories, phaseCount, version }: StoriesHead
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const { isTaskRunning } = useTaskContext()
 
-  const processPendingTasks = useCallback(() => {
-    const { pendingTasks, removePendingTask } = useTaskStore.getState()
+  // Get pending tasks from store (reactive)
+  const pendingTasks = useTaskStore((state) => state.pendingTasks)
+  const removePendingTask = useTaskStore((state) => state.removePendingTask)
 
+  // Track which tasks we've already processed to avoid loops
+  const processedTasksRef = useRef<Set<string>>(new Set())
+
+  // Process pending tasks when they change
+  useEffect(() => {
     if (pendingTasks.length === 0) return
 
-    // Find the first completed task
+    // Find the first completed task we haven't processed yet
     const task = pendingTasks.find(t =>
-      t.status === 'complete' || t.status === 'failed'
+      (t.status === 'complete' || t.status === 'failed') &&
+      !processedTasksRef.current.has(t.id)
     )
 
     if (task) {
+      processedTasksRef.current.add(task.id)
       setActiveTask(task)
       if (task.type === 'refine') {
         setRefineOpen(true)
@@ -42,20 +50,7 @@ export function StoriesHeader({ totalStories, phaseCount, version }: StoriesHead
       // Remove this task from pending
       removePendingTask(task.id)
     }
-  }, [])
-
-  // Check for pending tasks on mount and subscribe to changes
-  useEffect(() => {
-    // Check immediately
-    processPendingTasks()
-
-    // Subscribe to store changes
-    const unsubscribe = useTaskStore.subscribe(() => {
-      processPendingTasks()
-    })
-
-    return unsubscribe
-  }, [processPendingTasks])
+  }, [pendingTasks, removePendingTask])
 
   // Clear active task when modals close
   const handleRefineOpenChange = (open: boolean) => {

@@ -265,10 +265,10 @@ export function RefineStoriesModal({ open, onOpenChange, version, initialTask }:
                   <Loader2 className="h-12 w-12 mx-auto text-primary mb-4 animate-spin" />
                   <p className="text-lg font-medium mb-2">Analyzing stories...</p>
                   <p className="text-muted-foreground text-sm">
-                    Claude is reviewing all pending stories. You'll be notified when it's done.
+                    Claude is reviewing all pending stories. You&apos;ll be notified when it&apos;s done.
                   </p>
                   <p className="text-xs text-muted-foreground mt-4">
-                    You can close this modal - we'll notify you when complete.
+                    You can close this modal - we&apos;ll notify you when complete.
                   </p>
                 </>
               ) : loading ? (
@@ -630,10 +630,10 @@ export function StoryEditModal({ open, onOpenChange, version, initialTask, story
                   <Loader2 className="h-12 w-12 mx-auto text-primary mb-4 animate-spin" />
                   <p className="text-lg font-medium mb-2">Analyzing story...</p>
                   <p className="text-muted-foreground text-sm">
-                    Claude is analyzing your requested changes. You'll be notified when it's done.
+                    Claude is analyzing your requested changes. You&apos;ll be notified when it&apos;s done.
                   </p>
                   <p className="text-xs text-muted-foreground mt-4">
-                    You can close this modal - we'll notify you when complete.
+                    You can close this modal - we&apos;ll notify you when complete.
                   </p>
                 </div>
               ) : (
@@ -1004,10 +1004,10 @@ export function GenerateStoriesModal({ open, onOpenChange, version, initialTask 
                   <Loader2 className="h-12 w-12 mx-auto text-primary mb-4 animate-spin" />
                   <p className="text-lg font-medium mb-2">Generating stories...</p>
                   <p className="text-muted-foreground text-sm">
-                    Claude is creating stories based on your description. You'll be notified when it's done.
+                    Claude is creating stories based on your description. You&apos;ll be notified when it&apos;s done.
                   </p>
                   <p className="text-xs text-muted-foreground mt-4">
-                    You can close this modal - we'll notify you when complete.
+                    You can close this modal - we&apos;ll notify you when complete.
                   </p>
                 </div>
               ) : (

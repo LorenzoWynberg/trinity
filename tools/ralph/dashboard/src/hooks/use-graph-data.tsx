@@ -206,7 +206,6 @@ function calculateSingleVersionPositions(
   const MAX_PER_COL = 6
 
   // Spacing varies by layout type
-  const isCompact = direction === 'horizontal-compact' || direction === 'vertical-compact'
   const isVertical = direction === 'vertical' || direction === 'vertical-compact'
   const H_GAP = isVertical ? 80 : 60
   const V_GAP = direction === 'horizontal-compact' ? 40 : (isVertical ? 70 : 20)
@@ -515,7 +514,6 @@ export function useGraphData(version: string = 'all'): GraphData {
         const storiesData: Story[] = prd.stories
         setStories(storiesData)
 
-        const isAllVersions = version === 'all'
         // Always show version headers when there are versions
         const showVersionHeaders = (versionsData.versions?.length || 0) >= 1
 

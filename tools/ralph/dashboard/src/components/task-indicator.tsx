@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useTaskContext, type Task } from './task-provider';
 import { useTaskStore } from '@/lib/task-store';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,6 @@ export function TaskIndicator() {
     useTaskContext();
   const { addPendingTask } = useTaskStore();
   const router = useRouter();
-  const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   const handleClearTasks = async () => {
@@ -81,7 +80,7 @@ export function TaskIndicator() {
     setOpen(false);
 
     if (returnPath) {
-      window.location.href = returnPath;
+      router.push(returnPath);
     }
   };
 

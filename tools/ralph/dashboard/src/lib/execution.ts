@@ -216,7 +216,7 @@ async function runClaude(
 /**
  * Check Claude output for signals
  */
-async function checkSignals(outputFile: string, storyId: string): Promise<ClaudeSignals> {
+async function checkSignals(outputFile: string, _storyId: string): Promise<ClaudeSignals> {
   try {
     const content = await fs.readFile(outputFile, 'utf-8')
 

@@ -179,9 +179,6 @@ export default function TasksPage() {
     return true
   })
 
-  // Separate active and completed tasks
-  const activeTasks = filteredTasks.filter(t => t.status === 'queued' || t.status === 'running')
-  const completedTasks = filteredTasks.filter(t => t.status === 'complete' || t.status === 'failed')
 
   return (
     <div className="p-8 space-y-6">
