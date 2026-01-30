@@ -22,7 +22,7 @@ import type { Story, PRD } from './types'
 import { getNextStory, getRunnableStories, getScoredStories, type StoryScore } from './scoring'
 import * as state from './run-state'
 import * as git from './git'
-import * as prd from './db/prd'
+import * as prdDb from './db/prd'
 import { settings } from './db'
 
 const execAsync = promisify(exec)
@@ -177,6 +177,50 @@ async function buildPrompt(
   return prompt
 }
 
+interface ClaudeResult {
+  success: boolean
+  duration: number
+  inputTokens: number
+  outputTokens: number
+  error?: string
+}
+
+/**
+ * Extract token usage from Claude's stream-json output
+ */
+async function extractTokenUsage(outputFile: string): Promise<{ input: number; output: number }> {
+  try {
+    // Parse all JSON lines and find the result with usage info
+    const content = await fs.readFile(outputFile, 'utf-8')
+    const lines = content.split('\n').filter(line => line.trim().startsWith('{'))
+
+    for (const line of lines) {
+      try {
+        const obj = JSON.parse(line)
+        // Claude outputs usage in the result message
+        if (obj.type === 'result' && obj.usage) {
+          return {
+            input: obj.usage.input_tokens || 0,
+            output: obj.usage.output_tokens || 0
+          }
+        }
+        // Also check for usage in message events
+        if (obj.usage) {
+          return {
+            input: obj.usage.input_tokens || 0,
+            output: obj.usage.output_tokens || 0
+          }
+        }
+      } catch {
+        // Skip invalid JSON lines
+      }
+    }
+  } catch {
+    // File doesn't exist or can't be read
+  }
+  return { input: 0, output: 0 }
+}
+
 /**
  * Run Claude with the prompt
  */
@@ -185,13 +229,12 @@ async function runClaude(
   outputFile: string,
   timeoutSec: number,
   quiet: boolean = false
-): Promise<{ success: boolean; duration: number; error?: string }> {
+): Promise<ClaudeResult> {
   const promptFile = path.join(os.tmpdir(), `ralph-prompt-${randomUUID()}.md`)
+  const startTime = Date.now()
 
   try {
     await fs.writeFile(promptFile, prompt)
-
-    const startTime = Date.now()
     const timeoutMs = timeoutSec * 1000
 
     if (quiet) {
@@ -202,36 +245,35 @@ async function runClaude(
     } else {
       // Streaming mode with JSON output
       const streamText = 'select(.type == "assistant").message.content[]? | select(.type == "text").text // empty | gsub("\\n"; "\\r\\n") | . + "\\r\\n\\n"'
-      const finalResult = 'select(.type == "result").result // empty'
 
       await execAsync(
         `claude --dangerously-skip-permissions --verbose --print --output-format stream-json < "${promptFile}" 2>&1 | grep --line-buffered '^{' | tee "${outputFile}" | jq --unbuffered -rj '${streamText}' 2>/dev/null || true`,
         { cwd: PROJECT_ROOT, timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024 }
       )
-
-      // Extract final result
-      try {
-        await execAsync(
-          `jq -rs '${finalResult}' "${outputFile}" > "${outputFile}.result"`,
-          { cwd: PROJECT_ROOT }
-        )
-        const resultContent = await fs.readFile(`${outputFile}.result`, 'utf-8')
-        if (resultContent.trim()) {
-          await fs.writeFile(outputFile, resultContent)
-        }
-      } catch {
-        // Ignore extraction errors
-      }
     }
 
     const duration = Math.floor((Date.now() - startTime) / 1000)
-    return { success: true, duration }
+    const tokens = await extractTokenUsage(outputFile)
+
+    return {
+      success: true,
+      duration,
+      inputTokens: tokens.input,
+      outputTokens: tokens.output
+    }
   } catch (error: any) {
-    const duration = Math.floor((Date.now() - Date.now()) / 1000)
-    return { success: false, duration, error: error.message }
+    const duration = Math.floor((Date.now() - startTime) / 1000)
+    const tokens = await extractTokenUsage(outputFile)
+
+    return {
+      success: false,
+      duration,
+      inputTokens: tokens.input,
+      outputTokens: tokens.output,
+      error: error.message
+    }
   } finally {
     await fs.unlink(promptFile).catch(() => {})
-    await fs.unlink(`${outputFile}.result`).catch(() => {})
   }
 }
 
@@ -239,8 +281,8 @@ async function runClaude(
  * Check story status from database (Claude calls /api/signal to update)
  */
 function checkStoryStatus(storyId: string): { complete: boolean; blocked: boolean; message?: string } {
-  const story = prd.stories.get(storyId)
-  const runStateData = prd.runState.get()
+  const story = prdDb.stories.get(storyId)
+  const runStateData = prdDb.runState.get()
 
   if (story?.passes) {
     return { complete: true, blocked: false }
@@ -539,9 +581,14 @@ export async function runIteration(
 
     const outputFile = path.join(os.tmpdir(), `ralph-output-${randomUUID()}.txt`)
 
+    // Start execution log
+    const execLogId = prdDb.executionLog.start(storyId, currentState.attempts + 1)
+
     const claudeResult = await runClaude(prompt, outputFile, config.claudeTimeout)
 
     if (!claudeResult.success) {
+      // Log the failed execution with token usage
+      prdDb.executionLog.fail(execLogId, claudeResult.error || 'Claude execution failed')
       await state.recordFailure(claudeResult.error || 'Claude execution failed')
       return {
         status: 'error',
@@ -549,7 +596,12 @@ export async function runIteration(
         event: {
           type: 'error',
           timestamp: new Date().toISOString(),
-          data: { message: claudeResult.error, duration: claudeResult.duration }
+          data: {
+            message: claudeResult.error,
+            duration: claudeResult.duration,
+            inputTokens: claudeResult.inputTokens,
+            outputTokens: claudeResult.outputTokens
+          }
         }
       }
     }
@@ -560,9 +612,16 @@ export async function runIteration(
     const storyStatus = await waitForSignal(storyId, 30000, 1000)
 
     if (storyStatus.complete) {
+      // Log successful execution with token usage
+      prdDb.executionLog.complete(execLogId, {
+        input: claudeResult.inputTokens,
+        output: claudeResult.outputTokens
+      }, claudeResult.duration)
       await state.saveCheckpoint(storyId, 'claude_complete')
       await state.clearFailure()
     } else if (storyStatus.blocked) {
+      // Log blocked execution
+      prdDb.executionLog.block(execLogId, storyStatus.message || 'Story blocked')
       return {
         status: 'blocked',
         storyId,
@@ -574,13 +633,20 @@ export async function runIteration(
       }
     } else {
       // No signal received - Claude may have exited without signaling
+      // Still log the execution with token usage
+      prdDb.executionLog.fail(execLogId, 'Claude exited without signaling completion')
       return {
         status: 'error',
         storyId,
         event: {
           type: 'error',
           timestamp: new Date().toISOString(),
-          data: { message: 'Claude exited without signaling completion. Check if story was implemented.' }
+          data: {
+            message: 'Claude exited without signaling completion. Check if story was implemented.',
+            inputTokens: claudeResult.inputTokens,
+            outputTokens: claudeResult.outputTokens,
+            duration: claudeResult.duration
+          }
         }
       }
     }
