@@ -11,6 +11,7 @@ export interface Settings {
   showExternalDeps: boolean
   defaultVersion: string
   timezone: string
+  dashboardUrl: string
 }
 
 const defaultSettings: Settings = {
@@ -19,7 +20,8 @@ const defaultSettings: Settings = {
   showDeadEnds: false,
   showExternalDeps: false,
   defaultVersion: 'first',
-  timezone: 'UTC'
+  timezone: 'UTC',
+  dashboardUrl: 'http://localhost:3000'
 }
 
 function getSettings(): Settings {
@@ -31,6 +33,7 @@ function getSettings(): Settings {
     showExternalDeps: stored.showExternalDeps === 'true',
     defaultVersion: stored.defaultVersion || defaultSettings.defaultVersion,
     timezone: stored.timezone || defaultSettings.timezone,
+    dashboardUrl: stored.dashboardUrl || defaultSettings.dashboardUrl,
   }
 }
 
@@ -43,6 +46,7 @@ function saveSettings(settings: Partial<Settings>): void {
   if (settings.showExternalDeps !== undefined) data.showExternalDeps = String(settings.showExternalDeps)
   if (settings.defaultVersion !== undefined) data.defaultVersion = settings.defaultVersion
   if (settings.timezone !== undefined) data.timezone = settings.timezone
+  if (settings.dashboardUrl !== undefined) data.dashboardUrl = settings.dashboardUrl
 
   settingsDb.setAll(data)
 }
