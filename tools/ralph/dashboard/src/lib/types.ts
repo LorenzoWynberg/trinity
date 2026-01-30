@@ -13,10 +13,12 @@ export interface Story {
   merged?: boolean
   skipped?: boolean
   skip_reason?: string
+  branch?: string
   merge_commit?: string
   pr_url?: string
   target_version?: string
   external_deps?: { name: string; description: string }[]
+  external_deps_report?: string
   // Smart selection fields
   priority?: number  // User-defined priority (0-10), higher = more important
   tags?: string[]    // Tags for cross-cutting concerns and clustering

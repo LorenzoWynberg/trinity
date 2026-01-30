@@ -1,13 +1,12 @@
 import fs from 'fs/promises'
 import path from 'path'
-import type { PRD, State, Metrics, PhaseProgress, EpicProgress, Story, VersionInfo, BlockedInfo, Phase, Epic, KnowledgeChapter, ChapterIndex, KnowledgePage } from './types'
+import type { PRD, State, Metrics, PhaseProgress, EpicProgress, Story, VersionInfo, BlockedInfo, KnowledgeChapter, ChapterIndex, KnowledgePage } from './types'
 
 import { settings as settingsDb } from './db'
+import * as prd from './db/prd'
 
 // Paths relative to project root
 const PROJECT_ROOT = path.join(process.cwd(), '../../..')
-const RALPH_CLI_DIR = path.join(PROJECT_ROOT, 'tools/ralph/cli')
-const PRD_DIR = path.join(RALPH_CLI_DIR, 'prd')
 const DOCS_DIR = path.join(PROJECT_ROOT, 'docs')
 const LOGS_DIR = path.join(PROJECT_ROOT, 'logs')
 
@@ -48,99 +47,28 @@ export async function getSettings(): Promise<Settings> {
   }
 }
 
-// Get list of available versions from prd/ directory
+// Get list of available versions from SQLite database
 export async function getVersions(): Promise<string[]> {
   try {
-    const files = await fs.readdir(PRD_DIR)
-    return files
-      .filter(f => f.match(/^v[\d.]+\.json$/))
-      .map(f => f.replace('.json', ''))
-      .sort((a, b) => {
-        // Sort versions properly (v1.0 before v2.0, etc.)
-        const [, aMajor, aMinor] = a.match(/v(\d+)\.(\d+)/) || [, '0', '0']
-        const [, bMajor, bMinor] = b.match(/v(\d+)\.(\d+)/) || [, '0', '0']
-        if (aMajor !== bMajor) return parseInt(aMajor) - parseInt(bMajor)
-        return parseInt(aMinor) - parseInt(bMinor)
-      })
+    return prd.versions.list()
   } catch {
     return []
   }
 }
 
-// Get PRD for a specific version
+// Get PRD for a specific version from SQLite
 export async function getPRDForVersion(version: string): Promise<PRD | null> {
   try {
-    const content = await fs.readFile(path.join(PRD_DIR, `${version}.json`), 'utf-8')
-    const prd = JSON.parse(content)
-
-    // Build name lookups
-    const phaseNames = new Map<number, string>()
-    const epicNames = new Map<string, string>()
-    if (prd.phases) {
-      for (const p of prd.phases) {
-        phaseNames.set(p.id, p.name)
-      }
-    }
-    if (prd.epics) {
-      for (const e of prd.epics) {
-        epicNames.set(`${e.phase}-${e.id}`, e.name)
-      }
-    }
-
-    // Enrich stories with version and names
-    prd.stories = prd.stories.map((s: Story) => ({
-      ...s,
-      target_version: version,
-      phase_name: phaseNames.get(s.phase),
-      epic_name: epicNames.get(`${s.phase}-${s.epic}`)
-    }))
-    return prd
+    return prd.getPRD(version)
   } catch {
     return null
   }
 }
 
-// Get all PRDs combined (for aggregate views)
+// Get all PRDs combined (for aggregate views) from SQLite
 export async function getAllPRDs(): Promise<PRD | null> {
   try {
-    const versions = await getVersions()
-    if (versions.length === 0) return null
-
-    const allStories: Story[] = []
-    const allPhases: Phase[] = []
-    const allEpics: Epic[] = []
-    let projectName = ''
-
-    for (const version of versions) {
-      const prd = await getPRDForVersion(version)
-      if (prd) {
-        projectName = prd.project
-        allStories.push(...prd.stories)
-        // Merge phases and epics (dedup by id for phases, by phase+id for epics)
-        if (prd.phases) {
-          for (const p of prd.phases) {
-            if (!allPhases.find(x => x.id === p.id)) {
-              allPhases.push(p)
-            }
-          }
-        }
-        if (prd.epics) {
-          for (const e of prd.epics) {
-            if (!allEpics.find(x => x.phase === e.phase && x.id === e.id)) {
-              allEpics.push(e)
-            }
-          }
-        }
-      }
-    }
-
-    return {
-      project: projectName,
-      version: 'all',
-      phases: allPhases,
-      epics: allEpics,
-      stories: allStories
-    }
+    return prd.getAllPRDs()
   } catch {
     return null
   }
@@ -154,59 +82,65 @@ export async function getPRD(version?: string): Promise<PRD | null> {
   return getAllPRDs()
 }
 
-// Get version progress stats
+// Get version progress stats from SQLite
 export async function getVersionProgress(): Promise<VersionInfo[]> {
-  const versions = await getVersions()
+  const versionList = prd.versions.list()
   const progress: VersionInfo[] = []
 
-  for (const version of versions) {
-    const prd = await getPRDForVersion(version)
-    if (prd) {
-      const total = prd.stories.length
-      const merged = prd.stories.filter(s => s.merged).length
-      const passed = prd.stories.filter(s => s.passes && !s.merged).length
-      const skipped = prd.stories.filter(s => s.skipped).length
-      progress.push({
-        version,
-        title: prd.title,
-        shortTitle: prd.shortTitle,
-        description: prd.description,
-        total,
-        merged,
-        passed,
-        skipped,
-        percentage: total > 0 ? Math.round((merged / total) * 100) : 0
-      })
-    }
+  for (const version of versionList) {
+    const versionData = prd.versions.get(version)
+    const storyList = prd.stories.list(version)
+
+    const total = storyList.length
+    const merged = storyList.filter(s => s.merged).length
+    const passed = storyList.filter(s => s.passes && !s.merged).length
+    const skipped = storyList.filter(s => s.skipped).length
+
+    progress.push({
+      version,
+      title: versionData?.title,
+      shortTitle: versionData?.shortTitle,
+      description: versionData?.description,
+      total,
+      merged,
+      passed,
+      skipped,
+      percentage: total > 0 ? Math.round((merged / total) * 100) : 0
+    })
   }
 
   return progress
 }
 
-// Get version metadata only (for dropdowns, etc.)
+// Get version metadata only (for dropdowns, etc.) from SQLite
 export async function getVersionsWithMetadata(): Promise<{ version: string; title?: string; shortTitle?: string; description?: string }[]> {
-  const versions = await getVersions()
-  const metadata: { version: string; title?: string; shortTitle?: string; description?: string }[] = []
-
-  for (const version of versions) {
-    const prd = await getPRDForVersion(version)
-    if (prd) {
-      metadata.push({
-        version,
-        title: prd.title,
-        shortTitle: prd.shortTitle,
-        description: prd.description
-      })
+  const versionList = prd.versions.list()
+  return versionList.map(version => {
+    const data = prd.versions.get(version)
+    return {
+      version,
+      title: data?.title,
+      shortTitle: data?.shortTitle,
+      description: data?.description
     }
-  }
-
-  return metadata
+  })
 }
 
 export async function getState(): Promise<State | null> {
   try {
-    const content = await fs.readFile(path.join(RALPH_CLI_DIR, 'state.json'), 'utf-8')
-    return JSON.parse(content)
+    const state = prd.runState.get()
+    return {
+      version: 1,
+      current_story: state.current_story,
+      status: (state.status as 'idle' | 'in_progress' | 'blocked') || 'idle',
+      error: state.last_error,
+      started_at: null,
+      branch: state.branch,
+      attempts: state.attempts,
+      pr_url: state.pr_url,
+      last_updated: null,
+      checkpoints: []
+    }
   } catch {
     return null
   }
@@ -214,8 +148,21 @@ export async function getState(): Promise<State | null> {
 
 export async function getMetrics(): Promise<Metrics | null> {
   try {
-    const content = await fs.readFile(path.join(RALPH_CLI_DIR, 'metrics.json'), 'utf-8')
-    return JSON.parse(content)
+    const totals = prd.storyMetrics.getTotals()
+    const allStories = prd.stories.list()
+    const passedCount = allStories.filter(s => s.passes).length
+    const mergedCount = allStories.filter(s => s.merged).length
+
+    return {
+      total_tokens: totals.total_tokens,
+      total_input_tokens: totals.total_input_tokens,
+      total_output_tokens: totals.total_output_tokens,
+      total_duration_seconds: totals.total_duration_seconds,
+      stories_passed: passedCount,
+      stories_prd: allStories.length,
+      stories_merged: mergedCount,
+      stories: [] // Per-story metrics not needed for dashboard display
+    }
   } catch {
     return null
   }
