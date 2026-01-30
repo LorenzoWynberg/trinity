@@ -6,6 +6,7 @@ The dashboard uses SQLite via `better-sqlite3` for persistent storage. The datab
 
 ```typescript
 import { getDb, tasks, settings } from '@/lib/db'
+import * as prd from '@/lib/db/prd'
 
 // getDb() returns singleton connection with:
 // - WAL mode for better concurrency
@@ -13,7 +14,171 @@ import { getDb, tasks, settings } from '@/lib/db'
 // - Auto-runs pending migrations
 ```
 
-## Tables
+## Schema Overview
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  versions   │────<│   phases    │     │   settings  │
+└─────────────┘     └─────────────┘     └─────────────┘
+       │                   │
+       │            ┌─────────────┐
+       └───────────<│    epics    │
+       │            └─────────────┘
+       │
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   stories   │────<│ checkpoints │     │    tasks    │
+└─────────────┘     └─────────────┘     └─────────────┘
+       │
+       │            ┌─────────────┐
+       └───────────<│execution_log│
+                    └─────────────┘
+
+┌─────────────┐
+│  run_state  │  (single row - current execution)
+└─────────────┘
+```
+
+## PRD Tables
+
+### versions
+
+Version metadata for PRD releases.
+
+```sql
+CREATE TABLE versions (
+  id TEXT PRIMARY KEY,           -- 'v0.1', 'v1.0', etc.
+  title TEXT,
+  short_title TEXT,
+  description TEXT,
+  created_at TEXT
+);
+```
+
+### phases
+
+Phases per version.
+
+```sql
+CREATE TABLE phases (
+  version_id TEXT NOT NULL,
+  id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  PRIMARY KEY (version_id, id),
+  FOREIGN KEY (version_id) REFERENCES versions(id) ON DELETE CASCADE
+);
+```
+
+### epics
+
+Epics per version.
+
+```sql
+CREATE TABLE epics (
+  version_id TEXT NOT NULL,
+  phase_id INTEGER NOT NULL,
+  id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  PRIMARY KEY (version_id, phase_id, id),
+  FOREIGN KEY (version_id, phase_id) REFERENCES phases(version_id, id) ON DELETE CASCADE
+);
+```
+
+### stories
+
+Story definitions with status tracking.
+
+```sql
+CREATE TABLE stories (
+  id TEXT PRIMARY KEY,           -- 'v0.1:1.1.1' (version-prefixed)
+  version_id TEXT NOT NULL,
+  phase INTEGER NOT NULL,
+  epic INTEGER NOT NULL,
+  story_number INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  intent TEXT,
+  description TEXT,
+  acceptance TEXT,               -- JSON array
+  depends_on TEXT,               -- JSON array
+  tags TEXT,                     -- JSON array
+
+  -- Status flags
+  passes INTEGER DEFAULT 0,      -- Claude finished implementation
+  merged INTEGER DEFAULT 0,      -- PR merged to target branch
+  skipped INTEGER DEFAULT 0,     -- Manually skipped
+
+  -- Git tracking
+  target_branch TEXT DEFAULT 'dev',  -- Where to merge
+  working_branch TEXT,               -- Feature branch
+  pr_url TEXT,
+  merge_commit TEXT,
+
+  -- External dependencies
+  external_deps TEXT,            -- JSON array
+  external_deps_report TEXT,
+
+  created_at TEXT,
+  updated_at TEXT,
+  FOREIGN KEY (version_id) REFERENCES versions(id) ON DELETE CASCADE
+);
+```
+
+## Execution Tables
+
+### run_state
+
+Current execution state (single row).
+
+```sql
+CREATE TABLE run_state (
+  id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  current_story TEXT,            -- FK to stories.id
+  status TEXT DEFAULT 'idle',    -- idle/running/paused/waiting_gate/blocked
+  attempts INTEGER DEFAULT 0,
+  last_completed TEXT,           -- Last merged story ID
+  last_error TEXT,
+  last_updated TEXT
+);
+```
+
+### execution_log
+
+History of all Claude runs. Metrics are derived from this table.
+
+```sql
+CREATE TABLE execution_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  story_id TEXT NOT NULL,
+  attempt INTEGER DEFAULT 1,
+
+  started_at TEXT,
+  finished_at TEXT,
+  duration_seconds INTEGER,
+
+  input_tokens INTEGER DEFAULT 0,
+  output_tokens INTEGER DEFAULT 0,
+
+  status TEXT,                   -- running/complete/blocked/error
+  error_message TEXT,
+
+  FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE CASCADE
+);
+```
+
+### checkpoints
+
+Resume capability for mid-execution state.
+
+```sql
+CREATE TABLE checkpoints (
+  story_id TEXT NOT NULL,
+  stage TEXT NOT NULL,           -- validation_complete, branch_created, etc.
+  data TEXT,                     -- JSON
+  created_at TEXT,
+  PRIMARY KEY (story_id, stage)
+);
+```
+
+## Task Tables
 
 ### tasks
 
@@ -22,18 +187,18 @@ Background task queue for Claude-powered operations.
 ```sql
 CREATE TABLE tasks (
   id TEXT PRIMARY KEY,
-  type TEXT NOT NULL,           -- 'refine' | 'generate' | 'story-edit'
-  status TEXT NOT NULL,         -- 'queued' | 'running' | 'complete' | 'failed'
+  type TEXT NOT NULL,            -- 'refine' | 'generate' | 'story-edit'
+  status TEXT NOT NULL,          -- 'queued' | 'running' | 'complete' | 'failed'
   version TEXT NOT NULL,
-  params TEXT NOT NULL,         -- JSON: task-specific parameters
-  context TEXT,                 -- JSON: returnPath, step, formData, etc.
-  result TEXT,                  -- JSON: Claude's response
+  params TEXT NOT NULL,          -- JSON
+  context TEXT,                  -- JSON: returnPath, step, formData
+  result TEXT,                   -- JSON: Claude's response
   error TEXT,
   created_at TEXT NOT NULL,
   started_at TEXT,
   completed_at TEXT,
-  read_at TEXT,                 -- When user viewed the result
-  deleted_at TEXT               -- Soft delete timestamp
+  read_at TEXT,
+  deleted_at TEXT
 );
 ```
 
@@ -49,18 +214,6 @@ CREATE TABLE settings (
 );
 ```
 
-### migrations
-
-Tracks applied migrations.
-
-```sql
-CREATE TABLE migrations (
-  id INTEGER PRIMARY KEY,
-  name TEXT NOT NULL UNIQUE,
-  applied_at TEXT NOT NULL
-);
-```
-
 ## Migrations
 
 SQL files in `src/lib/db/migrations/` are applied automatically on startup:
@@ -68,77 +221,75 @@ SQL files in `src/lib/db/migrations/` are applied automatically on startup:
 | Migration | Description |
 |-----------|-------------|
 | `001_tasks.sql` | Initial tasks table |
-| `002_task_context.sql` | Add context column for navigation state |
+| `002_task_context.sql` | Add context column |
 | `003_settings.sql` | Settings table |
-| `004_task_soft_delete.sql` | Add read_at and deleted_at columns |
+| `004_task_soft_delete.sql` | Soft delete columns |
+| `005_prd.sql` | PRD tables (versions, phases, epics, stories, run_state, checkpoints) |
+| `006_execution_log.sql` | Execution history, schema cleanup |
 
-Migrations run in filename order. Each is wrapped in a transaction.
-
-## Task Operations
-
-```typescript
-import { tasks } from '@/lib/db'
-
-// Create
-const task = tasks.create('refine', 'v1', { storyId: '1.2.3' }, { returnPath: '/stories' })
-
-// Query
-tasks.get(id)                    // Single task by ID
-tasks.list({ type, status })     // Filtered list
-tasks.getActive()                // Queued or running
-tasks.getNext()                  // Next queued (if nothing running)
-tasks.getUnreadCount()           // Count of unread completed tasks
-
-// Lifecycle
-tasks.start(id)                  // Set status to running
-tasks.complete(id, result)       // Set status to complete with result
-tasks.fail(id, error)            // Set status to failed with error
-
-// Soft delete
-tasks.markRead(id)               // Set read_at
-tasks.markAllRead()              // Mark all unread as read
-tasks.softDelete(id)             // Set deleted_at
-tasks.restore(id)                // Clear deleted_at
-
-// Cleanup
-tasks.cleanup(50)                // Keep only 50 most recent completed tasks
-```
-
-## Settings Operations
+## PRD Operations
 
 ```typescript
-import { settings } from '@/lib/db'
+import * as prd from '@/lib/db/prd'
 
-settings.get('theme')            // Get single value
-settings.getAll()                // Get all as Record<string, string>
-settings.set('theme', 'dark')    // Set single value (upsert)
-settings.setAll({ theme, tz })   // Set multiple (transaction)
-settings.delete('key')           // Remove key
-settings.clear()                 // Remove all
+// Versions
+prd.versions.list()              // ['v0.1', 'v1.0', 'v2.0']
+prd.versions.get('v0.1')         // { id, title, shortTitle, description }
+
+// Stories
+prd.stories.list('v0.1')         // All stories for version
+prd.stories.get('v0.1:1.1.1')    // Single story
+prd.stories.markPassed(id)       // Set passes = 1
+prd.stories.markMerged(id, prUrl, commit)
+prd.stories.setWorkingBranch(id, branch)
+prd.stories.setPrUrl(id, url)
+
+// Run state
+prd.runState.get()               // Current execution state
+prd.runState.update({ status: 'running', current_story: id })
+prd.runState.reset()             // Clear current execution
+
+// Execution log
+const logId = prd.executionLog.start(storyId, attempt)
+prd.executionLog.complete(logId, { input: 1000, output: 500 }, duration)
+prd.executionLog.fail(logId, errorMessage)
+prd.executionLog.getTotals()     // Aggregate metrics
+
+// Checkpoints
+prd.checkpoints.save(storyId, 'branch_created', { branch })
+prd.checkpoints.get(storyId, 'branch_created')
+prd.checkpoints.clear(storyId)
+
+// Convenience
+prd.getPRD('v0.1')               // Full PRD with enriched stories
+prd.getAllPRDs()                 // Combined across versions
 ```
 
-## Connection
+## Seeding Data
 
-The database connection is a singleton. First call to `getDb()` initializes:
-1. Opens/creates `dashboard.db`
-2. Enables WAL mode and foreign keys
-3. Runs pending migrations
-4. Returns the connection
+Import PRD data from JSON files:
 
-Subsequent calls return the same connection.
+```bash
+cd tools/ralph/dashboard
+npx tsx src/lib/db/import-prd.ts
+```
+
+This reads from `tools/ralph/cli/prd/*.json` and populates the SQLite tables.
 
 ## File Location
 
 ```
 tools/ralph/dashboard/
-├── dashboard.db          # SQLite database file
+├── dashboard.db              # SQLite database (gitignored)
 └── src/lib/db/
-    ├── index.ts          # Connection + operations
-    └── migrations/       # SQL migration files
+    ├── index.ts              # Connection, tasks, settings
+    ├── prd.ts                # PRD operations
+    ├── import-prd.ts         # JSON → SQLite seeder
+    └── migrations/
         ├── 001_tasks.sql
         ├── 002_task_context.sql
         ├── 003_settings.sql
-        └── 004_task_soft_delete.sql
+        ├── 004_task_soft_delete.sql
+        ├── 005_prd.sql
+        └── 006_execution_log.sql
 ```
-
-The `.db` file is gitignored. Each developer has their own local database.
