@@ -16,12 +16,14 @@ import {
   ClipboardList,
   Menu,
   X,
+  Play,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TaskIndicator } from '@/components/task-indicator'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/run', label: 'Run', icon: Play },
   { href: '/stories', label: 'Stories', icon: ListTodo },
   { href: '/graph', label: 'Graph', icon: GitBranch },
   { href: '/terminal', label: 'Terminal', icon: TerminalSquare },

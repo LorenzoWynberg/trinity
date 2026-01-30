@@ -77,6 +77,8 @@ This persists across sessions, so resuming after a break continues with context.
 
 ## Implementation
 
+### CLI (Elvish)
+
 Key functions in `lib/prd.elv`:
 
 - `score-story` - Calculate composite score
@@ -84,5 +86,18 @@ Key functions in `lib/prd.elv`:
 - `calc-tag-overlap` - Jaccard similarity
 - `calc-blocker-value` - Count downstream dependents
 - `get-next-story` - Scores all candidates, returns highest
+
+### Dashboard (TypeScript)
+
+The same algorithm is implemented in `dashboard/src/lib/scoring.ts`:
+
+- `scoreStory()` - Calculate composite score
+- `calcTreeProximity()` - Phase/epic distance
+- `calcTagOverlap()` - Jaccard similarity
+- `calcBlockerValue()` - Count downstream dependents
+- `getNextStory()` - Returns highest scoring story
+- `getScoredStories()` - Returns all runnable stories with scores (for UI display)
+
+The Run page shows the story queue with scoring breakdown for transparency.
 
 The scoring happens automatically - no flags needed.
