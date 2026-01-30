@@ -380,64 +380,34 @@ prompts/
 
 **Token optimization:** Minimal context in, structured JSON out. No prose, no fluff. Schema-constrained responses.
 
-## Reference Implementation
+## Working on Ralph Dashboard
 
-See `examples/jetbrains-elvish/` for patterns Trinity will port to Go:
-- `ralph.elv` - Full loop implementation
-- `prd.json` - 60+ stories with dependencies
-- `prompt.md` - Story execution template
+Ralph is a Next.js dashboard for managing the autonomous development loop. Located at `tools/ralph/dashboard/`.
 
-## Working on Ralph
+### Key directories
 
-When working on Ralph (`tools/ralph/`):
+- `src/app/` - Next.js pages and API routes
+- `src/components/` - React components
+- `src/lib/` - Core logic (data, execution, scoring, git, db)
+- `src/lib/db/` - SQLite database with migrations
 
-1. **Always read the learnings files first**:
-   - `docs/learnings/ralph.md` - Ralph-specific patterns (state management, PR flow, release workflow)
-   - `docs/learnings/elvish.md` - Elvish language gotchas (arity mismatches, value vs byte pipelines, map access)
+### Data storage
 
-2. **Update learnings when fixing bugs**: When you fix a bug or discover a new pattern, add it to the appropriate learnings file. Gotchas stay with their category:
-   - Elvish language gotchas → `elvish.md`
-   - Ralph-specific gotchas → `ralph.md`
-   - No separate gotchas file - keep them organized by topic.
+- **SQLite** (`dashboard.db`) - Tasks, settings
+- **JSON files** (`tools/ralph/cli/`) - PRD versions, state, metrics (legacy, may migrate to SQLite)
 
-3. **Keep the CLI flags table up to date**: When adding, removing, or renaming flags:
-   - Update the "CLI Commands & Flags" section in `docs/learnings/ralph.md`
-   - Update the help text in `tools/ralph/cli/lib/ui.elv`
-   - If it's an auto flag, update the yolo mode description in both places
+### Running the dashboard
 
-4. **Always update the activity logs** after making changes:
-   - Location: `logs/activity/ralph/YYYY-MM-DD.md`
-   - Use YAML frontmatter for machine-readable metadata
-   - Group related changes under clear section headers
+```bash
+cd tools/ralph/dashboard
+pnpm dev
+```
 
-   **Activity log format:**
-   ```markdown
-   ---
-   title: "Brief description of work"
-   time: "YYYY-MM-DD ~HH:MM CR"
-   status: complete
-   files_changed:
-     - tools/ralph/cli/file1.elv
-     - tools/ralph/cli/file2.elv
-   files_created:
-     - docs/knowledge/ralph-cli/new-file.md
-   tags: [checkpoint, state, resume]
-   ---
+### Activity logs
 
-   ## Brief Description of Work
-
-   **Time:** YYYY-MM-DD ~HH:MM CR
-
-   ### What was done
-   Description of changes...
-
-   ### Files modified
-   - `path/to/file` - What changed
-
-   ---
-   ```
-
-Ralph is written in Elvish shell. The learnings files capture hard-won knowledge about its quirks and patterns.
+After making changes, update the activity log:
+- Location: `logs/activity/ralph/YYYY-MM-DD.md`
+- Group related changes under clear section headers
 
 ### resetProject shorthand
 
