@@ -45,3 +45,6 @@ ngrok.yml
 dashboard.db
 dashboard.db-wal
 dashboard.db-shm
+
+# backup
+/backup/
