@@ -21,7 +21,7 @@ export default async function StoriesPage({ searchParams }: PageProps) {
   let currentVersion: string
   if (selectedVersion && versions.includes(selectedVersion)) {
     currentVersion = selectedVersion
-  } else if (settings.defaultVersion !== 'first' && versions.includes(settings.defaultVersion)) {
+  } else if (settings.defaultVersion && versions.includes(settings.defaultVersion)) {
     currentVersion = settings.defaultVersion
   } else {
     currentVersion = versions.length > 0 ? versions[0] : 'v0.1'

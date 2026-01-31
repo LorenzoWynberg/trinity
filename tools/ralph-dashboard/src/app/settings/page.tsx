@@ -29,7 +29,7 @@ export default function SettingsPage() {
   const loading = settingsLoading || versionsLoading
 
   // Derive dashboard URL - user input takes precedence over settings
-  const dashboardUrlInput = userDashboardUrl ?? settings?.dashboardUrl ?? 'http://localhost:3000'
+  const dashboardUrlInput = userDashboardUrl ?? settings?.dashboardUrl ?? 'http://localhost:4000'
 
   const saveTheme = (newTheme: string) => {
     setTheme(newTheme)
@@ -127,7 +127,7 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-3 block">Default Version</label>
-              <Select value={settings?.defaultVersion || versions[0] || ''} onValueChange={saveDefaultVersion} disabled={loading || updateSettings.isPending}>
+              <Select value={versions.includes(settings?.defaultVersion || '') ? settings?.defaultVersion : versions[0] || ''} onValueChange={saveDefaultVersion} disabled={loading || updateSettings.isPending}>
                 <SelectTrigger className="w-[200px]">
                   {loading ? (
                     <div className="flex items-center gap-2">
@@ -223,7 +223,7 @@ export default function SettingsPage() {
                 <Input
                   value={dashboardUrlInput}
                   onChange={(e) => setUserDashboardUrl(e.target.value)}
-                  placeholder="http://localhost:3000"
+                  placeholder="http://localhost:4000"
                   className="w-[300px]"
                   disabled={loading}
                 />

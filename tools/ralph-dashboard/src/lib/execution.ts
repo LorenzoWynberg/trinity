@@ -101,7 +101,7 @@ async function buildPrompt(
   const template = await loadPromptTemplate()
 
   // Get settings
-  const dashboardUrl = settings.get('dashboardUrl') || 'http://localhost:3000'
+  const dashboardUrl = settings.get('dashboardUrl') || 'http://localhost:4000'
   const timezone = settings.get('timezone') || 'UTC'
 
   // Build feedback section from all context

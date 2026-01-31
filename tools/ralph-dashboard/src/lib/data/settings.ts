@@ -18,9 +18,9 @@ const defaultSettings: Settings = {
   graphDirection: 'horizontal',
   showDeadEnds: false,
   showExternalDeps: false,
-  defaultVersion: 'first',
+  defaultVersion: '',
   timezone: 'UTC',
-  dashboardUrl: 'http://localhost:3000'
+  dashboardUrl: 'http://localhost:4000'
 }
 
 export async function getSettings(): Promise<Settings> {
