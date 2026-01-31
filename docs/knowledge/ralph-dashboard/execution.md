@@ -166,26 +166,45 @@ Controls execution:
 
 ### POST `/api/signal`
 
-Claude calls this to signal story completion:
+Claude calls this to signal story status:
 ```json
 {
   "storyId": "v0.1:1.1.1",
-  "action": "complete" | "blocked" | "progress",
+  "action": "passed" | "merged" | "blocked" | "progress",
   "message": "Optional status message",
-  "prUrl": "Optional PR URL"
+  "prUrl": "Optional PR URL",
+  "mergeCommit": "Optional merge commit SHA (for merged action)"
 }
 ```
 
+**Actions:**
+| Action | Description | Sets |
+|--------|-------------|------|
+| `passed` | Work done, PR created | `passes=true` |
+| `merged` | PR merged to base branch | `merged=true` |
+| `blocked` | Story is blocked | `run_state.status=blocked` |
+| `progress` | Progress update | (SSE event only) |
+
 This replaces the old XML signal parsing from Claude output. Claude uses curl to call this endpoint as its final action when completing a story.
+
+Both `passed` and `merged` emit SSE events that trigger the dashboard queue to refresh immediately.
 
 ## Signal Flow
 
+**Two-stage completion:**
 ```
+Stage 1 - Passed (work done):
 1. Dashboard starts Claude with story prompt
-2. Claude implements story, commits, pushes
-3. Claude calls POST /api/signal with action=complete
-4. Dashboard polls for up to 30s waiting for story.passes=true
-5. Dashboard proceeds to PR/merge flow
+2. Claude implements story, commits, pushes, creates PR
+3. Claude calls POST /api/signal with action=passed
+4. Dashboard updates story.passes=true
+5. Dashboard proceeds to review/merge flow
+
+Stage 2 - Merged (fully complete):
+6. After PR review/merge
+7. Call POST /api/signal with action=merged
+8. Dashboard updates story.merged=true
+9. Story queue refreshes, dependencies unblock
 ```
 
 If Claude gets blocked:

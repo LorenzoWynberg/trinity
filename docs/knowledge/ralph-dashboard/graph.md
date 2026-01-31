@@ -36,3 +36,21 @@ Save and manage custom node arrangements per version.
 - Layouts stored per version in `graph-layouts-<version>.json`
 
 **API endpoint:** `/api/graph-layout`
+
+## Story ID Format
+
+Stories use version-prefixed IDs for uniqueness across versions:
+
+```
+v0.1:1.2.3
+ │    └── Story number (phase.epic.story)
+ └── Version prefix
+```
+
+This allows the same story number (e.g., 1.1.1) to exist in multiple versions without conflict.
+
+## Interactions
+
+- **Click** - Highlight dependency chain (all ancestors)
+- **Double-click** - Open story modal
+- **Click background** - Clear highlighting

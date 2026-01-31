@@ -6,8 +6,12 @@ The dashboard is a Next.js app for viewing PRD status, running Ralph, and managi
 
 ## Terminology
 
-- **Passed** = Claude finished the work (not "completed")
-- **Merged** = PR merged to base branch
+| Term | UI Label | Backend Field | Meaning |
+|------|----------|---------------|---------|
+| Passed | "Passed" (yellow) | `passes=true` | Claude finished work, PR created |
+| Merged | "Completed" (green) | `merged=true` | PR merged to base branch |
+
+**Note:** UI shows "Completed" for user-friendliness, but backend checks `merged` field.
 
 ## Pages
 
