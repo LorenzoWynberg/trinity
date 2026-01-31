@@ -42,7 +42,27 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+
+    // Validate required fields
+    if (!body.title || typeof body.title !== 'string' || body.title.trim() === '') {
+      return NextResponse.json({ error: 'title is required' }, { status: 400 })
+    }
+    if (!body.content || typeof body.content !== 'string' || body.content.trim() === '') {
+      return NextResponse.json({ error: 'content is required' }, { status: 400 })
+    }
+
+    // Validate book if provided
+    const validBooks = ['knowledge', 'gotchas']
     const book = body.book || 'knowledge'
+    if (!validBooks.includes(book)) {
+      return NextResponse.json({ error: `Invalid book: ${book}. Must be one of: ${validBooks.join(', ')}` }, { status: 400 })
+    }
+
+    // Validate source if provided
+    const validSources = ['claude', 'user', 'import']
+    if (body.source && !validSources.includes(body.source)) {
+      return NextResponse.json({ error: `Invalid source: ${body.source}. Must be one of: ${validSources.join(', ')}` }, { status: 400 })
+    }
 
     // Determine which db to use
     const db = book === 'gotchas' ? gotchasDb : knowledgeDb

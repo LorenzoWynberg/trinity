@@ -22,6 +22,26 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
+    // Validate required fields
+    if (!body.title || typeof body.title !== 'string' || body.title.trim() === '') {
+      return NextResponse.json({ error: 'title is required' }, { status: 400 })
+    }
+    if (!body.content || typeof body.content !== 'string' || body.content.trim() === '') {
+      return NextResponse.json({ error: 'content is required' }, { status: 400 })
+    }
+
+    // Validate project if provided
+    const validProjects = ['ralph', 'trinity']
+    if (body.project && !validProjects.includes(body.project)) {
+      return NextResponse.json({ error: `Invalid project: ${body.project}. Must be one of: ${validProjects.join(', ')}` }, { status: 400 })
+    }
+
+    // Validate status if provided
+    const validStatuses = ['complete', 'in_progress', 'blocked']
+    if (body.status && !validStatuses.includes(body.status)) {
+      return NextResponse.json({ error: `Invalid status: ${body.status}. Must be one of: ${validStatuses.join(', ')}` }, { status: 400 })
+    }
+
     const log = activityDb.create({
       project: body.project || 'trinity',
       date: body.date,

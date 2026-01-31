@@ -18,14 +18,23 @@ interface SignalBody {
   prUrl?: string
 }
 
+const VALID_ACTIONS = ['complete', 'blocked', 'progress'] as const
+
 // POST /api/signal - Claude signals story status
 export async function POST(request: NextRequest) {
   try {
     const body: SignalBody = await request.json()
     const { storyId, action, message, prUrl } = body
 
-    if (!storyId || !action) {
-      return NextResponse.json({ error: 'storyId and action are required' }, { status: 400 })
+    // Validate required fields
+    if (!storyId || typeof storyId !== 'string') {
+      return NextResponse.json({ error: 'storyId is required' }, { status: 400 })
+    }
+    if (!action || typeof action !== 'string') {
+      return NextResponse.json({ error: 'action is required' }, { status: 400 })
+    }
+    if (!VALID_ACTIONS.includes(action as any)) {
+      return NextResponse.json({ error: `Invalid action: ${action}. Valid actions: ${VALID_ACTIONS.join(', ')}` }, { status: 400 })
     }
 
     const story = prd.stories.get(storyId)
@@ -89,7 +98,8 @@ export async function POST(request: NextRequest) {
       }
 
       case 'progress': {
-        // Just a progress update - no state change
+        // Progress update - emit SSE event for dashboard
+        emit('story_update', { storyId, status: 'progress', message })
         return NextResponse.json({
           success: true,
           storyId,
