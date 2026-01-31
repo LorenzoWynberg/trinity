@@ -4,6 +4,7 @@ import { ProgressBar } from '@/components/progress-bar'
 import { CurrentWork } from '@/components/current-work'
 import { VersionSelector } from '@/components/version-selector'
 import { BlockedStories } from '@/components/blocked-stories'
+import { AlignCard } from '@/components/align-card'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ListTodo, CheckCircle, Coins, Clock } from 'lucide-react'
 
@@ -139,8 +140,18 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         <CurrentWork state={state} story={currentStory} lastCompletedStory={lastCompletedStory} />
       </div>
 
-      {/* Blocked Stories */}
-      <BlockedStories blocked={blocked} unmergedPassed={unmergedPassed} />
+      {/* Blocked Stories & Align */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          <BlockedStories blocked={blocked} unmergedPassed={unmergedPassed} />
+        </div>
+        <AlignCard
+          version={currentVersion}
+          versions={versions}
+          phases={prd.phases}
+          epics={prd.epics}
+        />
+      </div>
     </div>
   )
 }
