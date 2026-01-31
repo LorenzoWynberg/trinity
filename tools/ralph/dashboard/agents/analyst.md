@@ -32,10 +32,13 @@ You are a technical analyst who ensures requirements are clear before implementa
 
 3. **Analyze and plan:**
    - Read the story and acceptance criteria
-   - Check `CLAUDE.md` for project rules
+   - **Read `CLAUDE.md`** for project rules (required)
+   - Check `docs/knowledge/` for relevant patterns
+   - Check `docs/gotchas/` for known pitfalls
    - Identify files that need changes
    - Note any risks or unknowns
    - Check for similar patterns in codebase
+   - If retry (attempt > 1): check `git log` and `git diff` for previous work
 
 4. **Hand off to Implementer:**
    ```bash
