@@ -4,20 +4,31 @@ import { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Play, GitBranch, CheckCircle, Clock, User, ArrowRight, RotateCcw } from 'lucide-react'
 import { RunModal } from '@/components/run-modal'
 import { useVersions, useExecutionStatus, useHandoffs } from '@/lib/query'
 
 export default function RunPage() {
   const [modalOpen, setModalOpen] = useState(false)
-  const [userSelectedVersion, _setUserSelectedVersion] = useState<string | null>(null)
+  const [selectedVersion, setSelectedVersion] = useState<string>('v0.1')
 
   // Fetch versions
   const { data: versionsData } = useVersions()
   const versions = useMemo(() => versionsData?.versions || [], [versionsData?.versions])
 
-  // Use user selection or default to first version
-  const selectedVersion = userSelectedVersion ?? versions[0] ?? 'v0.1'
+  // Set default version when versions load
+  useMemo(() => {
+    if (versions.length > 0 && !versions.includes(selectedVersion)) {
+      setSelectedVersion(versions[0])
+    }
+  }, [versions, selectedVersion])
 
   // Fetch execution status (polls only when running)
   const { data: status } = useExecutionStatus(selectedVersion)
@@ -41,9 +52,21 @@ export default function RunPage() {
           <h1 className="text-2xl font-bold">Run</h1>
           <p className="text-muted-foreground">Execute the development loop</p>
         </div>
-        <Badge className={statusColor}>
-          {status?.state?.status?.replace('_', ' ') || 'idle'}
-        </Badge>
+        <div className="flex items-center gap-4">
+          <Select value={selectedVersion} onValueChange={setSelectedVersion}>
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="Version" />
+            </SelectTrigger>
+            <SelectContent>
+              {versions.map((v) => (
+                <SelectItem key={v} value={v}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Badge className={statusColor}>
+            {status?.state?.status?.replace('_', ' ') || 'idle'}
+          </Badge>
+        </div>
       </div>
 
       {/* Quick Actions */}
