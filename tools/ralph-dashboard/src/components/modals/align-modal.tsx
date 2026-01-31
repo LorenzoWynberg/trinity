@@ -82,23 +82,30 @@ type AlignModalProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   version: string
+  versions?: string[]
   phases?: Phase[]
   epics?: Epic[]
   initialTask?: Task | null
 }
 
-export function AlignModal({ open, onOpenChange, version, phases = [], epics = [], initialTask }: AlignModalProps) {
+export function AlignModal({ open, onOpenChange, version, versions = [], phases = [], epics = [], initialTask }: AlignModalProps) {
   const [step, setStep] = useState<'input' | 'analyze' | 'review' | 'preview' | 'complete'>('input')
   const [loading, setLoading] = useState(false)
   const [refineLoading, setRefineLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Input state
+  const [selectedVersion, setSelectedVersion] = useState(version)
   const [scope, setScope] = useState<AlignScope>('version')
   const [selectedPhase, setSelectedPhase] = useState<string>('')
   const [selectedEpic, setSelectedEpic] = useState<string>('')
   const [vision, setVision] = useState('')
   const [additionalInput, setAdditionalInput] = useState('')
+
+  // Reset selectedVersion when version prop changes
+  useEffect(() => {
+    setSelectedVersion(version)
+  }, [version])
 
   // Result state
   const [result, setResult] = useState<AlignResult | null>(null)
@@ -146,6 +153,7 @@ export function AlignModal({ open, onOpenChange, version, phases = [], epics = [
     setLoading(false)
     setRefineLoading(false)
     setError(null)
+    setSelectedVersion(version)
     setScope('version')
     setSelectedPhase('')
     setSelectedEpic('')
@@ -179,7 +187,7 @@ export function AlignModal({ open, onOpenChange, version, phases = [], epics = [
         returnPath: '/stories',
         step: 'review'
       }
-      await createTask('align', version, {
+      await createTask('align', selectedVersion, {
         scope,
         scopeId: getScopeId(),
         vision
@@ -199,7 +207,7 @@ export function AlignModal({ open, onOpenChange, version, phases = [], epics = [
 
     try {
       const refined = await api.prd.refineAlign({
-        version,
+        version: selectedVersion,
         previousAnalysis: result,
         additionalInput,
         scope,
@@ -228,7 +236,7 @@ export function AlignModal({ open, onOpenChange, version, phases = [], epics = [
       const newStories = result.new_stories?.filter((_, i) => selectedNew.has(i)) || []
       const removals = Array.from(selectedRemovals)
 
-      const data = await api.prd.applyAlignChanges(version, {
+      const data = await api.prd.applyAlignChanges(selectedVersion, {
         modifications,
         newStories,
         removals
@@ -301,7 +309,7 @@ export function AlignModal({ open, onOpenChange, version, phases = [], epics = [
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Target className="h-5 w-5" />
-            Align PRD ({version})
+            Align PRD
           </DialogTitle>
           <DialogDescription className="cyber-dark:text-secondary-foreground">
             {step === 'input' && 'Describe your vision to check PRD alignment'}
@@ -339,6 +347,23 @@ export function AlignModal({ open, onOpenChange, version, phases = [], epics = [
           {/* Step 1: Input */}
           {step === 'input' && (
             <div className="space-y-4">
+              {/* Version selection */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Version</label>
+                <Select value={selectedVersion} onValueChange={setSelectedVersion}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select version" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {versions.map(v => (
+                      <SelectItem key={v} value={v}>
+                        {v}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Scope selection */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Scope</label>

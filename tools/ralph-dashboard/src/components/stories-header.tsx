@@ -12,11 +12,12 @@ type StoriesHeaderProps = {
   totalStories: number
   phaseCount: number
   version: string
+  versions?: string[]
   phases?: Phase[]
   epics?: Epic[]
 }
 
-export function StoriesHeader({ totalStories, phaseCount, version, phases = [], epics = [] }: StoriesHeaderProps) {
+export function StoriesHeader({ totalStories, phaseCount, version, versions = [], phases = [], epics = [] }: StoriesHeaderProps) {
   const [refineOpen, setRefineOpen] = useState(false)
   const [generateOpen, setGenerateOpen] = useState(false)
   const [storyEditOpen, setStoryEditOpen] = useState(false)
@@ -142,6 +143,7 @@ export function StoriesHeader({ totalStories, phaseCount, version, phases = [], 
         open={alignOpen}
         onOpenChange={handleAlignOpenChange}
         version={version}
+        versions={versions}
         phases={phases}
         epics={epics}
         initialTask={activeTask?.type === 'align' ? activeTask : undefined}
