@@ -72,7 +72,6 @@ const STEP_LABELS: Record<RunStep, string> = {
 
 export function RunModal({ open, onOpenChange, initialVersion = 'v0.1' }: RunModalProps) {
   // Config state
-  const [versions, setVersions] = useState<string[]>([])
   const [stories, setStories] = useState<Story[]>([])
   const [scoredStories, setScoredStories] = useState<StoryScore[]>([])
   const [config, setConfig] = useState<RunConfig>({
@@ -109,14 +108,10 @@ export function RunModal({ open, onOpenChange, initialVersion = 'v0.1' }: RunMod
   // Agent handoffs (polls during execution)
   const { data: handoffState } = useHandoffs(currentStory?.id)
 
-  // Fetch versions on mount
+  // Sync version with page prop
   useEffect(() => {
-    if (open) {
-      api.prd.getVersions()
-        .then(data => {
-          setVersions(data.versions || [])
-        })
-        .catch(console.error)
+    if (initialVersion && initialVersion !== config.version) {
+      setConfig(prev => ({ ...prev, version: initialVersion }))
     }
   }, [open])
 
@@ -448,23 +443,6 @@ export function RunModal({ open, onOpenChange, initialVersion = 'v0.1' }: RunMod
           {step === 'config' && (
             <div className="space-y-6">
               <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Version</label>
-                  <Select
-                    value={config.version}
-                    onValueChange={(v) => setConfig(prev => ({ ...prev, version: v }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {versions.map(v => (
-                        <SelectItem key={v} value={v}>{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 <div>
                   <label className="text-sm font-medium mb-2 block">Story</label>
                   <Select
