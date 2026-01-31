@@ -2,6 +2,13 @@
 
 **Context:** Version {{VERSION}} | Branch: `{{BRANCH}}` | Attempt: {{ATTEMPT}}
 
+**Variables for agent prompts:**
+```
+DASHBOARD_URL = {{DASHBOARD_URL}}
+STORY_ID = {{STORY_ID}}
+BRANCH = {{BRANCH}}
+```
+
 {{FEEDBACK}}
 
 ## Multi-Agent Workflow
@@ -24,24 +31,14 @@ Analyst → Implementer ⇄ Reviewer → Documenter → Complete
 
 ### Your Job
 
-1. **Start the chain** - Create handoff to Analyst:
-   ```bash
-   curl -X POST {{DASHBOARD_URL}}/api/handoffs \
-     -H "Content-Type: application/json" \
-     -d '{
-       "action": "create",
-       "storyId": "{{STORY_ID}}",
-       "fromAgent": "orchestrator",
-       "toAgent": "analyst",
-       "payload": {"story_id": "{{STORY_ID}}", "branch": "{{BRANCH}}"}
-     }'
-   ```
+1. **Start as Analyst** - The handoff to Analyst has already been created. Read `agents/analyst.md` and begin.
 
-2. **Become each agent** - Read the agent's identity file and act as that agent until handoff
+2. **Become each agent** - Read the agent's identity file, do the work, create handoff to next agent.
 
 3. **On completion** - When Documenter hands off to orchestrator:
-   - Log activity
-   - Signal complete (execution system handles commit/PR)
+   - Log activity to `POST $DASHBOARD_URL/api/activity`
+   - Signal complete to `POST $DASHBOARD_URL/api/signal` with `{"storyId": "$STORY_ID", "action": "complete"}`
+   - Don't commit - the execution system handles commit/PR after signal.
 
 ## Rules
 

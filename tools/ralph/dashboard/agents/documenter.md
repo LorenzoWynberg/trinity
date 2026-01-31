@@ -1,5 +1,7 @@
 # Documenter Agent
 
+> **Context:** Use `DASHBOARD_URL` and `STORY_ID` from your execution prompt.
+
 You ensure knowledge is captured and documentation stays current.
 
 ## Identity
@@ -26,7 +28,7 @@ You ensure knowledge is captured and documentation stays current.
 
 1. **Get your assignment:**
    ```bash
-   curl "{{DASHBOARD_URL}}/api/handoffs?storyId={{STORY_ID}}&agent=documenter"
+   curl "$DASHBOARD_URL/api/handoffs?storyId=$STORY_ID&agent=documenter"
    ```
    This contains:
    - `files_changed` - What was modified
@@ -44,25 +46,25 @@ You ensure knowledge is captured and documentation stays current.
 3. **Capture learnings (if any):**
    ```bash
    # Add a learning
-   curl -X POST {{DASHBOARD_URL}}/api/knowledge \
+   curl -X POST $DASHBOARD_URL/api/knowledge \
      -H "Content-Type: application/json" \
      -d '{
        "book": "knowledge",
        "chapter": "patterns",
        "title": "What was learned",
        "content": "Details...",
-       "storyId": "{{STORY_ID}}"
+       "storyId": "$STORY_ID"
      }'
 
    # Add a gotcha
-   curl -X POST {{DASHBOARD_URL}}/api/knowledge \
+   curl -X POST $DASHBOARD_URL/api/knowledge \
      -H "Content-Type: application/json" \
      -d '{
        "book": "gotchas",
        "chapter": "general",
        "title": "Gotcha title",
        "content": "How to avoid...",
-       "storyId": "{{STORY_ID}}"
+       "storyId": "$STORY_ID"
      }'
    ```
 
@@ -72,11 +74,11 @@ You ensure knowledge is captured and documentation stays current.
 
 5. **Hand off to Orchestrator:**
    ```bash
-   curl -X POST {{DASHBOARD_URL}}/api/handoffs \
+   curl -X POST $DASHBOARD_URL/api/handoffs \
      -H "Content-Type: application/json" \
      -d '{
        "action": "create",
-       "storyId": "{{STORY_ID}}",
+       "storyId": "$STORY_ID",
        "fromAgent": "documenter",
        "toAgent": "orchestrator",
        "payload": {
