@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Loader2, Sparkles, Wand2, CheckCircle, AlertCircle, ChevronRight, ChevronLeft, Pencil, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { api } from '@/lib/api'
 import { useTaskContext, type Task, type TaskContext } from '@/components/task-provider'
 
 type Refinement = {
@@ -131,47 +132,38 @@ export function RefineStoriesModal({ open, onOpenChange, version, initialTask }:
 
     setEditLoading(true)
     try {
-      const res = await fetch('/api/prd/refine/edit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          storyId: id,
-          title: ref.title,
-          currentDescription: ref.suggested_description,
-          currentAcceptance: ref.suggested_acceptance,
-          userFeedback: editPrompt,
-          tags: ref.tags,
-          depends_on: ref.depends_on,
-          allRefinements: refinements
-        })
+      const data = await api.prd.editRefinement({
+        storyId: id,
+        title: ref.title,
+        currentDescription: ref.suggested_description,
+        currentAcceptance: ref.suggested_acceptance,
+        userFeedback: editPrompt,
+        tags: ref.tags,
+        depends_on: ref.depends_on,
+        allRefinements: refinements
       })
-      const data = await res.json()
 
-      if (data.error) {
-        setError(data.error)
-      } else {
-        setRefinements(prev => prev.map(r => {
-          if (r.id === id && data.target) {
-            return {
-              ...r,
-              suggested_description: data.target.suggested_description,
-              suggested_acceptance: data.target.suggested_acceptance
-            }
+      setRefinements(prev => prev.map(r => {
+        if (r.id === id && data.target) {
+          return {
+            ...r,
+            suggested_description: data.target.suggested_description,
+            suggested_acceptance: data.target.suggested_acceptance
           }
-          const relatedUpdate = (data.related_updates || []).find((u: any) => u.id === r.id)
-          if (relatedUpdate) {
-            return {
-              ...r,
-              suggested_description: relatedUpdate.suggested_description || r.suggested_description,
-              suggested_acceptance: relatedUpdate.suggested_acceptance || r.suggested_acceptance,
-              issues: [...r.issues, `Updated due to changes in ${id}: ${relatedUpdate.reason}`]
-            }
+        }
+        const relatedUpdate = (data.related_updates || []).find((u: any) => u.id === r.id)
+        if (relatedUpdate) {
+          return {
+            ...r,
+            suggested_description: relatedUpdate.suggested_description || r.suggested_description,
+            suggested_acceptance: relatedUpdate.suggested_acceptance || r.suggested_acceptance,
+            issues: [...r.issues, `Updated due to changes in ${id}: ${relatedUpdate.reason}`]
           }
-          return r
-        }))
-        setEditingId(null)
-        setEditPrompt('')
-      }
+        }
+        return r
+      }))
+      setEditingId(null)
+      setEditPrompt('')
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -187,19 +179,9 @@ export function RefineStoriesModal({ open, onOpenChange, version, initialTask }:
     const toApply = refinements.filter(r => selectedIds.has(r.id))
 
     try {
-      const res = await fetch('/api/prd/refine', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ version, refinements: toApply })
-      })
-      const data = await res.json()
-
-      if (data.error) {
-        setError(data.error)
-      } else {
-        setAppliedCount(data.applied)
-        setStep('complete')
-      }
+      const data = await api.prd.applyRefinements(version, toApply)
+      setAppliedCount(data.applied)
+      setStep('complete')
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -552,19 +534,9 @@ export function StoryEditModal({ open, onOpenChange, version, initialTask, story
     }
 
     try {
-      const res = await fetch('/api/prd/story', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ version, updates })
-      })
-      const data = await res.json()
-
-      if (data.error) {
-        setError(data.error)
-      } else {
-        setAppliedCount(data.applied)
-        setStep('complete')
-      }
+      const data = await api.prd.applyStoryUpdates(version, updates)
+      setAppliedCount(data.applied)
+      setStep('complete')
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -928,19 +900,9 @@ export function GenerateStoriesModal({ open, onOpenChange, version, initialTask 
     const toAdd = stories.filter((_, i) => selectedIdxs.has(i))
 
     try {
-      const res = await fetch('/api/prd/generate', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ version, stories: toAdd })
-      })
-      const data = await res.json()
-
-      if (data.error) {
-        setError(data.error)
-      } else {
-        setAddedCount(data.added)
-        setStep('complete')
-      }
+      const data = await api.prd.addStories(version, toAdd)
+      setAddedCount(data.added)
+      setStep('complete')
     } catch (e: any) {
       setError(e.message)
     } finally {

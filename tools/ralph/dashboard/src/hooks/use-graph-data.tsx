@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Node, Edge, MarkerType } from '@xyflow/react'
+import { api } from '@/lib/api'
 import type { Story, StoryStatus, VersionInfo } from '@/lib/types'
 
 export type GraphLayoutData = {
@@ -470,17 +471,13 @@ export function useGraphData(version: string = 'all'): GraphData {
   useEffect(() => {
     async function fetchData() {
       try {
-        const versionParam = version !== 'all' ? `?version=${version}` : ''
-        const [prdRes, stateRes, versionsRes, layoutRes] = await Promise.all([
-          fetch(`/api/prd${versionParam}`),
-          fetch('/api/state'),
-          fetch('/api/versions'),
+        const [prd, state, versionsData, layoutRes] = await Promise.all([
+          api.prd.get(version !== 'all' ? version : undefined),
+          api.run.getState(),
+          api.prd.getVersionsWithProgress(),
           fetch(`/api/graph-layout?version=${version}`),
         ])
 
-        const prd = await prdRes.json()
-        const state = await stateRes.json()
-        const versionsData = await versionsRes.json()
         const savedLayoutData: GraphLayoutData = await layoutRes.json()
         const currentStoryId = state?.current_story || null
 

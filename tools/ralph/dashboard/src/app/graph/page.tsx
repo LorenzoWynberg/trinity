@@ -24,6 +24,7 @@ import { VersionNode } from '@/components/version-node'
 import { StoryModal } from '@/components/story-modal'
 import { useGraphData, resolveDependency, GraphLayoutData } from '@/hooks/use-graph-data'
 import { cn } from '@/lib/utils'
+import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -96,8 +97,7 @@ function GraphContent() {
 
   // Load settings on mount
   useEffect(() => {
-    fetch('/api/settings')
-      .then(res => res.json())
+    api.settings.get()
       .then(data => {
         if (data.showDeadEnds !== undefined) {
           setShowDeadEnds(data.showDeadEnds)
@@ -113,22 +113,14 @@ function GraphContent() {
   const toggleDeadEnds = useCallback(() => {
     const newValue = !showDeadEnds
     setShowDeadEnds(newValue)
-    fetch('/api/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ showDeadEnds: newValue })
-    }).catch(() => {})
+    api.settings.update({ showDeadEnds: newValue }).catch(() => {})
   }, [showDeadEnds])
 
   // Save showExternalDeps setting when toggled
   const toggleExternalDeps = useCallback(() => {
     const newValue = !showExternalDeps
     setShowExternalDeps(newValue)
-    fetch('/api/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ showExternalDeps: newValue })
-    }).catch(() => {})
+    api.settings.update({ showExternalDeps: newValue }).catch(() => {})
   }, [showExternalDeps])
 
   // Check for fullscreen API support (not available on iOS Safari)

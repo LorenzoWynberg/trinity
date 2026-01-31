@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Coins, Clock, Hash, TrendingUp, CheckCircle, GitPullRequest, GitMerge } from 'lucide-react'
+import { api } from '@/lib/api'
 import type { Metrics, Story } from '@/lib/types'
 
 function formatDuration(seconds: number): string {
@@ -53,15 +54,11 @@ export default function MetricsPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [metricsRes, prdRes, versionsRes] = await Promise.all([
-          fetch('/api/metrics'),
-          fetch('/api/prd'),
-          fetch('/api/versions'),
+        const [metricsData, prdData, versionsData] = await Promise.all([
+          api.metrics.get(),
+          api.prd.get(),
+          api.prd.getVersions(),
         ])
-
-        const metricsData = await metricsRes.json()
-        const prdData = await prdRes.json()
-        const versionsData = await versionsRes.json()
 
         setMetrics(metricsData)
         setStories(prdData?.stories || [])

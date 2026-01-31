@@ -28,6 +28,7 @@ import {
   Square,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { api } from '@/lib/api'
 import type { Story } from '@/lib/types'
 
 type RunStep = 'config' | 'ext-deps' | 'validation' | 'execute' | 'review' | 'done'
@@ -107,8 +108,7 @@ export function RunModal({ open, onOpenChange, initialVersion = 'v0.1' }: RunMod
   // Fetch versions on mount
   useEffect(() => {
     if (open) {
-      fetch('/api/versions')
-        .then(res => res.json())
+      api.prd.getVersions()
         .then(data => {
           setVersions(data.versions || [])
         })
@@ -119,6 +119,7 @@ export function RunModal({ open, onOpenChange, initialVersion = 'v0.1' }: RunMod
   // Fetch stories when version changes
   useEffect(() => {
     if (open && config.version) {
+      // Fetch scored stories for smart selection
       fetch(`/api/run?version=${config.version}`)
         .then(res => res.json())
         .then(data => {
@@ -128,8 +129,8 @@ export function RunModal({ open, onOpenChange, initialVersion = 'v0.1' }: RunMod
         })
         .catch(console.error)
 
-      fetch(`/api/prd?version=${config.version}`)
-        .then(res => res.json())
+      // Fetch PRD stories
+      api.prd.get(config.version)
         .then(data => {
           if (data.stories) {
             setStories(data.stories.filter((s: Story) => !s.merged && !s.skipped))

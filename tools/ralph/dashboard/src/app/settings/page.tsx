@@ -13,10 +13,10 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Sun, Moon, Monitor, Zap, Clock, Loader2, Globe } from 'lucide-react'
+import { api } from '@/lib/api'
 
 export default function SettingsPage() {
   const { theme, resolvedTheme, setTheme } = useTheme()
-  // Use resolvedTheme for display (actual applied theme), theme for system detection
   const currentTheme = theme === 'system' ? 'system' : resolvedTheme
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -28,21 +28,19 @@ export default function SettingsPage() {
   const [savingTimezone, setSavingTimezone] = useState(false)
   const [savingDashboardUrl, setSavingDashboardUrl] = useState(false)
 
-  // Load settings on mount
   useEffect(() => {
     setMounted(true)
 
     async function loadSettings() {
       try {
         const [versionData, settingsData] = await Promise.all([
-          fetch('/api/versions').then(res => res.json()),
-          fetch('/api/settings').then(res => res.json())
+          api.prd.getVersions(),
+          api.settings.get(),
         ])
 
         const availableVersions = versionData.versions || []
         setVersions(availableVersions)
 
-        // Resolve 'first' or invalid version to actual first version
         const savedVersion = settingsData.defaultVersion
         if (savedVersion && savedVersion !== 'first' && availableVersions.includes(savedVersion)) {
           setDefaultVersion(savedVersion)
@@ -50,17 +48,14 @@ export default function SettingsPage() {
           setDefaultVersion(availableVersions[0])
         }
 
-        // Load timezone
         if (settingsData.timezone) {
           setTimezone(settingsData.timezone)
         }
 
-        // Load dashboard URL
         if (settingsData.dashboardUrl) {
           setDashboardUrl(settingsData.dashboardUrl)
         }
 
-        // Sync theme from DB to next-themes
         if (settingsData.theme) {
           setTheme(settingsData.theme)
         }
@@ -77,11 +72,7 @@ export default function SettingsPage() {
   const saveTheme = async (newTheme: string) => {
     setTheme(newTheme)
     try {
-      await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme: newTheme }),
-      })
+      await api.settings.update({ theme: newTheme as any })
     } catch (error) {
       console.error('Failed to save theme:', error)
     }
@@ -91,11 +82,7 @@ export default function SettingsPage() {
     setDefaultVersion(version)
     setSavingVersion(true)
     try {
-      await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ defaultVersion: version }),
-      })
+      await api.settings.update({ defaultVersion: version })
     } catch (error) {
       console.error('Failed to save default version:', error)
     } finally {
@@ -107,11 +94,7 @@ export default function SettingsPage() {
     setTimezone(tz)
     setSavingTimezone(true)
     try {
-      await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ timezone: tz }),
-      })
+      await api.settings.update({ timezone: tz })
     } catch (error) {
       console.error('Failed to save timezone:', error)
     } finally {
@@ -123,11 +106,7 @@ export default function SettingsPage() {
     setDashboardUrl(url)
     setSavingDashboardUrl(true)
     try {
-      await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dashboardUrl: url }),
-      })
+      await api.settings.update({ dashboardUrl: url })
     } catch (error) {
       console.error('Failed to save dashboard URL:', error)
     } finally {

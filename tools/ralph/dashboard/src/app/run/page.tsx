@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Play, GitBranch, CheckCircle, Clock } from 'lucide-react'
 import { RunModal } from '@/components/run-modal'
+import { api } from '@/lib/api'
 import type { Story } from '@/lib/types'
 import type { StoryScore } from '@/lib/scoring'
 
@@ -32,8 +33,7 @@ export default function RunPage() {
 
   // Fetch versions on mount
   useEffect(() => {
-    fetch('/api/versions')
-      .then(res => res.json())
+    api.prd.getVersions()
       .then(data => {
         setVersions(data.versions || [])
         if (data.versions?.length > 0) {
