@@ -13,10 +13,10 @@ export function ProgressBar({ label, value, max, className, href }: ProgressBarP
   const percentage = max > 0 ? Math.round((value / max) * 100) : 0
 
   const content = (
-    <div className={cn('space-y-2', href && 'cursor-pointer hover:opacity-80 transition-opacity', className)}>
+    <div className={cn('space-y-2 group', href && 'cursor-pointer transition-opacity', className)}>
       <div className="flex justify-between text-sm">
-        <span className={cn('font-medium', href && 'cyber-dark:hover:text-yellow-400')}>{label}</span>
-        <span className="text-muted-foreground">{value}/{max} ({percentage}%)</span>
+        <span className={cn('font-medium', href && 'group-hover:text-yellow-400 cyber-dark:group-hover:text-yellow-400')}>{label}</span>
+        <span className={cn('text-muted-foreground', href && 'group-hover:text-yellow-400 cyber-dark:group-hover:text-yellow-400')}>{value}/{max} ({percentage}%)</span>
       </div>
       <div className="h-2 bg-muted rounded-full overflow-hidden">
         <div

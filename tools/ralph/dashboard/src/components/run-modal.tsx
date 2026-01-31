@@ -317,7 +317,7 @@ export function RunModal({ open, onOpenChange, initialVersion = 'v0.1' }: RunMod
     if (data.status === 'idle') {
       // In autopilot mode, auto-continue to next story unless stopped
       if (config.mode === 'autopilot' && !stopAfterCurrent) {
-        addLog('Story complete. Autopilot continuing to next story...')
+        addLog('Story passed. Autopilot continuing to next story...')
 
         // Reset state for next story and continue
         setCurrentStory(null)
@@ -399,7 +399,7 @@ export function RunModal({ open, onOpenChange, initialVersion = 'v0.1' }: RunMod
             {step === 'validation' && 'Clarify story requirements'}
             {step === 'execute' && 'Claude is implementing the story'}
             {step === 'review' && 'Review the PR and decide next steps'}
-            {step === 'done' && 'Story completed successfully'}
+            {step === 'done' && 'Story passed - PR ready for review'}
           </DialogDescription>
         </DialogHeader>
 
@@ -799,7 +799,7 @@ export function RunModal({ open, onOpenChange, initialVersion = 'v0.1' }: RunMod
           {step === 'done' && (
             <div className="text-center py-8">
               <CheckCircle className="h-16 w-16 mx-auto text-green-500 mb-4" />
-              <p className="text-xl font-medium mb-2">Story Complete!</p>
+              <p className="text-xl font-medium mb-2">Story Passed!</p>
               {currentStory && (
                 <p className="text-muted-foreground mb-4">
                   {currentStory.id}: {currentStory.title}

@@ -202,9 +202,25 @@ export async function resetHard(): Promise<GitResult> {
 
 /**
  * Build branch name from story ID
+ * Follows pattern: feat/v<VERSION>/story-<PHASE>.<EPIC>.<STORY>
  */
-export function buildBranchName(storyId: string): string {
-  // Handle both "1.2.3" and "STORY-1.2.3" formats
-  const normalized = storyId.replace(/^STORY-/, '')
+export function buildBranchName(storyId: string, version?: string): string {
+  // Handle versioned IDs like "v0.1:1.2.3" or "v0.1:STORY-1.2.3"
+  let ver = version
+  let storyNumber = storyId
+
+  if (storyId.includes(':')) {
+    const [versionPart, rest] = storyId.split(':')
+    ver = ver || versionPart
+    storyNumber = rest
+  }
+
+  // Handle "STORY-1.2.3" format
+  const normalized = storyNumber.replace(/^STORY-/, '')
+
+  // Include version if available
+  if (ver) {
+    return `feat/${ver}/story-${normalized}`
+  }
   return `feat/story-${normalized}`
 }

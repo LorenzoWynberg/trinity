@@ -19,7 +19,7 @@ import fs from 'fs/promises'
 import os from 'os'
 import { randomUUID } from 'crypto'
 import type { Story, PRD } from './types'
-import { getNextStory, getRunnableStories, getScoredStories, type StoryScore } from './scoring'
+import { getNextStory, getRunnableStories, getScoredStories, getUpcomingStories, type StoryScore, type UpcomingStory } from './scoring'
 import * as state from './run-state'
 import * as git from './git'
 import * as prdDb from './db/prd'
@@ -375,17 +375,17 @@ export async function runIteration(
       const nextStory = getNextStory(prd, currentState.last_completed)
       story = nextStory || undefined
       if (!story) {
-        // Check if all complete
+        // Check if all merged
         const runnable = getRunnableStories(prd)
         if (runnable.length === 0) {
-          const allComplete = prd.stories.every(s => s.merged || s.skipped)
-          if (allComplete) {
+          const allMerged = prd.stories.every(s => s.merged || s.skipped)
+          if (allMerged) {
             return {
               status: 'complete',
               event: {
                 type: 'complete',
                 timestamp: new Date().toISOString(),
-                data: { message: 'All stories complete!' }
+                data: { message: 'All stories merged!' }
               }
             }
           }
@@ -509,7 +509,7 @@ export async function runIteration(
   // Create branch if needed
   const branchCheckpoint = await state.getCheckpoint(storyId, 'branch_created')
   if (!branch || !branchCheckpoint) {
-    branch = git.buildBranchName(storyId)
+    branch = git.buildBranchName(storyId, config.version)
     const branchResult = await git.createBranch(branch, config.baseBranch)
     if (!branchResult.success) {
       // Try checkout if branch exists
@@ -766,6 +766,7 @@ export async function getExecutionStatus(prd: PRD): Promise<{
   progress: { total: number; merged: number; passed: number; percentage: number }
   nextStory: Story | null
   scoredStories: StoryScore[]
+  upcomingStories: UpcomingStory[]
   agentState?: {
     currentAgent: string | null
     phase: string | null
@@ -775,6 +776,7 @@ export async function getExecutionStatus(prd: PRD): Promise<{
   const currentState = await state.readState()
   const nextStory = getNextStory(prd, currentState.last_completed)
   const scoredStories = getScoredStories(prd, currentState.last_completed)
+  const upcomingStories = getUpcomingStories(prd)
 
   const total = prd.stories.length
   const merged = prd.stories.filter(s => s.merged).length
@@ -797,6 +799,7 @@ export async function getExecutionStatus(prd: PRD): Promise<{
     progress: { total, merged, passed, percentage },
     nextStory,
     scoredStories,
+    upcomingStories,
     agentState
   }
 }

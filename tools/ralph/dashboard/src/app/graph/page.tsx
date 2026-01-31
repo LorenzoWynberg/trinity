@@ -337,14 +337,13 @@ function GraphContent() {
     if (nodeId.startsWith('version:')) {
       const ver = nodeId.replace('version:', '')
       stories.filter(s => s.target_version === ver).forEach(s => {
-        getAncestors(`${ver}:${s.id}`, visited)
+        getAncestors(s.id, visited)
       })
       return visited
     }
 
-    const storyId = extractStoryId(nodeId)
-    const version = extractVersion(nodeId)
-    const story = stories.find(s => s.id === storyId && (!version || s.target_version === version))
+    // Story IDs in database already include version prefix (e.g., "v0.1:1.1.1")
+    const story = stories.find(s => s.id === nodeId)
     if (story?.depends_on && story.depends_on.length > 0) {
       story.depends_on.forEach(depRef => {
         // Whole version dep (e.g., "v1.0") - add version node and its stories
@@ -352,7 +351,7 @@ function GraphContent() {
           visited.add(`version:${depRef}`)
           // Also add all stories from that version
           stories.filter(s => s.target_version === depRef).forEach(s => {
-            getAncestors(`${depRef}:${s.id}`, visited)
+            getAncestors(s.id, visited)
           })
           return
         }
@@ -362,7 +361,7 @@ function GraphContent() {
     }
     // Don't add version as ancestor for root stories - version is at the END now
     return visited
-  }, [stories, extractStoryId, extractVersion])
+  }, [stories])
 
   // Build a set of leaf story IDs (stories nothing in same version depends on)
   const leafStoryIds = useMemo(() => {
@@ -380,8 +379,8 @@ function GraphContent() {
     })
     return new Set(
       stories
-        .filter(s => !dependedOn.has(`${s.target_version}:${s.id}`))
-        .map(s => `${s.target_version}:${s.id}`)
+        .filter(s => !dependedOn.has(s.id))
+        .map(s => s.id)
     )
   }, [stories])
 
@@ -410,17 +409,15 @@ function GraphContent() {
       if (id.startsWith('version:')) {
         const ver = id.replace('version:', '')
         stories.filter(s => s.target_version === ver).forEach(s => {
-          const storyNodeId = `${ver}:${s.id}`
-          if (ancestors.has(storyNodeId) && !nodeDepths.has(storyNodeId)) {
-            queue.push([storyNodeId, depth + 1])
+          if (ancestors.has(s.id) && !nodeDepths.has(s.id)) {
+            queue.push([s.id, depth + 1])
           }
         })
         continue
       }
 
-      const storyId = extractStoryId(id)
-      const version = extractVersion(id)
-      const story = stories.find(s => s.id === storyId && (!version || s.target_version === version))
+      // Story IDs in database already include version prefix (e.g., "v0.1:1.1.1")
+      const story = stories.find(s => s.id === id)
       if (story?.depends_on) {
         story.depends_on.forEach(depRef => {
           // Whole version dep - add version node to queue
@@ -467,9 +464,8 @@ function GraphContent() {
       if (ancestorId.startsWith('version:')) {
         const ver = ancestorId.replace('version:', '')
         stories.filter(s => s.target_version === ver).forEach(s => {
-          const storyNodeId = `${ver}:${s.id}`
-          if (ancestors.has(storyNodeId) && leafStoryIds.has(storyNodeId)) {
-            const edgeId = `${storyNodeId}->${ancestorId}`
+          if (ancestors.has(s.id) && leafStoryIds.has(s.id)) {
+            const edgeId = `${s.id}->${ancestorId}`
             const globalDepth = nodeDepths.get(ancestorId) || 0
             const minDepth = minDepthPerVersion.get(ver) || 0
             edgeDepths.set(edgeId, { depth: globalDepth - minDepth, version: ver })
@@ -478,9 +474,8 @@ function GraphContent() {
         return
       }
 
-      const storyId = extractStoryId(ancestorId)
       const version = extractVersion(ancestorId)
-      const story = stories.find(s => s.id === storyId && (!version || s.target_version === version))
+      const story = stories.find(s => s.id === ancestorId)
       if (story?.depends_on && story.depends_on.length > 0) {
         story.depends_on.forEach(depRef => {
           // Whole version dep - create version → story edge (cross-version edge belongs to target version)
@@ -518,7 +513,7 @@ function GraphContent() {
     })
 
     return { edges: edgeDepths, maxPerVersion: relativeMaxPerVersion }
-  }, [stories, extractStoryId, extractVersion, leafStoryIds])
+  }, [stories, extractVersion, leafStoryIds])
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     if (highlightedNodes.has(node.id) && highlightedNodes.size === getAncestors(node.id).size) {
@@ -535,15 +530,14 @@ function GraphContent() {
   }, [getAncestors, getPathEdgesWithDepth, highlightedNodes])
 
   const openStoryModal = useCallback((nodeId: string, status: StoryStatus) => {
-    const storyId = extractStoryId(nodeId)
-    const version = extractVersion(nodeId)
-    const story = stories.find(s => s.id === storyId && (!version || s.target_version === version))
+    // Story IDs in database already include version prefix (e.g., "v0.1:1.1.1")
+    const story = stories.find(s => s.id === nodeId)
     if (story) {
       setSelectedStory(story)
       setSelectedStatus(status)
       setModalOpen(true)
     }
-  }, [stories, extractStoryId, extractVersion])
+  }, [stories])
 
   const onNodeDoubleClick = useCallback((_: React.MouseEvent, node: Node) => {
     // Only open modal for story nodes, not version headers

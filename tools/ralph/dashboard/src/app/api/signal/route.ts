@@ -13,12 +13,13 @@ import { emit } from '@/lib/events'
 
 interface SignalBody {
   storyId: string
-  action: 'complete' | 'blocked' | 'progress'
+  action: 'passed' | 'merged' | 'blocked' | 'progress'
   message?: string
   prUrl?: string
+  mergeCommit?: string
 }
 
-const VALID_ACTIONS = ['complete', 'blocked', 'progress'] as const
+const VALID_ACTIONS = ['passed', 'merged', 'blocked', 'progress'] as const
 
 // POST /api/signal - Claude signals story status
 export async function POST(request: NextRequest) {
@@ -43,8 +44,8 @@ export async function POST(request: NextRequest) {
     }
 
     switch (action) {
-      case 'complete': {
-        // Mark story as passed
+      case 'passed': {
+        // Mark story as passed (work done, PR created)
         prd.stories.markPassed(storyId)
 
         // Update PR URL if provided
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Save checkpoint
-        prd.checkpoints.save(storyId, 'claude_complete', { message, prUrl })
+        prd.checkpoints.save(storyId, 'passed', { message, prUrl })
 
         // Clear failure state
         await state.clearFailure()
@@ -62,14 +63,33 @@ export async function POST(request: NextRequest) {
         handoffs.clearForStory(storyId)
 
         // Emit SSE events
-        emit('story_update', { storyId, status: 'complete' })
+        emit('story_update', { storyId, status: 'passed' })
         emit('run_state', prd.runState.get())
 
         return NextResponse.json({
           success: true,
           storyId,
-          status: 'complete',
-          message: message || `Story ${storyId} marked as complete`
+          status: 'passed',
+          message: message || `Story ${storyId} marked as passed`
+        })
+      }
+
+      case 'merged': {
+        // Mark story as fully merged (PR merged to integration branch)
+        prd.stories.markMerged(storyId, prUrl, body.mergeCommit)
+
+        // Save checkpoint
+        prd.checkpoints.save(storyId, 'merged', { message, prUrl, mergeCommit: body.mergeCommit })
+
+        // Emit SSE events
+        emit('story_update', { storyId, status: 'merged' })
+        emit('run_state', prd.runState.get())
+
+        return NextResponse.json({
+          success: true,
+          storyId,
+          status: 'merged',
+          message: message || `Story ${storyId} marked as merged`
         })
       }
 

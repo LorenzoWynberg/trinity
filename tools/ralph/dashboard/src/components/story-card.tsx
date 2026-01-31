@@ -15,7 +15,7 @@ const statusConfig: Record<StoryStatus, { label: string; className: string }> =
     pending: { label: 'Pending', className: 'bg-gray-500' },
     in_progress: { label: 'In Progress', className: 'bg-blue-500' },
     passed: { label: 'Passed', className: 'bg-yellow-500' },
-    merged: { label: 'Merged', className: 'bg-green-500' },
+    merged: { label: 'Completed', className: 'bg-green-500' },
     skipped: { label: 'Skipped', className: 'bg-purple-500' },
     blocked: { label: 'Blocked', className: 'bg-red-500' },
   };

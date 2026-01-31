@@ -62,8 +62,8 @@ export function calculateSingleVersionPositions(
   const depths = calculateDepths(stories)
   const positions: Record<string, { x: number; y: number }> = {}
 
-  // Helper to create versioned key
-  const posKey = (story: Story) => `${story.target_version}:${story.id}`
+  // Story ID already includes version prefix (e.g., "v0.1:1.1.1")
+  const posKey = (story: Story) => story.id
 
   // Group stories by depth
   const byDepth = new Map<number, Story[]>()
@@ -228,7 +228,7 @@ export function calculateAutoPositions(
           const leafStories = verStories.filter(s => (depths.get(s.id) || 0) === maxDepth)
 
           if (leafStories.length > 0) {
-            const leafYs = leafStories.map(s => verPositions[`${ver}:${s.id}`]?.y || 0)
+            const leafYs = leafStories.map(s => verPositions[s.id]?.y || 0)
             const minY = Math.min(...leafYs)
             const maxY = Math.max(...leafYs)
             const centerY = (minY + maxY + NODE_HEIGHT - VERSION_HEADER_HEIGHT) / 2

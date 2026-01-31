@@ -7,57 +7,73 @@ export type ResolvedDep = {
 }
 
 /**
+ * Extract the story number from a full ID (e.g., "v0.1:1.1.1" -> "1.1.1")
+ */
+function extractStoryNumber(fullId: string): string {
+  const colonIndex = fullId.indexOf(':')
+  return colonIndex >= 0 ? fullId.slice(colonIndex + 1) : fullId
+}
+
+/**
  * Resolve a dependency reference to story IDs
  * Supports: 1.2.3 (story), v1.0:1.2.3 (cross-version story), v1.0 (whole version), 1 (phase), 1:2 (phase:epic)
- * Returns: array of { storyId, nodeId } where nodeId = version:storyId
+ *
+ * Note: Story IDs in the database are prefixed with version (e.g., "v0.1:1.1.1")
+ * But depends_on arrays contain unprefixed refs (e.g., "1.1.1") for same-version deps
+ *
+ * Returns: array of { storyId, nodeId } where nodeId = story.id (already includes version)
  */
 export function resolveDependency(dep: string, stories: Story[], currentVersion?: string): ResolvedDep[] {
   // Full version dependency (e.g., "v1.0") - return leaf stories
   if (/^v[0-9]+\.[0-9]+$/.test(dep)) {
     const version = dep
     const versionStories = stories.filter(s => s.target_version === version)
-    const versionIds = new Set(versionStories.map(s => s.id))
+    const storyNumbers = new Set(versionStories.map(s => extractStoryNumber(s.id)))
     const dependedOn = new Set<string>()
     versionStories.forEach(s => {
       s.depends_on?.forEach(d => {
-        if (versionIds.has(d)) dependedOn.add(d)
+        // depends_on contains story numbers, not full IDs
+        if (storyNumbers.has(d)) dependedOn.add(d)
       })
     })
     return versionStories
-      .filter(s => !dependedOn.has(s.id))
-      .map(s => ({ storyId: s.id, nodeId: `${version}:${s.id}`, crossVersion: version !== currentVersion }))
+      .filter(s => !dependedOn.has(extractStoryNumber(s.id)))
+      .map(s => ({ storyId: s.id, nodeId: s.id, crossVersion: version !== currentVersion }))
   }
 
   // Cross-version specific story (e.g., "v0.1:1.2.3")
   if (/^v[0-9]+\.[0-9]+:[0-9]+\.[0-9]+\.[0-9]+$/.test(dep)) {
-    // Split carefully - version is "vX.Y", story is the rest after first ":"
     const colonIndex = dep.indexOf(':')
     const version = dep.slice(0, colonIndex)
-    const storyId = dep.slice(colonIndex + 1)
-    const found = stories.find(s => s.id === storyId && s.target_version === version)
+    const storyNumber = dep.slice(colonIndex + 1)
+    // The full ID in the database is the dep itself (e.g., "v0.1:1.2.3")
+    const found = stories.find(s => s.id === dep)
     if (found) {
-      return [{ storyId: found.id, nodeId: `${version}:${found.id}`, crossVersion: version !== currentVersion }]
+      return [{ storyId: found.id, nodeId: found.id, crossVersion: version !== currentVersion }]
     }
     return []
   }
 
   // Specific story in same version (e.g., "1.2.3")
   if (/^[0-9]+\.[0-9]+\.[0-9]+$/.test(dep)) {
-    // Find in same version first, then any version
-    const sameVersion = stories.find(s => s.id === dep && s.target_version === currentVersion)
-    if (sameVersion) {
-      return [{ storyId: sameVersion.id, nodeId: `${currentVersion}:${sameVersion.id}`, crossVersion: false }]
+    // Construct the full ID with version prefix
+    if (currentVersion) {
+      const fullId = `${currentVersion}:${dep}`
+      const found = stories.find(s => s.id === fullId)
+      if (found) {
+        return [{ storyId: found.id, nodeId: found.id, crossVersion: false }]
+      }
     }
-    const anyVersion = stories.find(s => s.id === dep)
+    // Fallback: search any version
+    const anyVersion = stories.find(s => extractStoryNumber(s.id) === dep)
     if (anyVersion) {
-      return [{ storyId: anyVersion.id, nodeId: `${anyVersion.target_version}:${anyVersion.id}`, crossVersion: anyVersion.target_version !== currentVersion }]
+      return [{ storyId: anyVersion.id, nodeId: anyVersion.id, crossVersion: anyVersion.target_version !== currentVersion }]
     }
     return []
   }
 
   // Version-scoped phase or epic (e.g., "v0.1:1" or "v0.1:1:2")
   if (/^v[0-9]+\.[0-9]+:[0-9]+/.test(dep)) {
-    // Split carefully - version is "vX.Y", target is the rest after first ":"
     const colonIndex = dep.indexOf(':')
     const version = dep.slice(0, colonIndex)
     const target = dep.slice(colonIndex + 1)
@@ -98,15 +114,15 @@ function resolvePhaseEpic(target: string, filteredStories: Story[], version: str
     matchingStories = filteredStories.filter(s => s.phase === phase)
   }
 
-  const matchingIds = new Set(matchingStories.map(s => s.id))
+  const storyNumbers = new Set(matchingStories.map(s => extractStoryNumber(s.id)))
   const dependedOn = new Set<string>()
   matchingStories.forEach(s => {
     s.depends_on?.forEach(d => {
-      if (matchingIds.has(d)) dependedOn.add(d)
+      if (storyNumbers.has(d)) dependedOn.add(d)
     })
   })
 
   return matchingStories
-    .filter(s => !dependedOn.has(s.id))
-    .map(s => ({ storyId: s.id, nodeId: `${version}:${s.id}`, crossVersion: version !== currentVersion }))
+    .filter(s => !dependedOn.has(extractStoryNumber(s.id)))
+    .map(s => ({ storyId: s.id, nodeId: s.id, crossVersion: version !== currentVersion }))
 }

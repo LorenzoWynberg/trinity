@@ -27,7 +27,7 @@ const statusConfig = {
   pending: { label: 'Pending', className: 'bg-gray-500' },
   in_progress: { label: 'In Progress', className: 'bg-blue-500' },
   passed: { label: 'Passed', className: 'bg-yellow-500' },
-  merged: { label: 'Merged', className: 'bg-green-500' },
+  merged: { label: 'Completed', className: 'bg-green-500' },
   skipped: { label: 'Skipped', className: 'bg-purple-500' },
   blocked: { label: 'Blocked', className: 'bg-red-500' },
 };
@@ -37,7 +37,9 @@ export default async function StoryDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
+  const { id: rawId } = await params;
+  // Decode URL-encoded characters (e.g., %3A -> :)
+  const id = decodeURIComponent(rawId);
   const [settings, versions, state] = await Promise.all([
     getSettings(),
     getVersions(),
@@ -97,8 +99,9 @@ export default async function StoryDetailPage({
     s.depends_on?.includes(story.id),
   );
 
-  // Build branch name
-  const branchName = `feat/story-${story.phase}.${story.epic}.${story.story_number}`;
+  // Build branch name with version prefix
+  const storyVersion = story.target_version || 'v0.1';
+  const branchName = `feat/${storyVersion}/story-${story.phase}.${story.epic}.${story.story_number}`;
 
   return (
     <div className="p-8 space-y-6 max-w-4xl">
@@ -246,7 +249,7 @@ export default async function StoryDetailPage({
                             className="text-xs"
                           >
                             {dep.merged
-                              ? 'Merged'
+                              ? 'Completed'
                               : dep.passes
                                 ? 'Passed'
                                 : 'Pending'}
@@ -286,7 +289,7 @@ export default async function StoryDetailPage({
                         className="text-xs"
                       >
                         {dep.merged
-                          ? 'Merged'
+                          ? 'Completed'
                           : dep.passes
                             ? 'Passed'
                             : 'Pending'}

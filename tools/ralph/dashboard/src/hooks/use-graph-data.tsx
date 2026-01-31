@@ -203,7 +203,8 @@ function buildNodesAndEdges(
   const nodeList: Node[] = []
   const edgeList: Edge[] = []
 
-  const getNodeId = (story: Story) => `${story.target_version}:${story.id}`
+  // Story ID already includes version prefix (e.g., "v0.1:1.1.1")
+  const getNodeId = (story: Story) => story.id
 
   // Find dead-end nodes (stories that nothing in the SAME VERSION depends on)
   const dependedOn = new Set<string>()

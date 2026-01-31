@@ -97,7 +97,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           icon={<ListTodo className="h-4 w-4" />}
         />
         <StatsCard
-          title="Merged"
+          title="Completed"
           value={stats.merged}
           description={`${stats.percentage}% complete`}
           icon={<CheckCircle className="h-4 w-4" />}

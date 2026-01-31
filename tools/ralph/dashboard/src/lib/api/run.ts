@@ -1,6 +1,6 @@
 import { api } from './client'
 import type { State, Story } from '../types'
-import type { StoryScore } from '../scoring'
+import type { StoryScore, UpcomingStory } from '../scoring'
 
 export interface RunParams {
   version: string
@@ -16,9 +16,10 @@ export interface RunResponse {
 
 export interface SignalParams {
   storyId: string
-  action: 'complete' | 'blocked' | 'progress'
+  action: 'passed' | 'merged' | 'blocked' | 'progress'
   message?: string
   prUrl?: string
+  mergeCommit?: string
 }
 
 export interface ExecutionStatus {
@@ -26,6 +27,7 @@ export interface ExecutionStatus {
   progress: { total: number; merged: number; passed: number; percentage: number }
   nextStory: Story | null
   scoredStories: StoryScore[]
+  upcomingStories: UpcomingStory[]
 }
 
 export const runApi = {

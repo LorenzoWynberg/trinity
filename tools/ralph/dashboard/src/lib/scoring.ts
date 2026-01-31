@@ -248,3 +248,69 @@ export function getScoredStories(prd: PRD, lastCompletedId?: string | null): Sto
   // Sort by score descending
   return scores.sort((a, b) => b.score - a.score)
 }
+
+export interface UpcomingStory {
+  storyId: string
+  title: string
+  blockedBy: string[]  // IDs of stories blocking this one
+  depth: number        // How many levels deep (1 = blocked by ready story, 2 = blocked by depth-1 story)
+}
+
+/**
+ * Get stories that would become runnable after current ready stories complete
+ * Returns stories grouped by "depth" - how many steps away they are
+ */
+export function getUpcomingStories(prd: PRD, maxDepth: number = 3): UpcomingStory[] {
+  const runnable = getRunnableStories(prd)
+  const runnableIds = new Set(runnable.map(s => s.id))
+  const upcoming: UpcomingStory[] = []
+  const seen = new Set<string>()
+
+  // Mark done/skipped stories
+  const doneIds = new Set(prd.stories.filter(s => s.merged || s.skipped || s.passes).map(s => s.id))
+
+  // Find stories at each depth level
+  let currentLevelIds = runnableIds
+
+  for (let depth = 1; depth <= maxDepth; depth++) {
+    const nextLevelIds = new Set<string>()
+
+    for (const story of prd.stories) {
+      if (doneIds.has(story.id) || runnableIds.has(story.id) || seen.has(story.id)) continue
+
+      const deps = story.depends_on || []
+      if (deps.length === 0) continue
+
+      // Check if ALL blocking deps are either done OR in current level
+      const blockers = deps.filter(dep => {
+        // Check if it's a story ID dependency
+        const depStory = prd.stories.find(s => s.id === dep || s.id.endsWith(`:${dep}`))
+        if (!depStory) return false
+        return !doneIds.has(depStory.id) && !depStory.merged && !depStory.passes
+      })
+
+      // Find which ready/upcoming stories are blocking this
+      const blockingStories = blockers.filter(dep => {
+        const depStory = prd.stories.find(s => s.id === dep || s.id.endsWith(`:${dep}`))
+        return depStory && currentLevelIds.has(depStory.id)
+      })
+
+      if (blockingStories.length > 0 && blockingStories.length === blockers.length) {
+        // All blockers are in current level - this story is at next depth
+        upcoming.push({
+          storyId: story.id,
+          title: story.title,
+          blockedBy: blockingStories,
+          depth
+        })
+        nextLevelIds.add(story.id)
+        seen.add(story.id)
+      }
+    }
+
+    currentLevelIds = nextLevelIds
+    if (nextLevelIds.size === 0) break
+  }
+
+  return upcoming
+}

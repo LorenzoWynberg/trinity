@@ -20,7 +20,7 @@ const statusConfig: Record<StoryStatus, { label: string; className: string }> = 
   pending: { label: 'Pending', className: 'bg-gray-500' },
   in_progress: { label: 'In Progress', className: 'bg-blue-500' },
   passed: { label: 'Passed', className: 'bg-yellow-500' },
-  merged: { label: 'Merged', className: 'bg-green-500' },
+  merged: { label: 'Completed', className: 'bg-green-500' },
   skipped: { label: 'Skipped', className: 'bg-purple-500' },
   blocked: { label: 'Blocked', className: 'bg-red-500' },
 }
@@ -46,8 +46,18 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
   if (!story) return null
 
   const config = statusConfig[status]
-  const branchName = `feat/story-${story.phase}.${story.epic}.${story.story_number}`
   const storyVersion = version || story.target_version || 'v0.1'
+  const branchName = `feat/${storyVersion}/story-${story.phase}.${story.epic}.${story.story_number}`
+
+  // Format dependency for display - add version prefix if it's a same-version story ref
+  const formatDep = (dep: string): string => {
+    // Already has version prefix (cross-version dep) or is a phase/epic ref
+    if (dep.startsWith('v') || !dep.match(/^\d+\.\d+\.\d+$/)) {
+      return dep
+    }
+    // Same-version story ref - add version prefix
+    return `${storyVersion}:${dep}`
+  }
 
   const resetEdit = () => {
     setEditMode(startInEditMode)
@@ -183,7 +193,7 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
                     <div className="flex flex-wrap gap-1">
                       {story.depends_on.map(dep => (
                         <Badge key={dep} variant="outline" className="font-mono text-xs">
-                          {dep}
+                          {formatDep(dep)}
                         </Badge>
                       ))}
                     </div>

@@ -55,6 +55,7 @@ async function importPRDFromJson(versionId: string, filePath: string): Promise<n
   }
 
   // Import stories
+  // Story ID must include version prefix for uniqueness across versions (e.g., "v0.1:1.1.1")
   let storyCount = 0
   if (prd.stories && prd.stories.length > 0) {
     const storyList = prd.stories.map(s => ({

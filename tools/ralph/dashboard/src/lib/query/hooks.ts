@@ -78,10 +78,11 @@ export function useExecutionStatus(version: string) {
     queryKey: ['executionStatus', version] as const,
     queryFn: () => api.run.getExecutionStatus(version),
     enabled: !!version,
-    // Poll when running, otherwise rely on SSE
+    // SSE invalidates on story_update events, polling is backup
+    // Fast poll when running, slow poll when idle
     refetchInterval: (query) => {
       const status = query.state.data?.state?.status
-      return status === 'running' ? 2000 : false
+      return status === 'running' ? 2000 : 10000
     },
   })
 }

@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Play, GitBranch, CheckCircle, Clock, User, ArrowRight, RotateCcw } from 'lucide-react'
+import { Play, GitBranch, CheckCircle, Clock, User, ArrowRight, RotateCcw, Lock } from 'lucide-react'
 import { RunModal } from '@/components/run-modal'
 import { useVersions, useExecutionStatus, useHandoffs } from '@/lib/query'
 
@@ -93,7 +93,7 @@ export default function RunPage() {
               <>
                 <div className="flex justify-between text-sm">
                   <span>Stories</span>
-                  <span>{status.progress.merged} / {status.progress.total} merged</span>
+                  <span>{status.progress.merged} / {status.progress.total} completed</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
@@ -120,7 +120,7 @@ export default function RunPage() {
             {status?.state?.last_completed && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CheckCircle className="h-4 w-4 text-green-500" />
-                Last: {status.state.last_completed}
+                Last merged: {status.state.last_completed}
               </div>
             )}
           </CardContent>
@@ -221,22 +221,23 @@ export default function RunPage() {
       )}
 
       {/* Story Queue */}
-      {status?.scoredStories && status.scoredStories.length > 0 && (
+      {((status?.scoredStories && status.scoredStories.length > 0) || (status?.upcomingStories && status.upcomingStories.length > 0)) && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Story Queue ({status.scoredStories.length} ready)</CardTitle>
-            <CardDescription>Ranked by smart selection - dependencies met, ready to run</CardDescription>
+            <CardTitle className="text-lg">Story Queue</CardTitle>
+            <CardDescription>Green = ready to run, Yellow = blocked but coming soon</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {status.scoredStories.slice(0, 10).map((scored, i) => (
+              {/* Ready stories (green) - show up to 5 total between ready and upcoming */}
+              {status?.scoredStories?.slice(0, Math.min(5, status.scoredStories.length)).map((scored, i) => (
                 <div
                   key={scored.storyId}
-                  className={`p-3 rounded ${i === 0 ? 'bg-green-50 dark:bg-green-950 cyber-dark:bg-green-950 border border-green-200 dark:border-green-800 cyber-dark:border-green-800' : 'bg-muted/50'}`}
+                  className={`p-3 rounded ${i === 0 ? 'bg-green-50 dark:bg-green-950 cyber-dark:bg-green-950 border border-green-200 dark:border-green-800 cyber-dark:border-green-800' : 'bg-green-50/50 dark:bg-green-950/50 cyber-dark:bg-green-950/50 border border-green-200/50 dark:border-green-800/50 cyber-dark:border-green-800/50'}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-bold w-6 text-muted-foreground">{i + 1}.</span>
+                      <span className="text-sm font-bold w-6 text-green-600 dark:text-green-400 cyber-dark:text-green-400">{i + 1}.</span>
                       <div>
                         <span className="font-mono text-sm">{scored.storyId}</span>
                         {scored.title && (
@@ -260,6 +261,47 @@ export default function RunPage() {
                   )}
                 </div>
               ))}
+
+              {/* Upcoming stories (yellow) - fill remaining slots up to 5 total */}
+              {status?.upcomingStories && status.upcomingStories.length > 0 && (
+                <>
+                  {status.scoredStories && status.scoredStories.length > 0 && (
+                    <div className="border-t border-dashed my-4 pt-2 text-xs text-muted-foreground flex items-center gap-2">
+                      <Lock className="h-3 w-3" />
+                      Coming up after current stories complete
+                    </div>
+                  )}
+                  {status.upcomingStories.slice(0, Math.max(0, 5 - (status.scoredStories?.length || 0))).map((upcoming) => (
+                    <div
+                      key={upcoming.storyId}
+                      className="p-3 rounded bg-yellow-50/50 dark:bg-yellow-950/30 cyber-dark:bg-yellow-950/30 border border-yellow-200/50 dark:border-yellow-800/50 cyber-dark:border-yellow-800/50"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Lock className="h-4 w-4 text-yellow-600 dark:text-yellow-400 cyber-dark:text-yellow-400" />
+                          <div>
+                            <span className="font-mono text-sm">{upcoming.storyId}</span>
+                            {upcoming.title && (
+                              <p className="text-sm text-muted-foreground truncate max-w-md">{upcoming.title}</p>
+                            )}
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="ml-2 text-yellow-600 dark:text-yellow-400 cyber-dark:text-yellow-400 border-yellow-300 dark:border-yellow-700 cyber-dark:border-yellow-700">
+                          depth {upcoming.depth}
+                        </Badge>
+                      </div>
+                      <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                        <span className="text-yellow-600 dark:text-yellow-400 cyber-dark:text-yellow-400">
+                          Blocked by:
+                        </span>
+                        <span>
+                          {upcoming.blockedBy.slice(0, 3).join(', ')}{upcoming.blockedBy.length > 3 ? '...' : ''}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
