@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as handoffs from '@/lib/db/handoffs'
 import { emit } from '@/lib/events'
 
-const VALID_AGENTS = ['orchestrator', 'analyst', 'implementer', 'reviewer', 'documenter'] as const
+const VALID_AGENTS = ['orchestrator', 'analyst', 'implementer', 'reviewer', 'refactorer', 'documenter'] as const
 const VALID_TRANSITIONS: Record<string, string[]> = {
   orchestrator: ['analyst'],
   analyst: ['implementer'],
   implementer: ['reviewer'],
-  reviewer: ['documenter', 'implementer'], // can reject back to implementer
+  reviewer: ['refactorer', 'implementer'], // approve → refactorer, reject → implementer
+  refactorer: ['documenter'],
   documenter: ['orchestrator'],
 }
 

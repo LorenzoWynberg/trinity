@@ -16,7 +16,7 @@ BRANCH = {{BRANCH}}
 This story is handled by a team of specialized agents. You are the **Orchestrator**.
 
 ```
-Analyst → Implementer ⇄ Reviewer → Documenter → Complete
+Analyst → Implementer ⇄ Reviewer → Refactorer → Documenter → Complete
            (can loop if rejected)
 ```
 
@@ -27,6 +27,7 @@ Analyst → Implementer ⇄ Reviewer → Documenter → Complete
 | Analyst | `agents/analyst.md` | Understands requirements, creates plan |
 | Implementer | `agents/implementer.md` | Writes clean, minimal code |
 | Reviewer | `agents/reviewer.md` | Catches issues, approves or rejects |
+| Refactorer | `agents/refactorer.md` | Polishes working code (light cleanup) |
 | Documenter | `agents/documenter.md` | Captures learnings, updates docs |
 
 ### Your Job

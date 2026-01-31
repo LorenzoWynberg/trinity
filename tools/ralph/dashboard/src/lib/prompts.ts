@@ -5,7 +5,7 @@ const PROMPTS_DIR = path.join(process.cwd(), 'prompts')
 const AGENTS_DIR = path.join(process.cwd(), 'agents')
 
 type PromptName = 'execution' | 'generate' | 'refine' | 'refine-edit' | 'story-edit'
-type AgentName = 'analyst' | 'implementer' | 'reviewer' | 'documenter'
+type AgentName = 'analyst' | 'implementer' | 'reviewer' | 'refactorer' | 'documenter'
 
 const promptCache = new Map<string, string>()
 const agentCache = new Map<string, string>()
@@ -72,13 +72,13 @@ export function getAgentPrompt(name: AgentName, values: Record<string, string>):
  * List available agent prompts
  */
 export function listAgents(): AgentName[] {
-  return ['analyst', 'implementer', 'reviewer', 'documenter']
+  return ['analyst', 'implementer', 'reviewer', 'refactorer', 'documenter']
 }
 
 /**
  * Check if an agent prompt exists
  */
 export function hasAgentPrompt(name: string): name is AgentName {
-  const validAgents: AgentName[] = ['analyst', 'implementer', 'reviewer', 'documenter']
+  const validAgents: AgentName[] = ['analyst', 'implementer', 'reviewer', 'refactorer', 'documenter']
   return validAgents.includes(name as AgentName)
 }

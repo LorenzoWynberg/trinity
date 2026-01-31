@@ -687,7 +687,7 @@ export function RunModal({ open, onOpenChange, initialVersion = 'v0.1' }: RunMod
 
               {/* Agent Pipeline */}
               <div className="flex items-center justify-between py-2">
-                {['analyst', 'implementer', 'reviewer', 'documenter'].map((agent, i) => {
+                {['analyst', 'implementer', 'reviewer', 'refactorer', 'documenter'].map((agent, i) => {
                   const isActive = handoffState?.currentAgent === agent
                   const isDone = handoffState?.handoffs?.some(
                     (h: any) => h.from_agent === agent && h.status === 'accepted'
@@ -703,7 +703,7 @@ export function RunModal({ open, onOpenChange, initialVersion = 'v0.1' }: RunMod
                       )}>
                         {isDone && !isActive ? <CheckCircle className="h-4 w-4" /> : agent[0].toUpperCase()}
                       </div>
-                      {i < 3 && <ChevronRight className="h-3 w-3 mx-1 text-muted-foreground" />}
+                      {i < 4 && <ChevronRight className="h-3 w-3 mx-1 text-muted-foreground" />}
                     </div>
                   )
                 })}

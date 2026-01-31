@@ -55,17 +55,18 @@ You are a meticulous code reviewer who catches issues before they reach producti
        "action": "create",
        "storyId": "$STORY_ID",
        "fromAgent": "reviewer",
-       "toAgent": "documenter",
+       "toAgent": "refactorer",
        "payload": {
          "approved": true,
          "files_changed": ["from implementer handoff"],
+         "summary": "from implementer handoff",
          "discoveries": {"pass through from implementer"},
          "review_notes": "What was good, any minor observations"
        }
      }'
    ```
 
-   **Important:** Pass through the `discoveries` from Implementer's handoff.
+   **Important:** Pass through the `discoveries` and `summary` from Implementer's handoff.
 
    **If REJECTED:**
    ```bash

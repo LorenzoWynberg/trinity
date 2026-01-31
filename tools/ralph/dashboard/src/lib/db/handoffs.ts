@@ -1,6 +1,6 @@
 import { getDb } from './index'
 
-export type AgentType = 'orchestrator' | 'analyst' | 'implementer' | 'reviewer' | 'documenter'
+export type AgentType = 'orchestrator' | 'analyst' | 'implementer' | 'reviewer' | 'refactorer' | 'documenter'
 export type HandoffStatus = 'pending' | 'accepted' | 'rejected'
 
 export type Handoff = {
@@ -178,7 +178,7 @@ export function timeout(id: number, reason: string = 'Agent timed out'): Handoff
 // Get current agent state for a story
 export function getCurrentState(storyId: string): {
   currentAgent: AgentType | null
-  phase: 'analyzing' | 'implementing' | 'reviewing' | 'documenting' | 'complete' | null
+  phase: 'analyzing' | 'implementing' | 'reviewing' | 'refactoring' | 'documenting' | 'complete' | null
   handoffs: Handoff[]
 } {
   const handoffs = listByStory(storyId)
@@ -194,6 +194,7 @@ export function getCurrentState(storyId: string): {
     const phase = latest.to_agent === 'analyst' ? 'analyzing'
       : latest.to_agent === 'implementer' ? 'implementing'
       : latest.to_agent === 'reviewer' ? 'reviewing'
+      : latest.to_agent === 'refactorer' ? 'refactoring'
       : latest.to_agent === 'documenter' ? 'documenting'
       : null
     return { currentAgent: latest.to_agent, phase, handoffs }

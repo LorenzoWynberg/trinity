@@ -1,6 +1,6 @@
 import { api } from './client'
 
-export type AgentType = 'orchestrator' | 'analyst' | 'implementer' | 'reviewer' | 'documenter'
+export type AgentType = 'orchestrator' | 'analyst' | 'implementer' | 'reviewer' | 'refactorer' | 'documenter'
 export type HandoffStatus = 'pending' | 'accepted' | 'rejected'
 
 export type Handoff = {
@@ -17,7 +17,7 @@ export type Handoff = {
 
 export type HandoffState = {
   currentAgent: AgentType | null
-  phase: 'analyzing' | 'implementing' | 'reviewing' | 'documenting' | 'complete' | null
+  phase: 'analyzing' | 'implementing' | 'reviewing' | 'refactoring' | 'documenting' | 'complete' | null
   handoffs: Handoff[]
 }
 

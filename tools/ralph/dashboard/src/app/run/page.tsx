@@ -119,7 +119,7 @@ export default function RunPage() {
           <CardContent>
             {/* Pipeline visualization */}
             <div className="flex items-center justify-between mb-6">
-              {['analyst', 'implementer', 'reviewer', 'documenter'].map((agent, i) => {
+              {['analyst', 'implementer', 'reviewer', 'refactorer', 'documenter'].map((agent, i) => {
                 const isActive = handoffState?.currentAgent === agent
                 const isDone = handoffState?.handoffs?.some(
                   h => h.from_agent === agent && h.status === 'accepted'
@@ -150,7 +150,7 @@ export default function RunPage() {
                         <span className="text-xs text-blue-500 animate-pulse">Working...</span>
                       )}
                     </div>
-                    {i < 3 && (
+                    {i < 4 && (
                       <ArrowRight className="h-4 w-4 mx-2 text-muted-foreground" />
                     )}
                   </div>
