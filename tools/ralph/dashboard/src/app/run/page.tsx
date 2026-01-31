@@ -132,8 +132,8 @@ export default function RunPage() {
                   <div key={agent} className="flex items-center">
                     <div className={`
                       flex flex-col items-center p-3 rounded-lg border-2 transition-all
-                      ${isActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ''}
-                      ${isDone && !isActive ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}
+                      ${isActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-950 cyber-dark:bg-blue-950' : ''}
+                      ${isDone && !isActive ? 'border-green-500 bg-green-50 dark:bg-green-950 cyber-dark:bg-green-950' : ''}
                       ${wasRejected ? 'border-orange-500' : ''}
                       ${!isActive && !isDone && !wasRejected ? 'border-muted' : ''}
                     `}>
@@ -168,7 +168,7 @@ export default function RunPage() {
                       key={h.id}
                       className={`
                         text-xs p-2 rounded flex items-center justify-between
-                        ${h.status === 'rejected' ? 'bg-orange-50 dark:bg-orange-950' : 'bg-muted/50'}
+                        ${h.status === 'rejected' ? 'bg-orange-50 dark:bg-orange-950 cyber-dark:bg-orange-950' : 'bg-muted/50'}
                       `}
                     >
                       <div className="flex items-center gap-2">
@@ -209,7 +209,7 @@ export default function RunPage() {
               {status.scoredStories.slice(0, 8).map((scored, i) => (
                 <div
                   key={scored.storyId}
-                  className={`flex items-center justify-between p-2 rounded ${i === 0 ? 'bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800' : 'bg-muted/50'}`}
+                  className={`flex items-center justify-between p-2 rounded ${i === 0 ? 'bg-green-50 dark:bg-green-950 cyber-dark:bg-green-950 border border-green-200 dark:border-green-800 cyber-dark:border-green-800' : 'bg-muted/50'}`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-medium w-6">{i + 1}.</span>

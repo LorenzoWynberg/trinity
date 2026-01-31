@@ -91,8 +91,8 @@ export function StoryHandoffs({ storyId }: StoryHandoffsProps) {
                 <div
                   className={cn(
                     'flex flex-col items-center p-2 rounded-lg border-2 transition-all',
-                    isActive && 'border-blue-500 bg-blue-50 dark:bg-blue-950',
-                    isDone && !isActive && 'border-green-500 bg-green-50 dark:bg-green-950',
+                    isActive && 'border-blue-500 bg-blue-50 dark:bg-blue-950 cyber-dark:bg-blue-950',
+                    isDone && !isActive && 'border-green-500 bg-green-50 dark:bg-green-950 cyber-dark:bg-green-950',
                     wasRejected && !isActive && !isDone && 'border-orange-500',
                     !isActive && !isDone && !wasRejected && 'border-muted'
                   )}
@@ -138,7 +138,7 @@ export function StoryHandoffs({ storyId }: StoryHandoffsProps) {
                   className={cn(
                     'text-xs rounded border',
                     h.status === 'rejected'
-                      ? 'bg-orange-50 dark:bg-orange-950 border-orange-200 dark:border-orange-800'
+                      ? 'bg-orange-50 dark:bg-orange-950 cyber-dark:bg-orange-950 border-orange-200 dark:border-orange-800 cyber-dark:border-orange-800'
                       : 'bg-muted/50 border-transparent'
                   )}
                 >
