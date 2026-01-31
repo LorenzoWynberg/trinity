@@ -30,6 +30,7 @@ import {
 import { cn } from '@/lib/utils'
 import { api } from '@/lib/api'
 import type { Story } from '@/lib/types'
+import { useHandoffs } from '@/lib/query'
 
 type RunStep = 'config' | 'ext-deps' | 'validation' | 'execute' | 'review' | 'done'
 
@@ -104,6 +105,9 @@ export function RunModal({ open, onOpenChange, initialVersion = 'v0.1' }: RunMod
   const [executionLogs, setExecutionLogs] = useState<string[]>([])
   const [iteration, setIteration] = useState(1)
   const [stopAfterCurrent, setStopAfterCurrent] = useState(false)
+
+  // Agent handoffs (polls during execution)
+  const { data: handoffState } = useHandoffs(currentStory?.id)
 
   // Fetch versions on mount
   useEffect(() => {
@@ -681,11 +685,41 @@ export function RunModal({ open, onOpenChange, initialVersion = 'v0.1' }: RunMod
                 </div>
               )}
 
-              <div className="text-center py-8">
-                <Loader2 className="h-12 w-12 mx-auto text-primary mb-4 animate-spin" />
-                <p className="text-lg font-medium mb-2">Claude is working...</p>
+              {/* Agent Pipeline */}
+              <div className="flex items-center justify-between py-2">
+                {['analyst', 'implementer', 'reviewer', 'documenter'].map((agent, i) => {
+                  const isActive = handoffState?.currentAgent === agent
+                  const isDone = handoffState?.handoffs?.some(
+                    (h: any) => h.from_agent === agent && h.status === 'accepted'
+                  )
+
+                  return (
+                    <div key={agent} className="flex items-center">
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium",
+                        isActive && "bg-blue-500 text-white animate-pulse",
+                        isDone && !isActive && "bg-green-500 text-white",
+                        !isActive && !isDone && "bg-muted text-muted-foreground"
+                      )}>
+                        {isDone && !isActive ? <CheckCircle className="h-4 w-4" /> : agent[0].toUpperCase()}
+                      </div>
+                      {i < 3 && <ChevronRight className="h-3 w-3 mx-1 text-muted-foreground" />}
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div className="text-center py-4">
+                <Loader2 className="h-10 w-10 mx-auto text-primary mb-3 animate-spin" />
+                <p className="text-base font-medium mb-1">
+                  {handoffState?.currentAgent
+                    ? `${handoffState.currentAgent.charAt(0).toUpperCase() + handoffState.currentAgent.slice(1)} is working...`
+                    : 'Starting...'}
+                </p>
                 <p className="text-muted-foreground text-sm">
-                  Implementing the story. This may take several minutes.
+                  {handoffState?.phase
+                    ? `Phase: ${handoffState.phase}`
+                    : 'Initializing agent pipeline'}
                 </p>
               </div>
 

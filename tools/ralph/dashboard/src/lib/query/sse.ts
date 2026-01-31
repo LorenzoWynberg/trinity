@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from './hooks'
 
 type SSEEvent = {
-  type: 'run_state' | 'story_update' | 'metrics'
+  type: 'run_state' | 'story_update' | 'metrics' | 'handoff'
   data: any
 }
 
@@ -40,6 +40,15 @@ export function useSSE() {
 
           case 'metrics':
             queryClient.invalidateQueries({ queryKey: queryKeys.metrics })
+            break
+
+          case 'handoff':
+            // Invalidate handoffs for the story
+            if (event.data.storyId) {
+              queryClient.invalidateQueries({ queryKey: queryKeys.handoffs(event.data.storyId) })
+            }
+            // Also invalidate execution status for agent state updates
+            queryClient.invalidateQueries({ queryKey: ['executionStatus'] })
             break
         }
       } catch (err) {
