@@ -1,0 +1,8 @@
+{
+  "title": "Patterns",
+  "description": "Common patterns and best practices",
+  "icon": "Lightbulb",
+  "pages": [
+    { "slug": "index", "title": "Overview" }
+  ]
+}

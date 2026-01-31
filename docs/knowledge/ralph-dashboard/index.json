@@ -1,0 +1,21 @@
+{
+  "title": "Ralph Dashboard",
+  "description": "Dashboard for viewing PRD status and running Ralph",
+  "icon": "LayoutDashboard",
+  "pages": [
+    { "slug": "index", "title": "Overview" },
+    { "slug": "execution", "title": "Execution Loop" },
+    { "slug": "handoffs", "title": "Agent Handoffs" },
+    { "slug": "stories", "title": "Stories" },
+    { "slug": "graph", "title": "Graph" },
+    { "slug": "terminal", "title": "Terminal" },
+    { "slug": "tasks", "title": "Tasks" },
+    { "slug": "metrics", "title": "Metrics" },
+    { "slug": "activity", "title": "Activity" },
+    { "slug": "knowledge-gotchas", "title": "Knowledge & Gotchas" },
+    { "slug": "settings", "title": "Settings" },
+    { "slug": "prd-tools", "title": "PRD Tools" },
+    { "slug": "database", "title": "Database" },
+    { "slug": "themes", "title": "Themes" }
+  ]
+}
