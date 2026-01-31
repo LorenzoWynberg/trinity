@@ -42,6 +42,7 @@ function getTaskLabel(type: Task['type']) {
     case 'refine': return 'Refine'
     case 'generate': return 'Generate'
     case 'story-edit': return 'Story Edit'
+    case 'align': return 'Align'
   }
 }
 
@@ -224,6 +225,7 @@ export default function TasksPage() {
                   <SelectItem value="refine">Refine</SelectItem>
                   <SelectItem value="generate">Generate</SelectItem>
                   <SelectItem value="story-edit">Story Edit</SelectItem>
+                  <SelectItem value="align">Align</SelectItem>
                 </SelectContent>
               </Select>
               <Button

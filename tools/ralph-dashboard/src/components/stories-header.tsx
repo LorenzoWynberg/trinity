@@ -2,21 +2,25 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { SplitButton } from '@/components/ui/split-button'
-import { Sparkles, Wand2, Loader2 } from 'lucide-react'
-import { RefineStoriesModal, GenerateStoriesModal, StoryEditModal } from '@/components/prd-tools-modals'
+import { Sparkles, Wand2, Loader2, Target } from 'lucide-react'
+import { RefineStoriesModal, GenerateStoriesModal, StoryEditModal, AlignModal } from '@/components/prd-tools-modals'
 import { useTaskContext, type Task } from '@/components/task-provider'
 import { useTaskStore } from '@/lib/task-store'
+import type { Phase, Epic } from '@/lib/types'
 
 type StoriesHeaderProps = {
   totalStories: number
   phaseCount: number
   version: string
+  phases?: Phase[]
+  epics?: Epic[]
 }
 
-export function StoriesHeader({ totalStories, phaseCount, version }: StoriesHeaderProps) {
+export function StoriesHeader({ totalStories, phaseCount, version, phases = [], epics = [] }: StoriesHeaderProps) {
   const [refineOpen, setRefineOpen] = useState(false)
   const [generateOpen, setGenerateOpen] = useState(false)
   const [storyEditOpen, setStoryEditOpen] = useState(false)
+  const [alignOpen, setAlignOpen] = useState(false)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const { isTaskRunning } = useTaskContext()
 
@@ -46,6 +50,8 @@ export function StoriesHeader({ totalStories, phaseCount, version }: StoriesHead
         setGenerateOpen(true)
       } else if (task.type === 'story-edit') {
         setStoryEditOpen(true)
+      } else if (task.type === 'align') {
+        setAlignOpen(true)
       }
       // Remove this task from pending
       removePendingTask(task.id)
@@ -68,8 +74,14 @@ export function StoriesHeader({ totalStories, phaseCount, version }: StoriesHead
     if (!open) setActiveTask(null)
   }
 
+  const handleAlignOpenChange = (open: boolean) => {
+    setAlignOpen(open)
+    if (!open) setActiveTask(null)
+  }
+
   const refineRunning = isTaskRunning('refine')
   const generateRunning = isTaskRunning('generate')
+  const alignRunning = isTaskRunning('align')
 
   return (
     <>
@@ -81,6 +93,14 @@ export function StoriesHeader({ totalStories, phaseCount, version }: StoriesHead
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <SplitButton
+            size="sm"
+            icon={alignRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Target className="h-4 w-4" />}
+            onClick={() => setAlignOpen(true)}
+            disabled={alignRunning}
+          >
+            {alignRunning ? 'Aligning...' : 'Align'}
+          </SplitButton>
           <SplitButton
             size="sm"
             icon={refineRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
@@ -117,6 +137,14 @@ export function StoriesHeader({ totalStories, phaseCount, version }: StoriesHead
         onOpenChange={handleStoryEditOpenChange}
         version={version}
         initialTask={activeTask?.type === 'story-edit' ? activeTask : undefined}
+      />
+      <AlignModal
+        open={alignOpen}
+        onOpenChange={handleAlignOpenChange}
+        version={version}
+        phases={phases}
+        epics={epics}
+        initialTask={activeTask?.type === 'align' ? activeTask : undefined}
       />
     </>
   )

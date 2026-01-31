@@ -67,7 +67,7 @@ function runMigrations(db: Database.Database) {
 }
 
 // Task types
-export type TaskType = 'refine' | 'generate' | 'story-edit'
+export type TaskType = 'refine' | 'generate' | 'story-edit' | 'align'
 export type TaskStatus = 'queued' | 'running' | 'complete' | 'failed'
 
 export interface TaskContext {

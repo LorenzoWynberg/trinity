@@ -111,4 +111,23 @@ export const prdApi = {
       '/api/prd/generate',
       { version, stories }
     ),
+
+  // Align - refine analysis with additional input
+  refineAlign: (params: {
+    version: string
+    previousAnalysis: any
+    additionalInput: string
+    scope: string
+    scopeId?: string
+  }) => api.post<any>('/api/prd/align/refine', params),
+
+  // Apply alignment changes
+  applyAlignChanges: (version: string, changes: {
+    modifications?: any[]
+    newStories?: any[]
+    removals?: string[]
+  }) => api.put<{ applied: number; added: number; removed: number; success: boolean }>(
+    '/api/prd/align',
+    { version, ...changes }
+  ),
 }

@@ -79,8 +79,14 @@ export function TaskProvider({ children }: TaskProviderProps) {
   }, [addPendingTask])
 
   const showNotification = useCallback((task: Task) => {
+    const typeLabels: Record<TaskType, string> = {
+      'refine': 'Refine',
+      'generate': 'Generate',
+      'story-edit': 'Story Edit',
+      'align': 'Align'
+    }
     const title = task.status === 'complete'
-      ? `${task.type === 'refine' ? 'Refine' : task.type === 'generate' ? 'Generate' : 'Story Edit'} Complete`
+      ? `${typeLabels[task.type]} Complete`
       : `Task Failed`
 
     const body = task.status === 'complete'
@@ -88,6 +94,8 @@ export function TaskProvider({ children }: TaskProviderProps) {
         ? `${task.result?.refinements?.filter((r: any) => r.status === 'needs_work').length || 0} stories need work`
         : task.type === 'generate'
         ? `${task.result?.stories?.length || 0} stories generated`
+        : task.type === 'align'
+        ? `Alignment score: ${task.result?.alignment_score || 0}/100`
         : 'Story analysis complete'
       : task.error || 'An error occurred'
 
@@ -184,9 +192,15 @@ export function TaskProvider({ children }: TaskProviderProps) {
     // Refresh to pick up new task
     await refreshTasks()
 
+    const typeLabels: Record<TaskType, string> = {
+      'refine': 'Refine',
+      'generate': 'Generate',
+      'story-edit': 'Story Edit',
+      'align': 'Align'
+    }
     toast({
       title: 'Task Started',
-      description: `${type === 'refine' ? 'Refine' : type === 'generate' ? 'Generate' : 'Story Edit'} task queued for ${version}`
+      description: `${typeLabels[type]} task queued for ${version}`
     })
 
     return data.task

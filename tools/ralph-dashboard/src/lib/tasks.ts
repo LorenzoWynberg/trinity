@@ -110,7 +110,7 @@ async function processQueue(): Promise<void> {
 
 // Task execution - calls the appropriate handler
 async function executeTask(task: Task): Promise<void> {
-  const { runRefineTask, runGenerateTask, runStoryEditTask } = await import('./task-handlers')
+  const { runRefineTask, runGenerateTask, runStoryEditTask, runAlignTask } = await import('./task-handlers')
 
   try {
     let result: any
@@ -124,6 +124,9 @@ async function executeTask(task: Task): Promise<void> {
         break
       case 'story-edit':
         result = await runStoryEditTask(task)
+        break
+      case 'align':
+        result = await runAlignTask(task)
         break
       default:
         throw new Error(`Unknown task type: ${task.type}`)

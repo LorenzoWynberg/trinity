@@ -50,6 +50,8 @@ export default async function StoriesPage({ searchParams }: PageProps) {
         totalStories={prd.stories.length}
         phaseCount={phases.length}
         version={currentVersion}
+        phases={prd.phases}
+        epics={prd.epics}
       />
 
       <StoriesList prd={prd} currentStoryId={currentStoryId} versions={versions} currentVersion={currentVersion} versionMetadata={versionMetadata} initialPhase={selectedPhase} />
