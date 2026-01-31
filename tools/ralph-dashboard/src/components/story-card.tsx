@@ -24,7 +24,7 @@ export function StoryCard({ story, status }: StoryCardProps) {
   const config = statusConfig[status];
 
   return (
-    <Link href={`/stories/${story.id}`}>
+    <Link href={`/stories/${encodeURIComponent(story.id)}`}>
       <Card className="hover:border-primary transition-colors cursor-pointer h-full cyber-light:border-l-4 cyber-light:border-l-cyan-400 cyber-dark:hover:border-yellow-400">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">

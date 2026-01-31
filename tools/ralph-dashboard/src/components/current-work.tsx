@@ -24,7 +24,7 @@ export function CurrentWork({ state, story, lastCompletedStory }: CurrentWorkPro
               <CheckCircle2 className="h-4 w-4 text-green-500" />
               <span className="text-muted-foreground">Last merged:</span>
               <Link
-                href={`/stories/${state.last_completed}`}
+                href={`/stories/${encodeURIComponent(state.last_completed)}`}
                 className="font-mono text-primary hover:underline"
               >
                 {state.last_completed}

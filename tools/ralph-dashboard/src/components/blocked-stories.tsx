@@ -36,7 +36,7 @@ export function BlockedStories({ blocked, unmergedPassed }: BlockedStoriesProps)
             <div className="space-y-2">
               {unmergedPassed.map(story => (
                 <div key={story.id} className="text-sm flex items-center justify-between">
-                  <Link href={`/stories/${story.id}`} className="hover:underline">
+                  <Link href={`/stories/${encodeURIComponent(story.id)}`} className="hover:underline">
                     <span className="font-mono text-muted-foreground">{story.id}</span>
                     <span className="ml-2">{story.title}</span>
                   </Link>
@@ -68,14 +68,14 @@ export function BlockedStories({ blocked, unmergedPassed }: BlockedStoriesProps)
             <div className="space-y-2">
               {blocked.map(({ story, blockedBy, blockerStory }) => (
                 <div key={story.id} className="text-sm">
-                  <Link href={`/stories/${story.id}`} className="hover:underline">
+                  <Link href={`/stories/${encodeURIComponent(story.id)}`} className="hover:underline">
                     <span className="font-mono text-muted-foreground">{story.id}</span>
                     <span className="ml-2">{story.title}</span>
                   </Link>
                   <div className="text-xs text-muted-foreground ml-4">
                     → waiting on{' '}
                     {blockerStory ? (
-                      <Link href={`/stories/${blockerStory.id}`} className="text-yellow-500 hover:underline">
+                      <Link href={`/stories/${encodeURIComponent(blockerStory.id)}`} className="text-yellow-500 hover:underline">
                         {blockerStory.id}
                       </Link>
                     ) : (

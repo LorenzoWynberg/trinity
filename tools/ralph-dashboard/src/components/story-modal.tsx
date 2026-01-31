@@ -235,7 +235,7 @@ export function StoryModal({ story, status, open, onOpenChange, version, startIn
               )}
 
               <div className="pt-2 flex justify-end">
-                <Link href={`/stories/${story.id}`}>
+                <Link href={`/stories/${encodeURIComponent(story.id)}`}>
                   <Button variant="outline" size="sm">
                     View Full Details
                   </Button>

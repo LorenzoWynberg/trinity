@@ -240,7 +240,7 @@ export default async function StoryDetailPage({
                     dep && (
                       <li key={dep.id}>
                         <Link
-                          href={`/stories/${dep.id}`}
+                          href={`/stories/${encodeURIComponent(dep.id)}`}
                           className="flex items-center justify-between text-sm hover:text-primary"
                         >
                           <span className="font-mono">{dep.id}</span>
@@ -280,7 +280,7 @@ export default async function StoryDetailPage({
                 {dependents.map((dep) => (
                   <li key={dep.id}>
                     <Link
-                      href={`/stories/${dep.id}`}
+                      href={`/stories/${encodeURIComponent(dep.id)}`}
                       className="flex items-center justify-between text-sm hover:text-primary"
                     >
                       <span className="font-mono">{dep.id}</span>
