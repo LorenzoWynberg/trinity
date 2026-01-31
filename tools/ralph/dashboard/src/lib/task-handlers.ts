@@ -1,17 +1,30 @@
 import { runClaude } from './claude'
-import { promises as fs } from 'fs'
-import path from 'path'
+import * as prd from './db/prd'
 import type { Task } from './tasks'
-
-const PRD_DIR = path.join(process.cwd(), '..', 'cli', 'prd')
 
 export async function runRefineTask(task: Task): Promise<any> {
   const { version } = task
-  const prdFile = path.join(PRD_DIR, `${version}.json`)
+  const prdData = prd.getPRD(version)
+  if (!prdData) {
+    throw new Error(`Version ${version} not found`)
+  }
 
-  const prompt = `Read the PRD file at: ${prdFile}
+  // Get incomplete stories
+  const incompleteStories = prdData.stories.filter(
+    s => !s.passes && !s.merged && !s.skipped
+  )
 
-Review all stories where passes=false AND merged=false AND skipped=false.
+  const prompt = `Review these stories for clarity and testability:
+
+STORIES TO REVIEW:
+${JSON.stringify(incompleteStories.map(s => ({
+  id: s.id,
+  title: s.title,
+  description: s.description,
+  acceptance: s.acceptance,
+  tags: s.tags,
+  depends_on: s.depends_on
+})), null, 2)}
 
 For each story, check:
 1. Are acceptance criteria specific and testable?
@@ -49,20 +62,19 @@ Copy tags and depends_on from original. Be pragmatic - only flag real issues.`
 export async function runGenerateTask(task: Task): Promise<any> {
   const { version, params } = task
   const { description } = params
-  const prdFile = path.join(PRD_DIR, `${version}.json`)
-
-  // Read PRD for context
-  const prdContent = await fs.readFile(prdFile, 'utf-8')
-  const prd = JSON.parse(prdContent)
+  const prdData = prd.getPRD(version)
+  if (!prdData) {
+    throw new Error(`Version ${version} not found`)
+  }
 
   // Build context
-  const phases = prd.phases?.map((p: any) => `${p.id}. ${p.name}`).join(', ') || 'No phases defined'
-  const epics = prd.epics?.map((e: any) => `Phase ${e.phase}, Epic ${e.id}: ${e.name}`).join('\n') || 'No epics defined'
-  const existingStories = prd.stories?.slice(0, 10).map((s: any) => `${s.id}: ${s.title}`).join('\n') || ''
+  const phases = prdData.phases?.map((p) => `${p.id}. ${p.name}`).join(', ') || 'No phases defined'
+  const epics = prdData.epics?.map((e) => `Phase ${e.phase}, Epic ${e.id}: ${e.name}`).join('\n') || 'No epics defined'
+  const existingStories = prdData.stories?.slice(0, 10).map((s) => `${s.id}: ${s.title}`).join('\n') || ''
 
   const prompt = `You are helping build a PRD. Here's the context:
 
-PROJECT: ${prd.project || prd.title}
+PROJECT: ${prdData.project}
 PHASES: ${phases}
 EPICS:
 ${epics}
@@ -104,20 +116,19 @@ Be specific with acceptance criteria. Match existing style.`
 export async function runStoryEditTask(task: Task): Promise<any> {
   const { version, params } = task
   const { storyId, requestedChanges } = params
-  const prdFile = path.join(PRD_DIR, `${version}.json`)
+  const prdData = prd.getPRD(version)
+  if (!prdData) {
+    throw new Error(`Version ${version} not found`)
+  }
 
-  // Read PRD to get story and related stories
-  const prdContent = await fs.readFile(prdFile, 'utf-8')
-  const prd = JSON.parse(prdContent)
-
-  const story = prd.stories.find((s: any) => s.id === storyId)
+  const story = prdData.stories.find((s) => s.id === storyId)
   if (!story) {
     throw new Error(`Story ${storyId} not found`)
   }
 
   // Find related stories (same tags, dependents, dependencies)
   const storyTags = new Set(story.tags || [])
-  const relatedStories = prd.stories.filter((s: any) => {
+  const relatedStories = prdData.stories.filter((s) => {
     if (s.id === storyId) return false
     const overlap = (s.tags || []).filter((t: string) => storyTags.has(t))
     if (overlap.length >= 2) return true
@@ -143,7 +154,7 @@ USER REQUESTED CHANGES:
 ${requestedChanges}
 
 RELATED STORIES (share tags or dependencies - may need updates for consistency):
-${JSON.stringify(relatedStories.map((s: any) => ({
+${JSON.stringify(relatedStories.map((s) => ({
   id: s.id,
   title: s.title,
   description: s.description,
@@ -185,7 +196,7 @@ Only include related_updates for stories that actually need changes.`
 
   // Enrich related_updates with title from original stories
   const enrichedRelatedUpdates = (result.related_updates || []).map((update: any) => {
-    const originalStory = relatedStories.find((s: any) => s.id === update.id)
+    const originalStory = relatedStories.find((s) => s.id === update.id)
     return {
       ...update,
       title: originalStory?.title || update.title
@@ -195,7 +206,7 @@ Only include related_updates for stories that actually need changes.`
   return {
     storyId,
     currentStory: story,
-    relatedStories: relatedStories.map((s: any) => ({ id: s.id, title: s.title })),
+    relatedStories: relatedStories.map((s) => ({ id: s.id, title: s.title })),
     target: result.target,
     related_updates: enrichedRelatedUpdates,
     summary: result.summary

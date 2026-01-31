@@ -62,7 +62,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       <div className="p-8">
         <h1 className="text-2xl font-bold mb-4 cyber-light:text-pink-600 cyber-dark:text-foreground">Dashboard</h1>
         <p className="text-muted-foreground cyber-light:text-cyan-600 cyber-dark:text-secondary-foreground">
-          No PRD found. Make sure prd.json exists in tools/ralph/cli/
+          No PRD found. Import a PRD or check the database.
         </p>
       </div>
     )

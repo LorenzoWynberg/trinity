@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import path from 'path'
-import fs from 'fs/promises'
-import { runClaude, PRD_DIR } from '@/lib/claude'
+import { runClaude } from '@/lib/claude'
+import * as prdDb from '@/lib/db/prd'
 
 // POST: Generate stories from description
 export async function POST(request: NextRequest) {
@@ -13,11 +12,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'version and description are required' }, { status: 400 })
     }
 
-    const prdFile = path.join(PRD_DIR, `${version}.json`)
-    const prdContent = await fs.readFile(prdFile, 'utf-8')
-    const prd = JSON.parse(prdContent)
+    const prd = prdDb.getPRD(version)
+    if (!prd) {
+      return NextResponse.json({ error: `Version ${version} not found` }, { status: 404 })
+    }
 
-    const existingStories = prd.stories.map((s: any) => ({
+    const existingStories = prd.stories.map((s) => ({
       id: s.id,
       title: s.title,
       phase: s.phase,
@@ -88,7 +88,7 @@ Be specific in acceptance criteria - avoid vague terms.`
   }
 }
 
-// PUT: Have Claude add generated stories to PRD
+// PUT: Add generated stories to PRD database
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
@@ -98,39 +98,52 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'version and stories array required' }, { status: 400 })
     }
 
-    const prdFile = path.join(PRD_DIR, `${version}.json`)
-
-    // Build prompt for Claude to add the stories
-    const prompt = `You need to add new stories to the PRD file.
-
-PRD FILE: ${prdFile}
-TARGET VERSION: ${version}
-
-NEW STORIES TO ADD:
-${JSON.stringify(stories, null, 2)}
-
-Instructions:
-1. Read the PRD file at the path above
-2. For each new story:
-   - Determine the next story_number for its phase.epic combination
-   - Generate the ID as "{phase}.{epic}.{story_number}"
-   - Add all required fields: id, title, intent, acceptance, phase, epic, story_number, target_version, depends_on, tags, passes (false), merged (false)
-3. Sort all stories by phase, then epic, then story_number
-4. Write the updated PRD back to the same file
-
-After completing, output this JSON:
-{
-  "added": <number of stories added>,
-  "success": true
-}`
-
-    const { success, result, error, raw } = await runClaude(prompt)
-
-    if (!success) {
-      return NextResponse.json({ error, raw }, { status: 500 })
+    const prd = prdDb.getPRD(version)
+    if (!prd) {
+      return NextResponse.json({ error: `Version ${version} not found` }, { status: 404 })
     }
 
-    return NextResponse.json(result)
+    // Find max story numbers per phase.epic
+    const maxStoryNumbers = new Map<string, number>()
+    for (const s of prd.stories) {
+      const key = `${s.phase}.${s.epic}`
+      const current = maxStoryNumbers.get(key) || 0
+      if (s.story_number && s.story_number > current) {
+        maxStoryNumbers.set(key, s.story_number)
+      }
+    }
+
+    // Build stories with IDs
+    const storiesToAdd = stories.map((s: any) => {
+      const key = `${s.phase}.${s.epic}`
+      const nextNum = (maxStoryNumbers.get(key) || 0) + 1
+      maxStoryNumbers.set(key, nextNum)
+
+      return {
+        id: `${version}:${s.phase}.${s.epic}.${nextNum}`,
+        title: s.title,
+        intent: s.intent,
+        acceptance: s.acceptance || [],
+        phase: s.phase,
+        epic: s.epic,
+        story_number: nextNum,
+        target_version: version,
+        depends_on: s.depends_on || [],
+        tags: s.tags || [],
+        passes: false,
+        merged: false,
+        skipped: false
+      }
+    })
+
+    // Add to database
+    prdDb.stories.bulkCreate(storiesToAdd)
+
+    return NextResponse.json({
+      added: storiesToAdd.length,
+      success: true,
+      stories: storiesToAdd.map(s => ({ id: s.id, title: s.title }))
+    })
   } catch (error: any) {
     console.error('Add stories error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })

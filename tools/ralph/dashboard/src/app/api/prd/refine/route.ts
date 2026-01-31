@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import path from 'path'
-import fs from 'fs/promises'
-import { runClaude, PRD_DIR } from '@/lib/claude'
+import { runClaude } from '@/lib/claude'
+import * as prdDb from '@/lib/db/prd'
 
 // POST: Get refinement suggestions from Claude
 export async function POST(request: NextRequest) {
@@ -15,29 +14,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'version is required' }, { status: 400 })
     }
 
-    const prdFile = path.join(PRD_DIR, `${version}.json`)
-    console.log('[refine] PRD file path:', prdFile)
-    const prdContent = await fs.readFile(prdFile, 'utf-8')
-    const prd = JSON.parse(prdContent)
+    const prd = prdDb.getPRD(version)
+    if (!prd) {
+      return NextResponse.json({ error: `Version ${version} not found` }, { status: 404 })
+    }
     console.log('[refine] PRD loaded, story count:', prd.stories?.length)
 
     // Get stories to refine
     let stories
     if (storyId) {
-      stories = prd.stories.filter((s: any) => s.id === storyId)
+      stories = prd.stories.filter((s) => s.id === storyId)
     } else {
       // All pending stories
-      stories = prd.stories.filter((s: any) => !s.passes && !s.merged && !s.skipped)
+      stories = prd.stories.filter((s) => !s.passes && !s.merged && !s.skipped)
     }
 
     if (stories.length === 0) {
       return NextResponse.json({ refinements: [], summary: 'No stories to refine' })
     }
 
-    // Build prompt - just point Claude to the PRD file
-    const prompt = `Read the PRD file at: ${prdFile}
+    // Build prompt with story data
+    const prompt = `Review these stories for clarity and testability:
 
-Review all stories where passes=false AND merged=false AND skipped=false.
+STORIES TO REVIEW:
+${JSON.stringify(stories.map(s => ({
+  id: s.id,
+  title: s.title,
+  description: s.description,
+  acceptance: s.acceptance,
+  tags: s.tags,
+  depends_on: s.depends_on
+})), null, 2)}
 
 For each story, check:
 1. Are acceptance criteria specific and testable?
@@ -80,7 +87,7 @@ Copy tags and depends_on from original. Be pragmatic - only flag real issues.`
   }
 }
 
-// PUT: Have Claude apply refinements to PRD
+// PUT: Apply refinements to database
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
@@ -90,41 +97,29 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'version and refinements array required' }, { status: 400 })
     }
 
-    const prdFile = path.join(PRD_DIR, `${version}.json`)
+    let applied = 0
+    for (const refinement of refinements) {
+      const story = prdDb.stories.get(refinement.id)
+      if (!story) continue
 
-    // Build prompt for Claude to apply the refinements
-    const prompt = `You need to update the PRD file with refined story content.
+      const changes: any = {}
+      if (refinement.suggested_description) {
+        changes.description = refinement.suggested_description
+      }
+      if (refinement.suggested_acceptance) {
+        changes.acceptance = refinement.suggested_acceptance
+      }
 
-PRD FILE: ${prdFile}
-
-REFINEMENTS TO APPLY:
-${JSON.stringify(refinements.map(r => ({
-  id: r.id,
-  new_description: r.suggested_description,
-  new_acceptance: r.suggested_acceptance
-})), null, 2)}
-
-Instructions:
-1. Read the PRD file at the path above
-2. For each refinement, find the story by ID and update:
-   - "description" field with new_description (if provided)
-   - "acceptance" array with new_acceptance
-3. Write the updated PRD back to the same file
-4. Preserve all other fields and formatting
-
-After completing, output this JSON:
-{
-  "applied": <number of stories updated>,
-  "success": true
-}`
-
-    const { success, result, error, raw } = await runClaude(prompt)
-
-    if (!success) {
-      return NextResponse.json({ error, raw }, { status: 500 })
+      if (Object.keys(changes).length > 0) {
+        prdDb.stories.update(refinement.id, changes)
+        applied++
+      }
     }
 
-    return NextResponse.json(result)
+    return NextResponse.json({
+      applied,
+      success: true
+    })
   } catch (error: any) {
     console.error('Apply refinements error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })

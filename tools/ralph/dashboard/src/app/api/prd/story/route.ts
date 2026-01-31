@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import path from 'path'
-import fs from 'fs/promises'
-import { runClaude, PRD_DIR } from '@/lib/claude'
+import { runClaude } from '@/lib/claude'
+import * as prdDb from '@/lib/db/prd'
 
 // POST: Analyze requested changes and check related stories
 export async function POST(request: NextRequest) {
@@ -13,18 +12,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'version, storyId, and requestedChanges are required' }, { status: 400 })
     }
 
-    const prdFile = path.join(PRD_DIR, `${version}.json`)
-    const prdContent = await fs.readFile(prdFile, 'utf-8')
-    const prd = JSON.parse(prdContent)
+    const prd = prdDb.getPRD(version)
+    if (!prd) {
+      return NextResponse.json({ error: `Version ${version} not found` }, { status: 404 })
+    }
 
-    const story = prd.stories.find((s: any) => s.id === storyId)
+    const story = prd.stories.find((s) => s.id === storyId)
     if (!story) {
       return NextResponse.json({ error: 'Story not found' }, { status: 404 })
     }
 
     // Find related stories (same tags, dependents, dependencies)
     const storyTags = new Set(story.tags || [])
-    const relatedStories = prd.stories.filter((s: any) => {
+    const relatedStories = prd.stories.filter((s) => {
       if (s.id === storyId) return false
       // Same tags (at least 2 overlap)
       const overlap = (s.tags || []).filter((t: string) => storyTags.has(t))
@@ -54,7 +54,7 @@ USER REQUESTED CHANGES:
 ${requestedChanges}
 
 RELATED STORIES (share tags or dependencies - may need updates for consistency):
-${JSON.stringify(relatedStories.map((s: any) => ({
+${JSON.stringify(relatedStories.map((s) => ({
   id: s.id,
   title: s.title,
   description: s.description,
@@ -97,7 +97,7 @@ Only include related_updates for stories that actually need changes.`
 
     // Enrich related_updates with title from original stories
     const enrichedRelatedUpdates = (result.related_updates || []).map((update: any) => {
-      const originalStory = relatedStories.find((s: any) => s.id === update.id)
+      const originalStory = relatedStories.find((s) => s.id === update.id)
       return {
         ...update,
         title: originalStory?.title || update.title
@@ -107,7 +107,7 @@ Only include related_updates for stories that actually need changes.`
     return NextResponse.json({
       storyId,
       currentStory: story,
-      relatedStories: relatedStories.map((s: any) => ({ id: s.id, title: s.title })),
+      relatedStories: relatedStories.map((s) => ({ id: s.id, title: s.title })),
       target: result.target,
       related_updates: enrichedRelatedUpdates,
       summary: result.summary
@@ -118,7 +118,7 @@ Only include related_updates for stories that actually need changes.`
   }
 }
 
-// PUT: Have Claude apply story updates
+// PUT: Apply story updates to database
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
@@ -128,38 +128,32 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'version and updates array required' }, { status: 400 })
     }
 
-    const prdFile = path.join(PRD_DIR, `${version}.json`)
+    let applied = 0
+    for (const update of updates) {
+      const story = prdDb.stories.get(update.id)
+      if (!story) continue
 
-    // Build prompt for Claude to apply the updates
-    const prompt = `You need to update stories in the PRD file.
+      const changes: any = {}
+      if (update.suggested_description) {
+        changes.description = update.suggested_description
+      }
+      if (update.suggested_acceptance) {
+        changes.acceptance = update.suggested_acceptance
+      }
+      if (update.suggested_intent) {
+        changes.intent = update.suggested_intent
+      }
 
-PRD FILE: ${prdFile}
-
-STORY UPDATES TO APPLY:
-${JSON.stringify(updates, null, 2)}
-
-Instructions:
-1. Read the PRD file at the path above
-2. For each update, find the story by ID and update:
-   - "description" field with suggested_description (if provided)
-   - "acceptance" array with suggested_acceptance (if provided)
-   - "intent" field with suggested_intent (if provided)
-3. Write the updated PRD back to the same file
-4. Preserve all other fields and formatting
-
-After completing, output this JSON:
-{
-  "applied": <number of stories updated>,
-  "success": true
-}`
-
-    const { success, result, error, raw } = await runClaude(prompt)
-
-    if (!success) {
-      return NextResponse.json({ error, raw }, { status: 500 })
+      if (Object.keys(changes).length > 0) {
+        prdDb.stories.update(update.id, changes)
+        applied++
+      }
     }
 
-    return NextResponse.json(result)
+    return NextResponse.json({
+      applied,
+      success: true
+    })
   } catch (error: any) {
     console.error('Apply story updates error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })

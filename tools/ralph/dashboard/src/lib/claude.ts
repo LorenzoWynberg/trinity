@@ -9,8 +9,6 @@ const execAsync = promisify(exec)
 
 // Dashboard runs from tools/ralph/dashboard, so project root is 3 levels up
 const PROJECT_ROOT = path.resolve(process.cwd(), '../../..')
-export const RALPH_CLI_DIR = path.join(PROJECT_ROOT, 'tools/ralph/cli')
-export const PRD_DIR = path.join(RALPH_CLI_DIR, 'prd')
 
 export type ClaudeResult = {
   success: boolean
