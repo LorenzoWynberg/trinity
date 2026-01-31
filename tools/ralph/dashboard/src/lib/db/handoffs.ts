@@ -144,6 +144,37 @@ export function clearForStory(storyId: string): number {
   return result.changes
 }
 
+// Find stale pending handoffs (older than threshold)
+export function findStale(thresholdMinutes: number = 30): Handoff[] {
+  const db = getDb()
+  const rows = db.prepare(`
+    SELECT * FROM agent_handoffs
+    WHERE status = 'pending'
+    AND created_at < datetime('now', '-' || ? || ' minutes')
+    ORDER BY created_at ASC
+  `).all(thresholdMinutes) as HandoffRow[]
+
+  return rows.map(parseRow)
+}
+
+// Mark a handoff as timed out (creates blocked handoff back to orchestrator)
+export function timeout(id: number, reason: string = 'Agent timed out'): Handoff {
+  const db = getDb()
+
+  // Get the handoff
+  const row = db.prepare('SELECT * FROM agent_handoffs WHERE id = ?').get(id) as HandoffRow
+  if (!row) throw new Error(`Handoff ${id} not found`)
+
+  // Mark as rejected
+  db.prepare(`
+    UPDATE agent_handoffs
+    SET status = 'rejected', processed_at = datetime('now'), rejection_reason = ?
+    WHERE id = ?
+  `).run(reason, id)
+
+  return parseRow(row)
+}
+
 // Get current agent state for a story
 export function getCurrentState(storyId: string): {
   currentAgent: AgentType | null

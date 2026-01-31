@@ -2,6 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as handoffs from '@/lib/db/handoffs'
 import { emit } from '@/lib/events'
 
+const VALID_AGENTS = ['orchestrator', 'analyst', 'implementer', 'reviewer', 'documenter'] as const
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  orchestrator: ['analyst'],
+  analyst: ['implementer'],
+  implementer: ['reviewer'],
+  reviewer: ['documenter', 'implementer'], // can reject back to implementer
+  documenter: ['orchestrator'],
+}
+
+function isValidAgent(agent: string): agent is handoffs.AgentType {
+  return VALID_AGENTS.includes(agent as any)
+}
+
+function isValidTransition(from: string, to: string): boolean {
+  return VALID_TRANSITIONS[from]?.includes(to) ?? false
+}
+
 // GET /api/handoffs?storyId=xxx - Get handoffs for a story
 // GET /api/handoffs?storyId=xxx&agent=implementer - Get pending handoff for agent
 export async function GET(request: NextRequest) {
@@ -32,6 +49,28 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'create': {
+        // Validate agents
+        if (!isValidAgent(body.fromAgent)) {
+          return NextResponse.json({ error: `Invalid fromAgent: ${body.fromAgent}` }, { status: 400 })
+        }
+        if (!isValidAgent(body.toAgent)) {
+          return NextResponse.json({ error: `Invalid toAgent: ${body.toAgent}` }, { status: 400 })
+        }
+        // Validate transition (skip for rejections which go backwards)
+        if (!isValidTransition(body.fromAgent, body.toAgent)) {
+          return NextResponse.json({
+            error: `Invalid transition: ${body.fromAgent} → ${body.toAgent}`
+          }, { status: 400 })
+        }
+        // Check for existing pending handoff to same agent
+        const existing = handoffs.getPending(body.storyId, body.toAgent)
+        if (existing) {
+          return NextResponse.json({
+            error: `Pending handoff already exists for ${body.toAgent}`,
+            existing
+          }, { status: 409 })
+        }
+
         const handoff = handoffs.create({
           story_id: body.storyId,
           from_agent: body.fromAgent,
