@@ -1,8 +1,0 @@
-{
-  "title": "Next.js",
-  "description": "Next.js and React gotchas",
-  "icon": "Globe",
-  "pages": [
-    { "slug": "index", "title": "Overview" }
-  ]
-}

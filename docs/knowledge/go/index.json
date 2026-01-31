@@ -1,8 +1,0 @@
-{
-  "title": "Go",
-  "description": "Go workspaces and best practices",
-  "icon": "Code2",
-  "pages": [
-    { "slug": "index", "title": "Overview" }
-  ]
-}

@@ -1,8 +1,0 @@
-{
-  "title": "Go",
-  "description": "Go language gotchas",
-  "icon": "Code2",
-  "pages": [
-    { "slug": "index", "title": "Overview" }
-  ]
-}
