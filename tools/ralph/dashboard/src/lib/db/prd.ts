@@ -1,4 +1,5 @@
 import { getDb } from './index'
+import * as tagsDb from './tags'
 import type { Story, Phase, Epic, PRD } from '../types'
 
 // Version operations
@@ -137,17 +138,16 @@ export const stories = {
     db.prepare(`
       INSERT INTO stories (
         id, version_id, phase, epic, story_number, title, intent, description,
-        acceptance, depends_on, tags, passes, merged, skipped,
+        acceptance, depends_on, passes, merged, skipped,
         target_branch, working_branch, pr_url, merge_commit,
         external_deps, external_deps_report
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         title = excluded.title,
         intent = excluded.intent,
         description = excluded.description,
         acceptance = excluded.acceptance,
         depends_on = excluded.depends_on,
-        tags = excluded.tags,
         passes = excluded.passes,
         merged = excluded.merged,
         skipped = excluded.skipped,
@@ -169,7 +169,6 @@ export const stories = {
       story.description || null,
       JSON.stringify(story.acceptance || []),
       JSON.stringify(story.depends_on || []),
-      JSON.stringify(story.tags || []),
       story.passes ? 1 : 0,
       story.merged ? 1 : 0,
       story.skipped ? 1 : 0,
@@ -180,6 +179,11 @@ export const stories = {
       JSON.stringify(story.external_deps || []),
       story.external_deps_report || null
     )
+
+    // Set tags via junction table
+    if (story.tags?.length) {
+      tagsDb.setForStory(story.id, story.tags)
+    }
   },
 
   bulkCreate(storyList: Story[]): void {
@@ -187,17 +191,16 @@ export const stories = {
     const stmt = db.prepare(`
       INSERT INTO stories (
         id, version_id, phase, epic, story_number, title, intent, description,
-        acceptance, depends_on, tags, passes, merged, skipped,
+        acceptance, depends_on, passes, merged, skipped,
         target_branch, working_branch, pr_url, merge_commit,
         external_deps, external_deps_report
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         title = excluded.title,
         intent = excluded.intent,
         description = excluded.description,
         acceptance = excluded.acceptance,
         depends_on = excluded.depends_on,
-        tags = excluded.tags,
         passes = excluded.passes,
         merged = excluded.merged,
         skipped = excluded.skipped,
@@ -223,7 +226,6 @@ export const stories = {
           story.description || null,
           JSON.stringify(story.acceptance || []),
           JSON.stringify(story.depends_on || []),
-          JSON.stringify(story.tags || []),
           story.passes ? 1 : 0,
           story.merged ? 1 : 0,
           story.skipped ? 1 : 0,
@@ -234,6 +236,11 @@ export const stories = {
           JSON.stringify(story.external_deps || []),
           story.external_deps_report || null
         )
+
+        // Set tags via junction table
+        if (story.tags?.length) {
+          tagsDb.setForStory(story.id, story.tags)
+        }
       }
     })()
   },
@@ -480,7 +487,7 @@ function parseStoryRow(row: any): Story {
     description: row.description,
     acceptance: JSON.parse(row.acceptance || '[]'),
     depends_on: JSON.parse(row.depends_on || '[]'),
-    tags: JSON.parse(row.tags || '[]'),
+    tags: tagsDb.getForStory(row.id).map(t => t.name),
     phase: row.phase,
     epic: row.epic,
     story_number: row.story_number,
