@@ -201,26 +201,40 @@ export default function RunPage() {
       {status?.scoredStories && status.scoredStories.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Story Queue</CardTitle>
-            <CardDescription>Ranked by smart selection algorithm</CardDescription>
+            <CardTitle className="text-lg">Story Queue ({status.scoredStories.length} ready)</CardTitle>
+            <CardDescription>Ranked by smart selection - dependencies met, ready to run</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {status.scoredStories.slice(0, 8).map((scored, i) => (
+            <div className="space-y-3">
+              {status.scoredStories.slice(0, 10).map((scored, i) => (
                 <div
                   key={scored.storyId}
-                  className={`flex items-center justify-between p-2 rounded ${i === 0 ? 'bg-green-50 dark:bg-green-950 cyber-dark:bg-green-950 border border-green-200 dark:border-green-800 cyber-dark:border-green-800' : 'bg-muted/50'}`}
+                  className={`p-3 rounded ${i === 0 ? 'bg-green-50 dark:bg-green-950 cyber-dark:bg-green-950 border border-green-200 dark:border-green-800 cyber-dark:border-green-800' : 'bg-muted/50'}`}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium w-6">{i + 1}.</span>
-                    <span className="font-mono text-sm">{scored.storyId}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-bold w-6 text-muted-foreground">{i + 1}.</span>
+                      <div>
+                        <span className="font-mono text-sm">{scored.storyId}</span>
+                        {scored.title && (
+                          <p className="text-sm text-muted-foreground truncate max-w-md">{scored.title}</p>
+                        )}
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="ml-2">{scored.score.toFixed(2)}</Badge>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span title="Tree Proximity">Tree: {scored.proximity.toFixed(1)}</span>
-                    <span title="Tag Overlap">Tags: {scored.tagOverlap.toFixed(2)}</span>
-                    <span title="Blocker Value">Blocks: {scored.blockerValue}</span>
-                    <Badge variant="outline">{scored.score.toFixed(2)}</Badge>
-                  </div>
+                  {scored.blockerValue > 0 && (
+                    <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                      <span className="text-green-600 dark:text-green-400 cyber-dark:text-green-400 font-medium">
+                        Unblocks {scored.blockerValue} {scored.blockerValue === 1 ? 'story' : 'stories'}
+                      </span>
+                      {scored.wouldUnblock && scored.wouldUnblock.length > 0 && (
+                        <span className="text-muted-foreground">
+                          ({scored.wouldUnblock.slice(0, 3).join(', ')}{scored.wouldUnblock.length > 3 ? '...' : ''})
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

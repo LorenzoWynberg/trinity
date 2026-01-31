@@ -13,12 +13,14 @@ import type { Story, PRD } from './types'
 
 export interface StoryScore {
   storyId: string
+  title: string
   score: number
   proximity: number
   tagOverlap: number
   blockerValue: number
   priority: number
   inverseComplexity: number
+  wouldUnblock: string[]  // IDs of stories this would unblock
 }
 
 /**
@@ -59,11 +61,10 @@ export function calcTagOverlap(tagsA: string[] | undefined, tagsB: string[] | un
 }
 
 /**
- * Count how many stories would be unblocked if this story is merged
- * Higher = more valuable to complete
+ * Get stories that would be unblocked if this story is merged
  */
-export function calcBlockerValue(storyId: string, allStories: Story[]): number {
-  let count = 0
+export function getStoriesBlockedBy(storyId: string, allStories: Story[]): Story[] {
+  const blocked: Story[] = []
 
   for (const story of allStories) {
     if (story.id === storyId) continue
@@ -71,11 +72,19 @@ export function calcBlockerValue(storyId: string, allStories: Story[]): number {
 
     const deps = story.depends_on || []
     if (deps.includes(storyId)) {
-      count++
+      blocked.push(story)
     }
   }
 
-  return count
+  return blocked
+}
+
+/**
+ * Count how many stories would be unblocked if this story is merged
+ * Higher = more valuable to complete
+ */
+export function calcBlockerValue(storyId: string, allStories: Story[]): number {
+  return getStoriesBlockedBy(storyId, allStories).length
 }
 
 /**
@@ -159,7 +168,8 @@ export function scoreStory(
   const tagOverlap = calcTagOverlap(story.tags, lastCompleted?.tags)
 
   // Blocker value: how many stories depend on this one
-  const blockerValue = calcBlockerValue(story.id, allStories)
+  const blockedStories = getStoriesBlockedBy(story.id, allStories)
+  const blockerValue = blockedStories.length
   // Normalize to 0-1 range (assume max 10 dependents)
   const blockerScore = Math.min(blockerValue / 10, 1.0)
 
@@ -181,12 +191,14 @@ export function scoreStory(
 
   return {
     storyId: story.id,
+    title: story.title,
     score,
     proximity,
     tagOverlap,
     blockerValue,
     priority,
-    inverseComplexity
+    inverseComplexity,
+    wouldUnblock: blockedStories.map(s => s.id)
   }
 }
 
