@@ -239,3 +239,23 @@ CREATE TABLE IF NOT EXISTS page_tags (
 
 CREATE INDEX IF NOT EXISTS idx_page_tags_page ON page_tags(page_id);
 CREATE INDEX IF NOT EXISTS idx_page_tags_tag ON page_tags(tag_id);
+
+-------------------------------------------------
+-- AGENT HANDOFFS (multi-agent orchestration)
+-------------------------------------------------
+CREATE TABLE IF NOT EXISTS agent_handoffs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  story_id TEXT NOT NULL,
+  from_agent TEXT NOT NULL,           -- 'analyst', 'implementer', 'reviewer', 'orchestrator'
+  to_agent TEXT NOT NULL,
+  status TEXT DEFAULT 'pending',      -- 'pending', 'accepted', 'rejected'
+  payload TEXT,                       -- JSON: plan, review notes, files changed, etc.
+  rejection_reason TEXT,              -- Why it was sent back
+  created_at TEXT DEFAULT (datetime('now')),
+  processed_at TEXT,
+  FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_handoffs_story ON agent_handoffs(story_id);
+CREATE INDEX IF NOT EXISTS idx_agent_handoffs_status ON agent_handoffs(status);
+CREATE INDEX IF NOT EXISTS idx_agent_handoffs_to_agent ON agent_handoffs(to_agent, status);

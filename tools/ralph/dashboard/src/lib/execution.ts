@@ -89,6 +89,7 @@ async function buildPrompt(
   story: Story,
   branch: string,
   attempt: number,
+  version: string,
   options: {
     clarification?: string
     feedback?: string
@@ -120,6 +121,7 @@ async function buildPrompt(
   // Replace placeholders
   const prompt = template
     .replace(/\{\{STORY_ID\}\}/g, story.id)
+    .replace(/\{\{VERSION\}\}/g, version)
     .replace(/\{\{BRANCH\}\}/g, branch)
     .replace(/\{\{ATTEMPT\}\}/g, String(attempt))
     .replace(/\{\{DASHBOARD_URL\}\}/g, dashboardUrl)
@@ -525,7 +527,7 @@ export async function runIteration(
     const validationData = (await state.getCheckpoint(storyId, 'validation_complete'))?.data || {}
     const extDepsData = (await state.getCheckpoint(storyId, 'external_deps_complete'))?.data || {}
 
-    const prompt = await buildPrompt(story, branch, currentState.attempts + 1, {
+    const prompt = await buildPrompt(story, branch, currentState.attempts + 1, config.version, {
       clarification: validationData.clarification as string | undefined,
       externalDepsReport: extDepsData.externalDepsReport as string | undefined,
       previousFailure: currentState.last_error || undefined
