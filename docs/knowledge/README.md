@@ -4,12 +4,11 @@ Product documentation for Trinity and Ralph. Updated as features are built.
 
 ## Structure
 
-| File | Description |
-|------|-------------|
-| [trinity.md](trinity.md) | Trinity CLI architecture, concepts, storage, branching |
-| [ralph.md](ralph.md) | Ralph CLI commands, workflow, state management, PRD features |
-| [dashboard.md](dashboard.md) | Dashboard architecture, terminal, themes, ngrok setup |
-| [go.md](go.md) | Go workspace setup, multi-module patterns |
+| Directory | Description |
+|-----------|-------------|
+| [trinity/](trinity/) | Trinity CLI architecture, concepts, storage, branching |
+| [ralph-dashboard/](ralph-dashboard/) | Ralph dashboard architecture, APIs, database, execution |
+| [go/](go/) | Go workspace setup, multi-module patterns |
 
 ## How to Use
 

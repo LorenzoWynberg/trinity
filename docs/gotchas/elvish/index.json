@@ -1,8 +1,0 @@
-{
-  "title": "Elvish",
-  "description": "Elvish shell language gotchas",
-  "icon": "Terminal",
-  "pages": [
-    { "slug": "index", "title": "Overview" }
-  ]
-}

@@ -393,8 +393,7 @@ Ralph is a Next.js dashboard for managing the autonomous development loop. Locat
 
 ### Data storage
 
-- **SQLite** (`dashboard.db`) - Tasks, settings
-- **JSON files** (`tools/ralph/cli/`) - PRD versions, state, metrics (legacy, may migrate to SQLite)
+- **SQLite** (`dashboard.db`) - PRD versions, tasks, settings, handoffs, metrics
 
 ### Running the dashboard
 
@@ -414,5 +413,4 @@ After making changes, update the activity log:
 When user says "resetProject", do all of:
 1. `git checkout dev`
 2. Delete any `feat/story-*` branches (local and remote)
-3. Reset `tools/ralph/cli/state.json` to idle state
-4. Reset `tools/ralph/cli/metrics.json` to zeros
+3. Reset dashboard state via API: `POST /api/run { "action": "reset" }`

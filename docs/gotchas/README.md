@@ -6,7 +6,6 @@ Common pitfalls, mistakes to avoid, and lessons learned. Updated by Claude and R
 
 | File | Description |
 |------|-------------|
-| [elvish.md](elvish.md) | Elvish shell pitfalls (values vs bytes, arity, map access) |
 | [dashboard.md](dashboard.md) | React/Next.js hydration, mobile issues, shadcn quirks |
 | [go.md](go.md) | Go module path, workspace sync timing |
 | [patterns.md](patterns.md) | Reusable patterns discovered |

@@ -6,7 +6,6 @@ import { api } from '@/lib/api'
 import type { Story, StoryStatus, VersionInfo } from '@/lib/types'
 import {
   resolveDependency,
-  calculateDepths,
   calculateAutoPositions,
   defaultLayoutData,
   type GraphLayoutData,

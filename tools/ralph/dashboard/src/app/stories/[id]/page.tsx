@@ -9,6 +9,7 @@ import { getStoryStatus } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StoryEditButton } from '@/components/story-edit-button';
+import { StoryHandoffs } from '@/components/story-handoffs';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -298,6 +299,9 @@ export default async function StoryDetailPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Agent Pipeline / Handoffs */}
+      <StoryHandoffs storyId={story.id} />
 
       {/* Metadata */}
       {(story.skipped || story.merge_commit || story.pr_url) && (
