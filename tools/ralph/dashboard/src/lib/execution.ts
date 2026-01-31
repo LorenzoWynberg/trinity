@@ -28,8 +28,7 @@ import { settings } from './db'
 const execAsync = promisify(exec)
 
 const PROJECT_ROOT = path.resolve(process.cwd(), '../../..')
-const RALPH_CLI_DIR = path.join(PROJECT_ROOT, 'tools/ralph/cli')
-const PROMPT_FILE = path.join(RALPH_CLI_DIR, 'prompt.md')
+const PROMPT_FILE = path.join(process.cwd(), 'prompts/execution.md')
 
 export type ExecutionStatus =
   | 'idle'
@@ -83,46 +82,8 @@ async function loadPromptTemplate(): Promise<string> {
 }
 
 /**
- * Get story details for prompt
- */
-function getStoryPromptSection(story: Story): string {
-  let section = `## Story: ${story.id}\n`
-  section += `**Title:** ${story.title}\n\n`
-
-  if (story.intent) {
-    section += `**Intent:** ${story.intent}\n\n`
-  }
-
-  if (story.description) {
-    section += `**Description:**\n${story.description}\n\n`
-  }
-
-  section += `**Acceptance Criteria:**\n`
-  for (const ac of story.acceptance || []) {
-    section += `- ${ac}\n`
-  }
-
-  return section
-}
-
-/**
- * Get recent activity logs for context
- */
-async function getRecentActivityLogs(): Promise<string> {
-  try {
-    const today = new Date().toISOString().split('T')[0]
-    const logPath = path.join(PROJECT_ROOT, `logs/activity/trinity/${today}.md`)
-    const content = await fs.readFile(logPath, 'utf-8')
-    // Return last 50 lines max
-    const lines = content.split('\n')
-    return lines.slice(-50).join('\n')
-  } catch {
-    return '(No recent activity logs)'
-  }
-}
-
-/**
  * Build the prompt for Claude
+ * Minimal prompt - Claude fetches story details via API
  */
 async function buildPrompt(
   story: Story,
@@ -141,38 +102,29 @@ async function buildPrompt(
   const dashboardUrl = settings.get('dashboardUrl') || 'http://localhost:3000'
   const timezone = settings.get('timezone') || 'UTC'
 
-  // Get recent activity logs
-  const recentLogs = await getRecentActivityLogs()
-
   // Build feedback section from all context
   let feedbackSection = ''
   if (options.clarification) {
-    feedbackSection += `## Clarification from User\n${options.clarification}\n\n`
+    feedbackSection += `## Clarification\n${options.clarification}\n\n`
   }
   if (options.feedback) {
-    feedbackSection += `## Feedback from Code Review\n${options.feedback}\n\n`
+    feedbackSection += `## Feedback\n${options.feedback}\n\n`
   }
   if (options.externalDepsReport) {
-    feedbackSection += `## External Dependencies Report\n${options.externalDepsReport}\n\n`
+    feedbackSection += `## External Deps\n${options.externalDepsReport}\n\n`
   }
   if (options.previousFailure) {
-    feedbackSection += `## Previous Failure\n${options.previousFailure}\nPlease address this issue.\n\n`
+    feedbackSection += `## Previous Failure\n${options.previousFailure}\n\n`
   }
 
-  // Build story details section
-  const storyDetails = getStoryPromptSection(story)
-
-  // Replace all placeholders
+  // Replace placeholders
   const prompt = template
-    .replace(/\{\{CURRENT_STORY\}\}/g, story.id)
-    .replace(/\{\{VERSION\}\}/g, story.target_version || 'v0.1')
+    .replace(/\{\{STORY_ID\}\}/g, story.id)
     .replace(/\{\{BRANCH\}\}/g, branch)
     .replace(/\{\{ATTEMPT\}\}/g, String(attempt))
     .replace(/\{\{DASHBOARD_URL\}\}/g, dashboardUrl)
     .replace(/\{\{TIMEZONE\}\}/g, timezone)
-    .replace(/\{\{STORY_DETAILS\}\}/g, storyDetails)
     .replace(/\{\{FEEDBACK\}\}/g, feedbackSection)
-    .replace(/\{\{RECENT_ACTIVITY_LOGS\}\}/g, recentLogs)
 
   return prompt
 }
