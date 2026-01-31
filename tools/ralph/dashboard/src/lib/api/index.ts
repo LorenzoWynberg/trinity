@@ -13,6 +13,8 @@ export { prdApi, type RefineResult, type StoryAnalysis, type GenerateResult } fr
 export { runApi, type RunParams, type RunResponse, type SignalParams, type ExecutionStatus } from './run'
 export { metricsApi } from './metrics'
 export { tasksApi, type Task } from './tasks'
+export { type Handoff, type HandoffState } from './handoffs'
+import * as handoffsModule from './handoffs'
 
 // Convenience namespace
 import { settingsApi } from './settings'
@@ -27,4 +29,5 @@ export const api = {
   run: runApi,
   metrics: metricsApi,
   tasks: tasksApi,
+  handoffs: handoffsModule,
 }

@@ -12,6 +12,7 @@ export const queryKeys = {
   story: (id: string) => ['story', id] as const,
   runState: ['runState'] as const,
   metrics: ['metrics'] as const,
+  handoffs: (storyId: string) => ['handoffs', storyId] as const,
 }
 
 // ============ Settings ============
@@ -93,6 +94,21 @@ export function useMetrics() {
     queryFn: () => api.metrics.get(),
     // Metrics don't need frequent updates
     staleTime: 60 * 1000,
+  })
+}
+
+// ============ Handoffs ============
+
+export function useHandoffs(storyId: string | null | undefined) {
+  return useQuery({
+    queryKey: queryKeys.handoffs(storyId || ''),
+    queryFn: () => api.handoffs.getState(storyId!),
+    enabled: !!storyId,
+    // Poll while agent is working
+    refetchInterval: (query) => {
+      const phase = query.state.data?.phase
+      return phase && phase !== 'complete' ? 2000 : false
+    },
   })
 }
 

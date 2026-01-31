@@ -9,6 +9,7 @@ export {
   useRunState,
   useExecutionStatus,
   useMetrics,
+  useHandoffs,
   useInvalidate,
 } from './hooks'
 export { useSSE } from './sse'

@@ -4,9 +4,9 @@ import { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Play, GitBranch, CheckCircle, Clock } from 'lucide-react'
+import { Play, GitBranch, CheckCircle, Clock, User, ArrowRight, RotateCcw } from 'lucide-react'
 import { RunModal } from '@/components/run-modal'
-import { useVersions, useExecutionStatus } from '@/lib/query'
+import { useVersions, useExecutionStatus, useHandoffs } from '@/lib/query'
 
 export default function RunPage() {
   const [modalOpen, setModalOpen] = useState(false)
@@ -21,6 +21,10 @@ export default function RunPage() {
 
   // Fetch execution status (polls only when running)
   const { data: status } = useExecutionStatus(selectedVersion)
+
+  // Fetch handoffs for current story
+  const currentStoryId = status?.state?.current_story
+  const { data: handoffState } = useHandoffs(currentStoryId)
 
   const statusColor = {
     idle: 'bg-gray-500',
@@ -99,6 +103,99 @@ export default function RunPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Agent Pipeline */}
+      {currentStoryId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Agent Pipeline
+            </CardTitle>
+            <CardDescription>
+              {handoffState?.phase ? `Phase: ${handoffState.phase}` : 'Waiting to start'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Pipeline visualization */}
+            <div className="flex items-center justify-between mb-6">
+              {['analyst', 'implementer', 'reviewer', 'documenter'].map((agent, i) => {
+                const isActive = handoffState?.currentAgent === agent
+                const isDone = handoffState?.handoffs?.some(
+                  h => h.from_agent === agent && h.status === 'accepted'
+                )
+                const wasRejected = handoffState?.handoffs?.some(
+                  h => h.to_agent === agent && h.status === 'rejected'
+                )
+
+                return (
+                  <div key={agent} className="flex items-center">
+                    <div className={`
+                      flex flex-col items-center p-3 rounded-lg border-2 transition-all
+                      ${isActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ''}
+                      ${isDone && !isActive ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}
+                      ${wasRejected ? 'border-orange-500' : ''}
+                      ${!isActive && !isDone && !wasRejected ? 'border-muted' : ''}
+                    `}>
+                      <div className={`
+                        w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium
+                        ${isActive ? 'bg-blue-500 text-white' : ''}
+                        ${isDone && !isActive ? 'bg-green-500 text-white' : ''}
+                        ${!isActive && !isDone ? 'bg-muted text-muted-foreground' : ''}
+                      `}>
+                        {isDone && !isActive ? <CheckCircle className="h-5 w-5" /> : agent[0].toUpperCase()}
+                      </div>
+                      <span className="text-xs mt-1 capitalize">{agent}</span>
+                      {isActive && (
+                        <span className="text-xs text-blue-500 animate-pulse">Working...</span>
+                      )}
+                    </div>
+                    {i < 3 && (
+                      <ArrowRight className="h-4 w-4 mx-2 text-muted-foreground" />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Handoff history */}
+            {handoffState?.handoffs && handoffState.handoffs.length > 0 && (
+              <div className="border-t pt-4">
+                <div className="text-sm font-medium mb-2">Handoff History</div>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {handoffState.handoffs.map((h) => (
+                    <div
+                      key={h.id}
+                      className={`
+                        text-xs p-2 rounded flex items-center justify-between
+                        ${h.status === 'rejected' ? 'bg-orange-50 dark:bg-orange-950' : 'bg-muted/50'}
+                      `}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="capitalize">{h.from_agent}</span>
+                        {h.status === 'rejected' ? (
+                          <RotateCcw className="h-3 w-3 text-orange-500" />
+                        ) : (
+                          <ArrowRight className="h-3 w-3" />
+                        )}
+                        <span className="capitalize">{h.to_agent}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={h.status === 'accepted' ? 'default' : h.status === 'rejected' ? 'destructive' : 'secondary'}>
+                          {h.status}
+                        </Badge>
+                        <span className="text-muted-foreground">
+                          {new Date(h.created_at).toLocaleTimeString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Story Queue */}
       {status?.scoredStories && status.scoredStories.length > 0 && (
