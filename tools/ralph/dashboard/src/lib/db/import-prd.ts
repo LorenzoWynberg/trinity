@@ -7,8 +7,7 @@ import path from 'path'
 import { getDb } from './index'
 import { versions, phases, epics, stories } from './prd'
 
-const PROJECT_ROOT = path.resolve(process.cwd(), '../../..')
-const PRD_DIR = path.join(PROJECT_ROOT, 'tools/ralph/cli/prd')
+const PRD_DIR = path.join(process.cwd(), 'prd-backup')
 
 interface JsonPRD {
   title?: string

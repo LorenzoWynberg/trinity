@@ -45,7 +45,7 @@ export const phases = {
   list(versionId: string): Phase[] {
     const db = getDb()
     const rows = db.prepare(`
-      SELECT id, name FROM phases WHERE version_id = ? ORDER BY id
+      SELECT phase_number as id, name FROM phases WHERE version_id = ? ORDER BY phase_number
     `).all(versionId) as { id: number; name: string }[]
     return rows.map(r => ({ id: r.id, name: r.name }))
   },
@@ -53,18 +53,18 @@ export const phases = {
   create(versionId: string, phase: Phase): void {
     const db = getDb()
     db.prepare(`
-      INSERT INTO phases (version_id, id, name)
+      INSERT INTO phases (version_id, phase_number, name)
       VALUES (?, ?, ?)
-      ON CONFLICT(version_id, id) DO UPDATE SET name = excluded.name
+      ON CONFLICT(version_id, phase_number) DO UPDATE SET name = excluded.name
     `).run(versionId, phase.id, phase.name)
   },
 
   bulkCreate(versionId: string, phaseList: Phase[]): void {
     const db = getDb()
     const stmt = db.prepare(`
-      INSERT INTO phases (version_id, id, name)
+      INSERT INTO phases (version_id, phase_number, name)
       VALUES (?, ?, ?)
-      ON CONFLICT(version_id, id) DO UPDATE SET name = excluded.name
+      ON CONFLICT(version_id, phase_number) DO UPDATE SET name = excluded.name
     `)
     db.transaction(() => {
       for (const phase of phaseList) {
@@ -79,7 +79,7 @@ export const epics = {
   list(versionId: string): Epic[] {
     const db = getDb()
     const rows = db.prepare(`
-      SELECT phase_id as phase, id, name FROM epics WHERE version_id = ? ORDER BY phase_id, id
+      SELECT phase_number as phase, epic_number as id, name FROM epics WHERE version_id = ? ORDER BY phase_number, epic_number
     `).all(versionId) as Epic[]
     return rows
   },
@@ -87,18 +87,18 @@ export const epics = {
   create(versionId: string, epic: Epic): void {
     const db = getDb()
     db.prepare(`
-      INSERT INTO epics (version_id, phase_id, id, name)
+      INSERT INTO epics (version_id, phase_number, epic_number, name)
       VALUES (?, ?, ?, ?)
-      ON CONFLICT(version_id, phase_id, id) DO UPDATE SET name = excluded.name
+      ON CONFLICT(version_id, phase_number, epic_number) DO UPDATE SET name = excluded.name
     `).run(versionId, epic.phase, epic.id, epic.name)
   },
 
   bulkCreate(versionId: string, epicList: Epic[]): void {
     const db = getDb()
     const stmt = db.prepare(`
-      INSERT INTO epics (version_id, phase_id, id, name)
+      INSERT INTO epics (version_id, phase_number, epic_number, name)
       VALUES (?, ?, ?, ?)
-      ON CONFLICT(version_id, phase_id, id) DO UPDATE SET name = excluded.name
+      ON CONFLICT(version_id, phase_number, epic_number) DO UPDATE SET name = excluded.name
     `)
     db.transaction(() => {
       for (const epic of epicList) {
