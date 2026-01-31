@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   result TEXT,
   error TEXT,
   context TEXT,
-  deleted INTEGER DEFAULT 0,
+  deleted_at TEXT,
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))
 );
