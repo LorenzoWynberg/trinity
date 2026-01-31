@@ -429,6 +429,15 @@ export function getStoryById(prd: PRD, id: string): Story | undefined {
   return prd.stories.find(s => s.id === id)
 }
 
+// Get a single story directly from SQLite (efficient - doesn't load full PRD)
+export async function getStory(id: string): Promise<Story | null> {
+  try {
+    return prd.stories.get(id)
+  } catch {
+    return null
+  }
+}
+
 export function getTotalStats(prd: PRD, metrics: Metrics | null) {
   const total = prd.stories.length
   const merged = prd.stories.filter(s => s.merged).length
