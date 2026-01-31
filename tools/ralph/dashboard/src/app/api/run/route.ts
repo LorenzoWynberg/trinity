@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPRD } from '@/lib/data'
 import * as execution from '@/lib/execution'
 import * as state from '@/lib/run-state'
+import * as handoffs from '@/lib/db/handoffs'
+
+const VALID_ACTIONS = ['start', 'continue', 'stop', 'reset'] as const
 
 // GET /api/run - Get execution status
 export async function GET(request: NextRequest) {
@@ -34,12 +37,27 @@ export async function POST(request: NextRequest) {
       gateResponse
     } = body
 
+    // Validate action
+    if (!VALID_ACTIONS.includes(action as any)) {
+      return NextResponse.json({
+        error: `Invalid action: ${action}. Valid actions: ${VALID_ACTIONS.join(', ')}`
+      }, { status: 400 })
+    }
+
     const prd = await getPRD(version)
     if (!prd) {
       return NextResponse.json({ error: 'PRD not found' }, { status: 404 })
     }
 
     if (action === 'start' || action === 'continue') {
+      // On start, check for stale handoffs and timeout them
+      if (action === 'start') {
+        const staleHandoffs = handoffs.findStale(30) // 30 minute threshold
+        for (const stale of staleHandoffs) {
+          handoffs.timeout(stale.id, `Timed out on restart (was pending for ${stale.to_agent})`)
+        }
+      }
+
       const execConfig: execution.ExecutionConfig = {
         version,
         baseBranch: config?.baseBranch || 'dev',
@@ -61,8 +79,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'reset') {
+      // Clear stale handoffs on reset
+      const staleHandoffs = handoffs.findStale(0) // All pending handoffs
+      for (const stale of staleHandoffs) {
+        handoffs.timeout(stale.id, 'Reset by user')
+      }
       await state.resetState()
-      return NextResponse.json({ status: 'reset' })
+      return NextResponse.json({ status: 'reset', clearedHandoffs: staleHandoffs.length })
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
