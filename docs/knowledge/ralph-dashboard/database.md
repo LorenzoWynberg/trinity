@@ -1,6 +1,6 @@
 # Database
 
-The dashboard uses SQLite via `better-sqlite3` for persistent storage. The database file lives at `tools/ralph/dashboard/dashboard.db`.
+The dashboard uses SQLite via `better-sqlite3` for persistent storage. The database file lives at `tools/ralph-dashboard/dashboard.db`.
 
 ## Setup
 
@@ -344,14 +344,14 @@ PRD data is stored directly in SQLite. Use the PRD Tools UI to generate or impor
 To import from external JSON:
 
 ```bash
-cd tools/ralph/dashboard
+cd tools/ralph-dashboard
 npx tsx src/lib/db/import-prd.ts /path/to/prd.json
 ```
 
 ## File Location
 
 ```
-tools/ralph/dashboard/
+tools/ralph-dashboard/
 ├── dashboard.db              # SQLite database (gitignored)
 └── src/lib/db/
     ├── index.ts              # Connection, tasks, settings

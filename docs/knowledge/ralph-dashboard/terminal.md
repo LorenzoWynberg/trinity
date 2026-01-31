@@ -40,7 +40,7 @@ Requires `brew install tmux`. Session named "ralph" persists until manually kill
 
 For accessing dashboard from phone/remote:
 
-**Config file:** `tools/ralph/dashboard/ngrok.yml` (gitignored - contains authtoken)
+**Config file:** `tools/ralph-dashboard/ngrok.yml` (gitignored - contains authtoken)
 
 ```yaml
 version: 3

@@ -2,7 +2,7 @@
 
 The dashboard is a Next.js app for viewing PRD status, running Ralph, and managing the development loop.
 
-**Location:** `tools/ralph/dashboard/`
+**Location:** `tools/ralph-dashboard/`
 
 ## Terminology
 

@@ -8,7 +8,7 @@ import * as chapters from './chapters'
 import * as pages from './pages'
 import type { Book } from './chapters'
 
-const PROJECT_ROOT = path.join(process.cwd(), '../../..')
+const PROJECT_ROOT = path.join(process.cwd(), '../..')
 const DOCS_DIR = path.join(PROJECT_ROOT, 'docs')
 
 type ChapterIndex = {
