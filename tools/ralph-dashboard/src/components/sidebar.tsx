@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   Play,
+  Target,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TaskIndicator } from '@/components/task-indicator'
@@ -26,6 +27,7 @@ const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/run', label: 'Run', icon: Play },
   { href: '/stories', label: 'Stories', icon: ListTodo },
+  { href: '/align', label: 'Align', icon: Target },
   { href: '/graph', label: 'Graph', icon: GitBranch },
   { href: '/terminal', label: 'Terminal', icon: TerminalSquare },
   { href: '/tasks', label: 'Tasks', icon: ClipboardList },
