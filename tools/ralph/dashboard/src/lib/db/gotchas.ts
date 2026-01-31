@@ -1,5 +1,5 @@
-// Knowledge base convenience wrapper
-// Knowledge pages are in the 'knowledge' book
+// Gotchas convenience wrapper
+// Gotchas are pages in the 'gotchas' book
 
 import * as chapters from './chapters'
 import * as pages from './pages'
@@ -7,14 +7,14 @@ import * as pages from './pages'
 export type { Chapter } from './chapters'
 export type { Page } from './pages'
 
-// List all knowledge chapters
+// List all gotcha chapters
 export function listChapters() {
-  return chapters.list('knowledge')
+  return chapters.list('gotchas')
 }
 
 // Get a chapter
 export function getChapter(slug: string) {
-  return chapters.get('knowledge', slug)
+  return chapters.get('gotchas', slug)
 }
 
 // Create a chapter
@@ -24,12 +24,12 @@ export function createChapter(data: {
   description?: string
   icon?: string
 }) {
-  return chapters.create({ ...data, book: 'knowledge' })
+  return chapters.create({ ...data, book: 'gotchas' })
 }
 
-// List all knowledge pages
+// List all gotcha pages
 export function listPages() {
-  return pages.listByBook('knowledge')
+  return pages.listByBook('gotchas')
 }
 
 // List pages in a chapter
@@ -42,7 +42,7 @@ export function getPage(id: number) {
   return pages.get(id)
 }
 
-// Create a knowledge page
+// Create a gotcha page
 export function createPage(chapterSlug: string, data: {
   slug: string
   title: string
@@ -52,7 +52,7 @@ export function createPage(chapterSlug: string, data: {
   source?: string
   tags?: string[]
 }) {
-  return pages.createInBook('knowledge', chapterSlug, data)
+  return pages.createInBook('gotchas', chapterSlug, data)
 }
 
 // Update a page
@@ -65,20 +65,20 @@ export function deletePage(id: number) {
   return pages.remove(id)
 }
 
-// Search knowledge
+// Search gotchas
 export function search(query: string) {
-  return pages.search(query, 'knowledge')
+  return pages.search(query, 'gotchas')
 }
 
 // Find by tag
 export function findByTag(tagName: string) {
-  return pages.findByTag(tagName, 'knowledge')
+  return pages.findByTag(tagName, 'gotchas')
 }
 
-// Get knowledge linked to a story
+// Get gotchas linked to a story
 export function getByStory(storyId: string) {
   return pages.getByStory(storyId).filter(p => {
     const chapter = chapters.getById(p.chapter_id)
-    return chapter?.book === 'knowledge'
+    return chapter?.book === 'gotchas'
   })
 }

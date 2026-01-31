@@ -189,33 +189,53 @@ CREATE INDEX IF NOT EXISTS idx_activity_logs_date ON activity_logs(date);
 CREATE INDEX IF NOT EXISTS idx_activity_logs_story ON activity_logs(story_id);
 
 -------------------------------------------------
--- KNOWLEDGE BASE
+-- KNOWLEDGE BASE & GOTCHAS (book/chapter/page structure)
 -------------------------------------------------
-CREATE TABLE IF NOT EXISTS knowledge (
+
+-- Chapters (directories like "ralph-dashboard", "elvish")
+CREATE TABLE IF NOT EXISTS chapters (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  category TEXT NOT NULL CHECK (category IN ('knowledge', 'gotcha')),
-  slug TEXT,
+  book TEXT NOT NULL CHECK (book IN ('knowledge', 'gotchas')),
+  slug TEXT NOT NULL,                    -- directory name
   title TEXT NOT NULL,
-  content TEXT,
-  story_id TEXT,
-  source TEXT,
+  description TEXT,
+  icon TEXT,                             -- lucide icon name
+  sort_order INTEGER DEFAULT 0,
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(book, slug)
+);
+
+CREATE INDEX IF NOT EXISTS idx_chapters_book ON chapters(book);
+
+-- Pages (markdown files within chapters)
+CREATE TABLE IF NOT EXISTS pages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  chapter_id INTEGER NOT NULL,
+  slug TEXT NOT NULL,                    -- filename without .md
+  title TEXT NOT NULL,
+  content TEXT,
+  sort_order INTEGER DEFAULT 0,
+  story_id TEXT,                         -- what story generated this (optional)
+  source TEXT,                           -- 'extraction', 'feedback', 'manual'
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(chapter_id, slug),
+  FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE,
   FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_knowledge_category ON knowledge(category);
-CREATE INDEX IF NOT EXISTS idx_knowledge_slug ON knowledge(slug);
-CREATE INDEX IF NOT EXISTS idx_knowledge_story ON knowledge(story_id);
+CREATE INDEX IF NOT EXISTS idx_pages_chapter ON pages(chapter_id);
+CREATE INDEX IF NOT EXISTS idx_pages_story ON pages(story_id);
 
--- Knowledge tags junction
-CREATE TABLE IF NOT EXISTS knowledge_tags (
-  knowledge_id INTEGER NOT NULL,
+-- Page tags junction
+CREATE TABLE IF NOT EXISTS page_tags (
+  page_id INTEGER NOT NULL,
   tag_id INTEGER NOT NULL,
-  PRIMARY KEY (knowledge_id, tag_id),
-  FOREIGN KEY (knowledge_id) REFERENCES knowledge(id) ON DELETE CASCADE,
+  PRIMARY KEY (page_id, tag_id),
+  FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE,
   FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_knowledge_tags_knowledge ON knowledge_tags(knowledge_id);
-CREATE INDEX IF NOT EXISTS idx_knowledge_tags_tag ON knowledge_tags(tag_id);
+CREATE INDEX IF NOT EXISTS idx_page_tags_page ON page_tags(page_id);
+CREATE INDEX IF NOT EXISTS idx_page_tags_tag ON page_tags(tag_id);

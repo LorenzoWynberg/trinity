@@ -67,26 +67,26 @@ export function removeFromStory(storyId: string, tagName: string): void {
   `).run(storyId, tagName)
 }
 
-// Get tags for knowledge
-export function getForKnowledge(knowledgeId: number): Tag[] {
+// Get tags for a page
+export function getForPage(pageId: number): Tag[] {
   const db = getDb()
   return db.prepare(`
     SELECT t.* FROM tags t
-    JOIN knowledge_tags kt ON kt.tag_id = t.id
-    WHERE kt.knowledge_id = ?
+    JOIN page_tags pt ON pt.tag_id = t.id
+    WHERE pt.page_id = ?
     ORDER BY t.name
-  `).all(knowledgeId) as Tag[]
+  `).all(pageId) as Tag[]
 }
 
-// Set tags for knowledge (replaces existing)
-export function setForKnowledge(knowledgeId: number, tagNames: string[]): void {
+// Set tags for a page (replaces existing)
+export function setForPage(pageId: number, tagNames: string[]): void {
   const db = getDb()
 
-  db.prepare('DELETE FROM knowledge_tags WHERE knowledge_id = ?').run(knowledgeId)
+  db.prepare('DELETE FROM page_tags WHERE page_id = ?').run(pageId)
 
   for (const name of tagNames) {
     const tag = getOrCreate(name)
-    db.prepare('INSERT OR IGNORE INTO knowledge_tags (knowledge_id, tag_id) VALUES (?, ?)').run(knowledgeId, tag.id)
+    db.prepare('INSERT OR IGNORE INTO page_tags (page_id, tag_id) VALUES (?, ?)').run(pageId, tag.id)
   }
 }
 
@@ -101,13 +101,13 @@ export function findStoriesByTag(tagName: string): string[] {
   return rows.map(r => r.story_id)
 }
 
-// Find knowledge by tag
-export function findKnowledgeByTag(tagName: string): number[] {
+// Find pages by tag
+export function findPagesByTag(tagName: string): number[] {
   const db = getDb()
   const rows = db.prepare(`
-    SELECT kt.knowledge_id FROM knowledge_tags kt
-    JOIN tags t ON t.id = kt.tag_id
+    SELECT pt.page_id FROM page_tags pt
+    JOIN tags t ON t.id = pt.tag_id
     WHERE t.name = ?
-  `).all(tagName) as { knowledge_id: number }[]
-  return rows.map(r => r.knowledge_id)
+  `).all(tagName) as { page_id: number }[]
+  return rows.map(r => r.page_id)
 }
