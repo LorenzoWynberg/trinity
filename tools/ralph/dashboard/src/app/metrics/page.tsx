@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { StatsCard } from '@/components/stats-card'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -12,8 +12,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Coins, Clock, Hash, TrendingUp, CheckCircle, GitPullRequest, GitMerge } from 'lucide-react'
-import { api } from '@/lib/api'
-import type { Metrics, Story } from '@/lib/types'
+import { useMetrics, usePrd, useVersions } from '@/lib/query'
+import type { Story } from '@/lib/types'
 
 function formatDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600)
@@ -38,42 +38,21 @@ function formatTokens(tokens: number): string {
   return tokens.toString()
 }
 
-// Extract version from story ID (e.g., STORY-1.2.3 -> check prd data)
 function getVersionFromStoryId(storyId: string, stories: Story[]): string | undefined {
   const story = stories.find(s => s.id === storyId)
   return story?.target_version
 }
 
 export default function MetricsPage() {
-  const [metrics, setMetrics] = useState<Metrics | null>(null)
-  const [stories, setStories] = useState<Story[]>([])
-  const [versions, setVersions] = useState<string[]>([])
   const [selectedVersion, setSelectedVersion] = useState<string>('all')
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [metricsData, prdData, versionsData] = await Promise.all([
-          api.metrics.get(),
-          api.prd.get(),
-          api.prd.getVersions(),
-        ])
+  const { data: metrics, isLoading: metricsLoading } = useMetrics()
+  const { data: prd } = usePrd()
+  const { data: versionsData } = useVersions()
 
-        setMetrics(metricsData)
-        setStories(prdData?.stories || [])
-        setVersions(versionsData.versions || [])
-        setLoading(false)
-      } catch (error) {
-        console.error('Failed to fetch metrics:', error)
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-    const interval = setInterval(fetchData, 5000)
-    return () => clearInterval(interval)
-  }, [])
+  const stories = prd?.stories || []
+  const versions = versionsData?.versions || []
+  const loading = metricsLoading
 
   if (loading) {
     return (

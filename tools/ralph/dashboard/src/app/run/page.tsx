@@ -1,64 +1,26 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Play, GitBranch, CheckCircle, Clock } from 'lucide-react'
 import { RunModal } from '@/components/run-modal'
-import { api } from '@/lib/api'
-import type { Story } from '@/lib/types'
-import type { StoryScore } from '@/lib/scoring'
-
-interface RunState {
-  current_story: string | null
-  status: string
-  branch: string | null
-  attempts: number
-  last_completed: string | null
-}
-
-interface ExecutionStatus {
-  state: RunState
-  progress: { total: number; merged: number; passed: number; percentage: number }
-  nextStory: Story | null
-  scoredStories: StoryScore[]
-}
+import { useVersions, useExecutionStatus } from '@/lib/query'
 
 export default function RunPage() {
   const [modalOpen, setModalOpen] = useState(false)
-  const [, setVersions] = useState<string[]>([])
-  const [selectedVersion, setSelectedVersion] = useState('v0.1')
-  const [status, setStatus] = useState<ExecutionStatus | null>(null)
+  const [userSelectedVersion, _setUserSelectedVersion] = useState<string | null>(null)
 
-  // Fetch versions on mount
-  useEffect(() => {
-    api.prd.getVersions()
-      .then(data => {
-        setVersions(data.versions || [])
-        if (data.versions?.length > 0) {
-          setSelectedVersion(data.versions[0])
-        }
-      })
-      .catch(console.error)
-  }, [])
+  // Fetch versions
+  const { data: versionsData } = useVersions()
+  const versions = useMemo(() => versionsData?.versions || [], [versionsData?.versions])
 
-  // Fetch status
-  useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        const res = await fetch(`/api/run?version=${selectedVersion}`)
-        const data = await res.json()
-        setStatus(data)
-      } catch (error) {
-        console.error('Failed to fetch status:', error)
-      }
-    }
+  // Use user selection or default to first version
+  const selectedVersion = userSelectedVersion ?? versions[0] ?? 'v0.1'
 
-    fetchStatus()
-    const interval = setInterval(fetchStatus, 5000)
-    return () => clearInterval(interval)
-  }, [selectedVersion])
+  // Fetch execution status (polls only when running)
+  const { data: status } = useExecutionStatus(selectedVersion)
 
   const statusColor = {
     idle: 'bg-gray-500',

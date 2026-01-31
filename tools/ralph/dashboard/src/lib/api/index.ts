@@ -10,7 +10,7 @@
 export { ApiError } from './client'
 export { settingsApi, type Settings, type Theme, type GraphDirection } from './settings'
 export { prdApi, type RefineResult, type StoryAnalysis, type GenerateResult } from './prd'
-export { runApi, type RunParams, type RunResponse, type SignalParams } from './run'
+export { runApi, type RunParams, type RunResponse, type SignalParams, type ExecutionStatus } from './run'
 export { metricsApi } from './metrics'
 export { tasksApi, type Task } from './tasks'
 

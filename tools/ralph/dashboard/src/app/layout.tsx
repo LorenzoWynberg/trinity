@@ -5,6 +5,8 @@ import { Sidebar } from "@/components/sidebar"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ToastProvider } from "@/components/toast-provider"
 import { TaskProvider } from "@/components/task-provider"
+import { QueryProvider } from "@/lib/query"
+import { SSEProvider } from "@/components/sse-provider"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,16 +40,20 @@ export default function RootLayout({
           disableTransitionOnChange
           themes={['light', 'dark', 'cyber-light', 'cyber-dark', 'system']}
         >
-          <ToastProvider>
-            <TaskProvider>
-              <div className="flex h-screen bg-background text-foreground">
-                <Sidebar />
-                <main className="flex-1 overflow-auto pt-16 md:pt-0">
-                  {children}
-                </main>
-              </div>
-            </TaskProvider>
-          </ToastProvider>
+          <QueryProvider>
+            <SSEProvider>
+              <ToastProvider>
+                <TaskProvider>
+                  <div className="flex h-screen bg-background text-foreground">
+                    <Sidebar />
+                    <main className="flex-1 overflow-auto pt-16 md:pt-0">
+                      {children}
+                    </main>
+                  </div>
+                </TaskProvider>
+              </ToastProvider>
+            </SSEProvider>
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>

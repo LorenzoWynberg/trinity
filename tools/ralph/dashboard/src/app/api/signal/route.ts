@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as prd from '@/lib/db/prd'
 import * as state from '@/lib/run-state'
+import { emit } from '@/lib/events'
 
 interface SignalBody {
   storyId: string
@@ -47,6 +48,10 @@ export async function POST(request: NextRequest) {
         // Clear failure state
         await state.clearFailure()
 
+        // Emit SSE events
+        emit('story_update', { storyId, status: 'complete' })
+        emit('run_state', prd.runState.get())
+
         return NextResponse.json({
           success: true,
           storyId,
@@ -66,6 +71,10 @@ export async function POST(request: NextRequest) {
           status: 'blocked',
           last_error: message || 'Story blocked'
         })
+
+        // Emit SSE events
+        emit('story_update', { storyId, status: 'blocked', message })
+        emit('run_state', prd.runState.get())
 
         return NextResponse.json({
           success: true,

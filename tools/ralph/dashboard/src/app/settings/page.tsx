@@ -1,7 +1,7 @@
 'use client'
 
 import { useTheme } from 'next-themes'
-import { useEffect, useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,105 +13,39 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Sun, Moon, Monitor, Zap, Clock, Loader2, Globe } from 'lucide-react'
-import { api } from '@/lib/api'
+import { useSettings, useUpdateSettings, useVersions } from '@/lib/query'
 
 export default function SettingsPage() {
   const { theme, resolvedTheme, setTheme } = useTheme()
   const currentTheme = theme === 'system' ? 'system' : resolvedTheme
-  const [mounted, setMounted] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [versions, setVersions] = useState<string[]>([])
-  const [defaultVersion, setDefaultVersion] = useState<string>('first')
-  const [timezone, setTimezone] = useState<string>('Africa/Johannesburg')
-  const [dashboardUrl, setDashboardUrl] = useState<string>('http://localhost:3000')
-  const [savingVersion, setSavingVersion] = useState(false)
-  const [savingTimezone, setSavingTimezone] = useState(false)
-  const [savingDashboardUrl, setSavingDashboardUrl] = useState(false)
+  const [userDashboardUrl, setUserDashboardUrl] = useState<string | null>(null)
 
-  useEffect(() => {
-    setMounted(true)
+  // TanStack Query hooks
+  const { data: settings, isLoading: settingsLoading } = useSettings()
+  const { data: versionsData, isLoading: versionsLoading } = useVersions()
+  const updateSettings = useUpdateSettings()
 
-    async function loadSettings() {
-      try {
-        const [versionData, settingsData] = await Promise.all([
-          api.prd.getVersions(),
-          api.settings.get(),
-        ])
+  const versions = useMemo(() => versionsData?.versions || [], [versionsData?.versions])
+  const loading = settingsLoading || versionsLoading
 
-        const availableVersions = versionData.versions || []
-        setVersions(availableVersions)
+  // Derive dashboard URL - user input takes precedence over settings
+  const dashboardUrlInput = userDashboardUrl ?? settings?.dashboardUrl ?? 'http://localhost:3000'
 
-        const savedVersion = settingsData.defaultVersion
-        if (savedVersion && savedVersion !== 'first' && availableVersions.includes(savedVersion)) {
-          setDefaultVersion(savedVersion)
-        } else if (availableVersions.length > 0) {
-          setDefaultVersion(availableVersions[0])
-        }
-
-        if (settingsData.timezone) {
-          setTimezone(settingsData.timezone)
-        }
-
-        if (settingsData.dashboardUrl) {
-          setDashboardUrl(settingsData.dashboardUrl)
-        }
-
-        if (settingsData.theme) {
-          setTheme(settingsData.theme)
-        }
-      } catch (error) {
-        console.error('Failed to load settings:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadSettings()
-  }, [setTheme])
-
-  const saveTheme = async (newTheme: string) => {
+  const saveTheme = (newTheme: string) => {
     setTheme(newTheme)
-    try {
-      await api.settings.update({ theme: newTheme as any })
-    } catch (error) {
-      console.error('Failed to save theme:', error)
-    }
+    updateSettings.mutate({ theme: newTheme as any })
   }
 
-  const saveDefaultVersion = async (version: string) => {
-    setDefaultVersion(version)
-    setSavingVersion(true)
-    try {
-      await api.settings.update({ defaultVersion: version })
-    } catch (error) {
-      console.error('Failed to save default version:', error)
-    } finally {
-      setSavingVersion(false)
-    }
+  const saveDefaultVersion = (version: string) => {
+    updateSettings.mutate({ defaultVersion: version })
   }
 
-  const saveTimezone = async (tz: string) => {
-    setTimezone(tz)
-    setSavingTimezone(true)
-    try {
-      await api.settings.update({ timezone: tz })
-    } catch (error) {
-      console.error('Failed to save timezone:', error)
-    } finally {
-      setSavingTimezone(false)
-    }
+  const saveTimezone = (tz: string) => {
+    updateSettings.mutate({ timezone: tz })
   }
 
-  const saveDashboardUrl = async (url: string) => {
-    setDashboardUrl(url)
-    setSavingDashboardUrl(true)
-    try {
-      await api.settings.update({ dashboardUrl: url })
-    } catch (error) {
-      console.error('Failed to save dashboard URL:', error)
-    } finally {
-      setSavingDashboardUrl(false)
-    }
+  const saveDashboardUrl = () => {
+    updateSettings.mutate({ dashboardUrl: dashboardUrlInput })
   }
 
   const timezones = [
@@ -132,8 +66,13 @@ export default function SettingsPage() {
     { value: 'UTC', label: 'UTC' },
   ]
 
-  if (!mounted) {
-    return null
+  if (loading) {
+    return (
+      <div className="p-8 max-w-2xl">
+        <h1 className="text-2xl font-bold cyber-light:text-pink-600 cyber-dark:text-foreground">Settings</h1>
+        <p className="text-muted-foreground mt-2">Loading...</p>
+      </div>
+    )
   }
 
   const themes = [
@@ -188,14 +127,14 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-3 block">Default Version</label>
-              <Select value={defaultVersion} onValueChange={saveDefaultVersion} disabled={loading || savingVersion}>
+              <Select value={settings?.defaultVersion || versions[0] || ''} onValueChange={saveDefaultVersion} disabled={loading || updateSettings.isPending}>
                 <SelectTrigger className="w-[200px]">
                   {loading ? (
                     <div className="flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span>Loading...</span>
                     </div>
-                  ) : savingVersion ? (
+                  ) : updateSettings.isPending ? (
                     <div className="flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span>Saving...</span>
@@ -234,14 +173,14 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-3 block">Preferred Timezone</label>
-              <Select value={timezone} onValueChange={saveTimezone} disabled={loading || savingTimezone}>
+              <Select value={settings?.timezone || 'Africa/Johannesburg'} onValueChange={saveTimezone} disabled={loading || updateSettings.isPending}>
                 <SelectTrigger className="w-[280px]">
                   {loading ? (
                     <div className="flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span>Loading...</span>
                     </div>
-                  ) : savingTimezone ? (
+                  ) : updateSettings.isPending ? (
                     <div className="flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span>Saving...</span>
@@ -282,17 +221,17 @@ export default function SettingsPage() {
               <label className="text-sm font-medium mb-3 block">Dashboard URL</label>
               <div className="flex gap-2">
                 <Input
-                  value={dashboardUrl}
-                  onChange={(e) => setDashboardUrl(e.target.value)}
+                  value={dashboardUrlInput}
+                  onChange={(e) => setUserDashboardUrl(e.target.value)}
                   placeholder="http://localhost:3000"
                   className="w-[300px]"
                   disabled={loading}
                 />
                 <Button
-                  onClick={() => saveDashboardUrl(dashboardUrl)}
-                  disabled={loading || savingDashboardUrl}
+                  onClick={saveDashboardUrl}
+                  disabled={loading || updateSettings.isPending}
                 >
-                  {savingDashboardUrl ? (
+                  {updateSettings.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                       Saving...
