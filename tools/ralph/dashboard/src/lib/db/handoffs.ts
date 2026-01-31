@@ -137,6 +137,13 @@ export function reject(id: number, reason: string): Handoff {
   return parseRow(row)
 }
 
+// Clear all handoffs for a story (cleanup after completion)
+export function clearForStory(storyId: string): number {
+  const db = getDb()
+  const result = db.prepare('DELETE FROM agent_handoffs WHERE story_id = ?').run(storyId)
+  return result.changes
+}
+
 // Get current agent state for a story
 export function getCurrentState(storyId: string): {
   currentAgent: AgentType | null

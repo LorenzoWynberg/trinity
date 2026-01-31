@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as handoffs from '@/lib/db/handoffs'
+import { emit } from '@/lib/events'
 
 // GET /api/handoffs?storyId=xxx - Get handoffs for a story
 // GET /api/handoffs?storyId=xxx&agent=implementer - Get pending handoff for agent
@@ -37,11 +38,25 @@ export async function POST(request: NextRequest) {
           to_agent: body.toAgent,
           payload: body.payload
         })
+        // Emit SSE event
+        emit('handoff', {
+          action: 'create',
+          storyId: body.storyId,
+          handoff,
+          state: handoffs.getCurrentState(body.storyId)
+        })
         return NextResponse.json({ success: true, handoff })
       }
 
       case 'accept': {
         const handoff = handoffs.accept(body.handoffId, body.payload)
+        // Emit SSE event
+        emit('handoff', {
+          action: 'accept',
+          storyId: handoff.story_id,
+          handoff,
+          state: handoffs.getCurrentState(handoff.story_id)
+        })
         return NextResponse.json({ success: true, handoff })
       }
 
@@ -57,6 +72,13 @@ export async function POST(request: NextRequest) {
             rejection_reason: body.reason,
             rejected_by: handoff.to_agent
           }
+        })
+        // Emit SSE event
+        emit('handoff', {
+          action: 'reject',
+          storyId: handoff.story_id,
+          handoff: returnHandoff,
+          state: handoffs.getCurrentState(handoff.story_id)
         })
         return NextResponse.json({ success: true, handoff: returnHandoff })
       }

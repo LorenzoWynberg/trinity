@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import * as prd from '@/lib/db/prd'
+import * as handoffs from '@/lib/db/handoffs'
 import * as state from '@/lib/run-state'
 import { emit } from '@/lib/events'
 
@@ -47,6 +48,9 @@ export async function POST(request: NextRequest) {
 
         // Clear failure state
         await state.clearFailure()
+
+        // Cleanup handoffs for this story
+        handoffs.clearForStory(storyId)
 
         // Emit SSE events
         emit('story_update', { storyId, status: 'complete' })

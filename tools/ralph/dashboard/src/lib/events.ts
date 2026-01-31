@@ -4,7 +4,7 @@
  * Used to push updates from API routes to connected SSE clients
  */
 
-type EventType = 'run_state' | 'story_update' | 'metrics'
+type EventType = 'run_state' | 'story_update' | 'metrics' | 'handoff'
 type Listener = (data: string) => void
 
 const listeners = new Set<Listener>()
