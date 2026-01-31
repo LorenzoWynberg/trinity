@@ -15,20 +15,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const prd = prdDb.getPRD(version)
+    const prd = version === 'all' ? prdDb.getAllPRDs() : prdDb.getPRD(version)
     if (!prd) {
-      return NextResponse.json({ error: `Version ${version} not found` }, { status: 404 })
+      return NextResponse.json({ error: version === 'all' ? 'No PRD data found' : `Version ${version} not found` }, { status: 404 })
     }
 
     // Get stories based on scope (same logic as align task)
     let stories = prd.stories
     let scopeDescription = ''
 
-    if (scope === 'phase' && scopeId) {
+    if (scope === 'project') {
+      scopeDescription = 'Whole Project (all versions)'
+    } else if (scope === 'phase' && scopeId) {
       const phaseNum = parseInt(scopeId, 10)
       stories = stories.filter(s => s.phase === phaseNum)
       const phase = prd.phases?.find(p => p.id === phaseNum)
-      scopeDescription = `Phase ${phaseNum}${phase ? `: ${phase.name}` : ''}`
+      scopeDescription = `Phase ${phaseNum}${phase ? `: ${phase.name}` : ''} in ${version}`
     } else if (scope === 'epic' && scopeId) {
       const [phaseStr, epicStr] = scopeId.split('.')
       const phaseNum = parseInt(phaseStr, 10)
@@ -36,9 +38,9 @@ export async function POST(request: NextRequest) {
       stories = stories.filter(s => s.phase === phaseNum && s.epic === epicNum)
       const phase = prd.phases?.find(p => p.id === phaseNum)
       const epic = prd.epics?.find(e => e.phase === phaseNum && e.id === epicNum)
-      scopeDescription = `Phase ${phaseNum}${phase ? ` (${phase.name})` : ''}, Epic ${epicNum}${epic ? `: ${epic.name}` : ''}`
+      scopeDescription = `Phase ${phaseNum}${phase ? ` (${phase.name})` : ''}, Epic ${epicNum}${epic ? `: ${epic.name}` : ''} in ${version}`
     } else {
-      scopeDescription = `Full version: ${version}`
+      scopeDescription = `Version: ${version}`
     }
 
     const incompleteStories = stories.filter(s => !s.passes && !s.merged && !s.skipped)

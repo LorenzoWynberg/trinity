@@ -24,7 +24,7 @@ import { api } from '@/lib/api'
 import { useTaskContext, type Task, type TaskContext } from '@/components/task-provider'
 import type { Phase, Epic } from '@/lib/types'
 
-type AlignScope = 'version' | 'phase' | 'epic'
+type AlignScope = 'project' | 'version' | 'phase' | 'epic'
 
 type Gap = {
   description: string
@@ -96,7 +96,7 @@ export function AlignModal({ open, onOpenChange, version, versions = [], phases 
 
   // Input state
   const [selectedVersion, setSelectedVersion] = useState(version)
-  const [scope, setScope] = useState<AlignScope>('version')
+  const [scope, setScope] = useState<AlignScope>('project')
   const [selectedPhase, setSelectedPhase] = useState<string>('')
   const [selectedEpic, setSelectedEpic] = useState<string>('')
   const [vision, setVision] = useState('')
@@ -154,7 +154,7 @@ export function AlignModal({ open, onOpenChange, version, versions = [], phases 
     setRefineLoading(false)
     setError(null)
     setSelectedVersion(version)
-    setScope('version')
+    setScope('project')
     setSelectedPhase('')
     setSelectedEpic('')
     setVision('')
@@ -177,6 +177,8 @@ export function AlignModal({ open, onOpenChange, version, versions = [], phases 
     return undefined
   }
 
+  const getEffectiveVersion = () => scope === 'project' ? 'all' : selectedVersion
+
   const handleStartTask = async () => {
     if (!vision.trim()) return
     setLoading(true)
@@ -187,7 +189,7 @@ export function AlignModal({ open, onOpenChange, version, versions = [], phases 
         returnPath: '/stories',
         step: 'review'
       }
-      await createTask('align', selectedVersion, {
+      await createTask('align', getEffectiveVersion(), {
         scope,
         scopeId: getScopeId(),
         vision
@@ -207,7 +209,7 @@ export function AlignModal({ open, onOpenChange, version, versions = [], phases 
 
     try {
       const refined = await api.prd.refineAlign({
-        version: selectedVersion,
+        version: getEffectiveVersion(),
         previousAnalysis: result,
         additionalInput,
         scope,
@@ -236,7 +238,7 @@ export function AlignModal({ open, onOpenChange, version, versions = [], phases 
       const newStories = result.new_stories?.filter((_, i) => selectedNew.has(i)) || []
       const removals = Array.from(selectedRemovals)
 
-      const data = await api.prd.applyAlignChanges(selectedVersion, {
+      const data = await api.prd.applyAlignChanges(getEffectiveVersion(), {
         modifications,
         newStories,
         removals
@@ -347,23 +349,6 @@ export function AlignModal({ open, onOpenChange, version, versions = [], phases 
           {/* Step 1: Input */}
           {step === 'input' && (
             <div className="space-y-4">
-              {/* Version selection */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Version</label>
-                <Select value={selectedVersion} onValueChange={setSelectedVersion}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select version" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {versions.map(v => (
-                      <SelectItem key={v} value={v}>
-                        {v}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
               {/* Scope selection */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Scope</label>
@@ -372,12 +357,32 @@ export function AlignModal({ open, onOpenChange, version, versions = [], phases 
                     <SelectValue placeholder="Select scope" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="version">Entire Version</SelectItem>
+                    <SelectItem value="project">Whole Project</SelectItem>
+                    <SelectItem value="version">Specific Version</SelectItem>
                     <SelectItem value="phase">Specific Phase</SelectItem>
                     <SelectItem value="epic">Specific Epic</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Version selection - only show when not whole project */}
+              {scope !== 'project' && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Version</label>
+                  <Select value={selectedVersion} onValueChange={setSelectedVersion}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select version" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {versions.map(v => (
+                        <SelectItem key={v} value={v}>
+                          {v}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Phase selector */}
               {(scope === 'phase' || scope === 'epic') && (

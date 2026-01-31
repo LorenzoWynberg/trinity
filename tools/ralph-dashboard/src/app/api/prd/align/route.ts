@@ -11,10 +11,15 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'version is required' }, { status: 400 })
     }
 
-    const prd = prdDb.getPRD(version)
+    const prd = version === 'all' ? prdDb.getAllPRDs() : prdDb.getPRD(version)
     if (!prd) {
-      return NextResponse.json({ error: `Version ${version} not found` }, { status: 404 })
+      return NextResponse.json({ error: version === 'all' ? 'No PRD data found' : `Version ${version} not found` }, { status: 404 })
     }
+
+    // For 'all' version, we need a target version for new stories
+    // Use the first available version or extract from existing story
+    const versions = prdDb.versions.list()
+    const targetVersion = version === 'all' ? (versions[0] || 'v0.1') : version
 
     let applied = 0
     let added = 0
@@ -61,15 +66,18 @@ export async function PUT(request: NextRequest) {
         const nextNum = (maxStoryNumbers.get(key) || 0) + 1
         maxStoryNumbers.set(key, nextNum)
 
+        // Use story's target_version if specified, otherwise use targetVersion
+        const storyVersion = s.target_version || targetVersion
+
         return {
-          id: `${version}:${s.phase}.${s.epic}.${nextNum}`,
+          id: `${storyVersion}:${s.phase}.${s.epic}.${nextNum}`,
           title: s.title,
           intent: s.intent,
           acceptance: s.acceptance || [],
           phase: s.phase,
           epic: s.epic,
           story_number: nextNum,
-          target_version: version,
+          target_version: storyVersion,
           depends_on: s.depends_on || [],
           tags: s.tags || [],
           passes: false,

@@ -218,23 +218,26 @@ export async function runAlignTask(task: Task): Promise<any> {
   const { version, params } = task
   const { scope, scopeId, vision } = params
   // scope: 'project' | 'version' | 'phase' | 'epic'
-  // scopeId: version id, phase number, or "phase.epic"
+  // scopeId: phase number, or "phase.epic"
   // vision: user's description of what they want
 
-  const prdData = prd.getPRD(version)
+  // Get PRD data based on scope
+  const prdData = version === 'all' ? prd.getAllPRDs() : prd.getPRD(version)
   if (!prdData) {
-    throw new Error(`Version ${version} not found`)
+    throw new Error(version === 'all' ? 'No PRD data found' : `Version ${version} not found`)
   }
 
   // Get stories based on scope
   let stories: Story[] = prdData.stories
   let scopeDescription = ''
 
-  if (scope === 'phase' && scopeId) {
+  if (scope === 'project') {
+    scopeDescription = 'Whole Project (all versions)'
+  } else if (scope === 'phase' && scopeId) {
     const phaseNum = parseInt(scopeId, 10)
     stories = stories.filter(s => s.phase === phaseNum)
     const phase = prdData.phases?.find(p => p.id === phaseNum)
-    scopeDescription = `Phase ${phaseNum}${phase ? `: ${phase.name}` : ''}`
+    scopeDescription = `Phase ${phaseNum}${phase ? `: ${phase.name}` : ''} in ${version}`
   } else if (scope === 'epic' && scopeId) {
     const [phaseStr, epicStr] = scopeId.split('.')
     const phaseNum = parseInt(phaseStr, 10)
@@ -242,9 +245,9 @@ export async function runAlignTask(task: Task): Promise<any> {
     stories = stories.filter(s => s.phase === phaseNum && s.epic === epicNum)
     const phase = prdData.phases?.find(p => p.id === phaseNum)
     const epic = prdData.epics?.find(e => e.phase === phaseNum && e.id === epicNum)
-    scopeDescription = `Phase ${phaseNum}${phase ? ` (${phase.name})` : ''}, Epic ${epicNum}${epic ? `: ${epic.name}` : ''}`
+    scopeDescription = `Phase ${phaseNum}${phase ? ` (${phase.name})` : ''}, Epic ${epicNum}${epic ? `: ${epic.name}` : ''} in ${version}`
   } else {
-    scopeDescription = `Full version: ${version}`
+    scopeDescription = `Version: ${version}`
   }
 
   // Filter to incomplete stories for analysis
