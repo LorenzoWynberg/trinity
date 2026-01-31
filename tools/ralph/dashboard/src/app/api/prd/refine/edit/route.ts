@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runClaude } from '@/lib/claude'
+import { getPrompt } from '@/lib/prompts'
 
 type Refinement = {
   id: string
@@ -65,24 +66,17 @@ export async function POST(request: NextRequest) {
       ? findRelatedStories(storyId, tags || [], depends_on || [], allRefinements)
       : []
 
-    const claudePrompt = `You are refining suggestions for a PRD story based on user feedback.
+    const hasRelated = relatedStories.length > 0
 
-TARGET STORY:
-- ID: ${storyId}
-- Title: ${title || 'Unknown'}
-- Tags: ${(tags || []).join(', ') || '(none)'}
-- Depends on: ${(depends_on || []).join(', ') || '(none)'}
-
-CURRENT SUGGESTED DESCRIPTION:
-${currentDescription || '(none)'}
-
-CURRENT SUGGESTED ACCEPTANCE CRITERIA:
-${(currentAcceptance || []).map((a: string, i: number) => `${i + 1}. ${a}`).join('\n')}
-
-USER FEEDBACK:
-${userFeedback}
-
-${relatedStories.length > 0 ? `
+    const prompt = getPrompt('refine-edit', {
+      STORY_ID: storyId,
+      TITLE: title || 'Unknown',
+      TAGS: (tags || []).join(', ') || '(none)',
+      DEPENDS_ON: (depends_on || []).join(', ') || '(none)',
+      CURRENT_DESCRIPTION: currentDescription || '(none)',
+      CURRENT_ACCEPTANCE: (currentAcceptance || []).map((a: string, i: number) => `${i + 1}. ${a}`).join('\n'),
+      USER_FEEDBACK: userFeedback,
+      RELATED_STORIES_SECTION: hasRelated ? `
 RELATED STORIES (share tags or dependencies - check if they need updates):
 ${JSON.stringify(relatedStories.map(r => ({
   id: r.id,
@@ -92,18 +86,11 @@ ${JSON.stringify(relatedStories.map(r => ({
   current_description: r.suggested_description,
   current_acceptance: r.suggested_acceptance
 })), null, 2)}
-` : ''}
-
-Based on the user's feedback:
-1. Generate improved suggestions for the target story
-2. ${relatedStories.length > 0 ? 'Check if any related stories need updated suggestions due to this change' : 'No related stories to check'}
-
-Output format (JSON only, no markdown):
-{
-  "target": {
-    "suggested_description": "Updated description",
-    "suggested_acceptance": ["criterion 1", "criterion 2"]
-  }${relatedStories.length > 0 ? `,
+` : '',
+      RELATED_CHECK_INSTRUCTION: hasRelated
+        ? 'Check if any related stories need updated suggestions due to this change'
+        : 'No related stories to check',
+      RELATED_OUTPUT_SCHEMA: hasRelated ? `,
   "related_updates": [
     {
       "id": "X.Y.Z",
@@ -111,12 +98,10 @@ Output format (JSON only, no markdown):
       "suggested_description": "Updated description if changed",
       "suggested_acceptance": ["updated criteria if changed"]
     }
-  ]` : ''}
-}
+  ]` : ''
+    })
 
-Only include related_updates for stories that actually need changes. Keep suggestions specific and testable.`
-
-    const { success, result, error, raw } = await runClaude(claudePrompt)
+    const { success, result, error, raw } = await runClaude(prompt)
 
     if (!success) {
       return NextResponse.json({ error, raw }, { status: 500 })

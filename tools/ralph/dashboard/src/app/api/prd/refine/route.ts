@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runClaude } from '@/lib/claude'
 import * as prdDb from '@/lib/db/prd'
+import { getPrompt } from '@/lib/prompts'
 
 // POST: Get refinement suggestions from Claude
 export async function POST(request: NextRequest) {
@@ -33,42 +34,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ refinements: [], summary: 'No stories to refine' })
     }
 
-    // Build prompt with story data
-    const prompt = `Review these stories for clarity and testability:
-
-STORIES TO REVIEW:
-${JSON.stringify(stories.map(s => ({
-  id: s.id,
-  title: s.title,
-  description: s.description,
-  acceptance: s.acceptance,
-  tags: s.tags,
-  depends_on: s.depends_on
-})), null, 2)}
-
-For each story, check:
-1. Are acceptance criteria specific and testable?
-2. Are there vague terms? ("settings", "improve", "properly", "handle")
-3. Should it be split into smaller stories?
-
-Output JSON:
-{
-  "refinements": [
-    {
-      "id": "X.Y.Z",
-      "title": "story title",
-      "status": "ok" | "needs_work",
-      "issues": ["issue 1"],
-      "suggested_description": "clearer description",
-      "suggested_acceptance": ["criterion 1", "criterion 2"],
-      "tags": ["from", "original"],
-      "depends_on": ["from", "original"]
-    }
-  ],
-  "summary": "X of Y stories need refinement"
-}
-
-Copy tags and depends_on from original. Be pragmatic - only flag real issues.`
+    const prompt = getPrompt('refine', {
+      STORIES: JSON.stringify(stories.map(s => ({
+        id: s.id,
+        title: s.title,
+        description: s.description,
+        acceptance: s.acceptance,
+        tags: s.tags,
+        depends_on: s.depends_on
+      })), null, 2)
+    })
 
     // Run Claude with temp files - use longer timeout for analyzing many stories
     console.log('[refine] Calling runClaude, prompt length:', prompt.length)

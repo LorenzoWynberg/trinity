@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runClaude } from '@/lib/claude'
 import * as prdDb from '@/lib/db/prd'
+import { getPrompt } from '@/lib/prompts'
 
 // POST: Analyze requested changes and check related stories
 export async function POST(request: NextRequest) {
@@ -36,57 +37,24 @@ export async function POST(request: NextRequest) {
       return false
     })
 
-    // Build prompt for Claude
-    const prompt = `You are updating a PRD story based on user feedback.
-
-TARGET STORY:
-- ID: ${story.id}
-- Title: ${story.title}
-- Current Description: ${story.description || '(none)'}
-- Current Intent: ${story.intent || '(none)'}
-- Tags: ${(story.tags || []).join(', ') || '(none)'}
-- Depends On: ${(story.depends_on || []).join(', ') || '(none)'}
-
-Current Acceptance Criteria:
-${(story.acceptance || []).map((a: string, i: number) => `${i + 1}. ${a}`).join('\n')}
-
-USER REQUESTED CHANGES:
-${requestedChanges}
-
-RELATED STORIES (share tags or dependencies - may need updates for consistency):
-${JSON.stringify(relatedStories.map((s) => ({
-  id: s.id,
-  title: s.title,
-  description: s.description,
-  tags: s.tags,
-  depends_on: s.depends_on,
-  acceptance: s.acceptance
-})), null, 2)}
-
-Tasks:
-1. Generate updated description and acceptance criteria for the target story
-2. Check if any related stories need updates to stay consistent
-3. Be specific - avoid vague terms like "properly", "handle", "settings"
-
-Output ONLY valid JSON (no markdown, no code blocks):
-{
-  "target": {
-    "suggested_description": "Updated description based on changes",
-    "suggested_acceptance": ["specific criterion 1", "specific criterion 2"],
-    "suggested_intent": "Updated intent if needed"
-  },
-  "related_updates": [
-    {
-      "id": "X.Y.Z",
-      "reason": "Why this story needs updating due to changes in ${storyId}",
-      "suggested_description": "Updated description if changed",
-      "suggested_acceptance": ["updated criteria if changed"]
-    }
-  ],
-  "summary": "Brief description of what changed and why"
-}
-
-Only include related_updates for stories that actually need changes.`
+    const prompt = getPrompt('story-edit', {
+      STORY_ID: story.id,
+      TITLE: story.title,
+      DESCRIPTION: story.description || '(none)',
+      INTENT: story.intent || '(none)',
+      TAGS: (story.tags || []).join(', ') || '(none)',
+      DEPENDS_ON: (story.depends_on || []).join(', ') || '(none)',
+      ACCEPTANCE: (story.acceptance || []).map((a: string, i: number) => `${i + 1}. ${a}`).join('\n'),
+      REQUESTED_CHANGES: requestedChanges,
+      RELATED_STORIES: JSON.stringify(relatedStories.map((s) => ({
+        id: s.id,
+        title: s.title,
+        description: s.description,
+        tags: s.tags,
+        depends_on: s.depends_on,
+        acceptance: s.acceptance
+      })), null, 2)
+    })
 
     // Run Claude with temp files
     const { success, result, error, raw } = await runClaude(prompt)
