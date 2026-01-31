@@ -7,6 +7,7 @@ export async function getMetrics(): Promise<Metrics | null> {
     const allStories = prdDb.stories.list()
     const passedCount = allStories.filter(s => s.passes).length
     const mergedCount = allStories.filter(s => s.merged).length
+    const prdCount = allStories.filter(s => s.pr_url).length  // Stories with PRs created
 
     return {
       total_tokens: totals.total_input_tokens + totals.total_output_tokens,
@@ -14,7 +15,7 @@ export async function getMetrics(): Promise<Metrics | null> {
       total_output_tokens: totals.total_output_tokens,
       total_duration_seconds: totals.total_duration_seconds,
       stories_passed: passedCount,
-      stories_prd: allStories.length,
+      stories_prd: prdCount,
       stories_merged: mergedCount,
       stories: [] // Per-story metrics derived from execution_log if needed
     }
