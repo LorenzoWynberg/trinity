@@ -29,9 +29,13 @@ import * as prd from '@/lib/db/prd'
 │   stories   │────<│ checkpoints │     │    tasks    │
 └─────────────┘     └─────────────┘     └─────────────┘
        │
-       │            ┌─────────────┐
-       └───────────<│execution_log│
-                    └─────────────┘
+       ├───────────<┌─────────────┐
+       │            │execution_log│
+       │            └─────────────┘
+       │
+       └───────────<┌─────────────────┐
+                    │ agent_handoffs  │  (multi-agent pipeline)
+                    └─────────────────┘
 
 ┌─────────────┐
 │  run_state  │  (single row - current execution)
@@ -178,6 +182,27 @@ CREATE TABLE checkpoints (
 );
 ```
 
+### agent_handoffs
+
+Multi-agent pipeline coordination.
+
+```sql
+CREATE TABLE agent_handoffs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  story_id TEXT NOT NULL,
+  from_agent TEXT NOT NULL,      -- orchestrator/analyst/implementer/reviewer/refactorer/documenter
+  to_agent TEXT NOT NULL,
+  status TEXT DEFAULT 'pending', -- pending/accepted/rejected
+  payload TEXT,                  -- JSON: analysis, plan, review notes
+  rejection_reason TEXT,
+  created_at TEXT NOT NULL,
+  processed_at TEXT,
+  FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE CASCADE
+);
+```
+
+See [Handoffs](handoffs.md) for full documentation.
+
 ## Task Tables
 
 ### tasks
@@ -220,12 +245,7 @@ SQL files in `src/lib/db/migrations/` are applied automatically on startup:
 
 | Migration | Description |
 |-----------|-------------|
-| `001_tasks.sql` | Initial tasks table |
-| `002_task_context.sql` | Add context column |
-| `003_settings.sql` | Settings table |
-| `004_task_soft_delete.sql` | Soft delete columns |
-| `005_prd.sql` | PRD tables (versions, phases, epics, stories, run_state, checkpoints) |
-| `006_execution_log.sql` | Execution history, schema cleanup |
+| `001_schema.sql` | Full schema: tasks, settings, PRD tables, run_state, execution_log, agent_handoffs |
 
 ## PRD Operations
 
@@ -319,14 +339,14 @@ This replaces the old XML signal parsing from Claude output.
 
 ## Seeding Data
 
-Import PRD data from JSON files:
+PRD data is stored directly in SQLite. Use the PRD Tools UI to generate or import stories.
+
+To import from external JSON:
 
 ```bash
 cd tools/ralph/dashboard
-npx tsx src/lib/db/import-prd.ts
+npx tsx src/lib/db/import-prd.ts /path/to/prd.json
 ```
-
-This reads from `tools/ralph/cli/prd/*.json` and populates the SQLite tables.
 
 ## File Location
 

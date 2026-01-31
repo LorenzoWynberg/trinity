@@ -65,6 +65,12 @@ Only shown if story has vague terms or unclear acceptance criteria.
 
 Shows Claude working with a spinner. Displays execution logs as they come in.
 
+**Agent Pipeline**: During execution, the multi-agent system coordinates work:
+```
+Analyst → Implementer ⇄ Reviewer → Refactorer → Documenter
+```
+The modal shows current agent and progress through the pipeline. See [Handoffs](handoffs.md) for details.
+
 In Autopilot mode, a "Stop after this story" button appears. Clicking it will:
 - Show confirmation that the run will stop after current story
 - Allow cancellation if you change your mind

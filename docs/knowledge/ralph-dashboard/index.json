@@ -5,6 +5,7 @@
   "pages": [
     { "slug": "index", "title": "Overview" },
     { "slug": "execution", "title": "Execution Loop" },
+    { "slug": "handoffs", "title": "Agent Handoffs" },
     { "slug": "stories", "title": "Stories" },
     { "slug": "graph", "title": "Graph" },
     { "slug": "terminal", "title": "Terminal" },

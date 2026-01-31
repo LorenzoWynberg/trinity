@@ -26,8 +26,10 @@ The dashboard is a Next.js app for viewing PRD status, running Ralph, and managi
 
 | Feature | Description |
 |---------|-------------|
+| [Execution](execution.md) | Autonomous dev loop wizard |
+| [Handoffs](handoffs.md) | Multi-agent pipeline coordination |
 | [PRD Tools](prd-tools.md) | Claude-powered story editing wizards |
-| [Database](database.md) | SQLite storage for tasks and settings |
+| [Database](database.md) | SQLite storage for PRD, tasks, handoffs |
 | [Themes](themes.md) | Light, dark, and cyber themes |
 
 ## Running Locally
