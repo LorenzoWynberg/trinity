@@ -144,13 +144,15 @@ CREATE TABLE IF NOT EXISTS tasks (
   type TEXT NOT NULL,
   version TEXT,
   status TEXT DEFAULT 'pending',
-  input TEXT,
+  params TEXT,
   result TEXT,
   error TEXT,
   context TEXT,
+  read_at TEXT,
   deleted_at TEXT,
   created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
+  started_at TEXT,
+  completed_at TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
