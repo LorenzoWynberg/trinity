@@ -25,16 +25,10 @@ Still failing after 3 attempts → BLOCKED
 1. **Log activity** - POST to activity endpoint
    - storyId, title, content, filesChanged, tags
 
-2. **Commit and push**
-   ```bash
-   git add -A
-   git commit -m "type(scope): description"
-   git push -u origin <branch>
-   ```
-   Types: feat, fix, refactor, test, docs, chore
-
-3. **Signal complete** - POST to signal endpoint
+2. **Signal complete** - POST to signal endpoint
    - action: "complete"
+
+Note: Don't commit - the execution system handles commit/PR after signal.
 
 ---
 

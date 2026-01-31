@@ -39,10 +39,9 @@ Analyst → Implementer ⇄ Reviewer → Documenter → Complete
 
 2. **Become each agent** - Read the agent's identity file and act as that agent until handoff
 
-3. **On completion** - When Reviewer approves (handoff to orchestrator):
-   - Commit and push
+3. **On completion** - When Documenter hands off to orchestrator:
    - Log activity
-   - Signal complete
+   - Signal complete (execution system handles commit/PR)
 
 ## Rules
 
