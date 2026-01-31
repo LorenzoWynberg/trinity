@@ -367,8 +367,91 @@ export default function AlignPage() {
 
       {/* Step 1: Input */}
       {step === 'input' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2">
+        <div className="space-y-6">
+          {/* Scope Card - Full Width */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Scope</CardTitle>
+              <CardDescription>
+                What to analyze
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-4">
+                <div className="space-y-2 min-w-[200px]">
+                  <label className="text-sm font-medium">Scope</label>
+                  <Select value={scope} onValueChange={(v) => setScope(v as AlignScope)} disabled={taskRunning}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select scope" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="project">Whole Project</SelectItem>
+                      <SelectItem value="version">Specific Version</SelectItem>
+                      <SelectItem value="phase">Specific Phase</SelectItem>
+                      <SelectItem value="epic">Specific Epic</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {scope !== 'project' && (
+                  <div className="space-y-2 min-w-[200px]">
+                    <label className="text-sm font-medium">Version</label>
+                    <Select value={selectedVersion} onValueChange={setSelectedVersion} disabled={taskRunning}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select version" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {versions.map(v => (
+                          <SelectItem key={v} value={v}>
+                            {v}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {(scope === 'phase' || scope === 'epic') && (
+                  <div className="space-y-2 min-w-[200px]">
+                    <label className="text-sm font-medium">Phase</label>
+                    <Select value={selectedPhase} onValueChange={setSelectedPhase} disabled={taskRunning}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select phase" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {phases.map(p => (
+                          <SelectItem key={p.id} value={String(p.id)}>
+                            Phase {p.id}: {p.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {scope === 'epic' && selectedPhase && (
+                  <div className="space-y-2 min-w-[200px]">
+                    <label className="text-sm font-medium">Epic</label>
+                    <Select value={selectedEpic} onValueChange={setSelectedEpic} disabled={taskRunning}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select epic" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filteredEpics.map(e => (
+                          <SelectItem key={`${e.phase}.${e.id}`} value={`${e.phase}.${e.id}`}>
+                            Epic {e.id}: {e.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Vision Card - Full Width */}
+          <Card>
             <CardHeader>
               <CardTitle>Your Vision</CardTitle>
               <CardDescription>
@@ -380,7 +463,7 @@ export default function AlignPage() {
                 placeholder="Describe what you want to build and your goals...&#10;&#10;Example: I want to build a modern task management app that focuses on team collaboration. Key features should include real-time updates, easy task assignment, and progress tracking. The app should be simple to use without overwhelming users with options."
                 value={vision}
                 onChange={e => setVision(e.target.value)}
-                rows={10}
+                rows={8}
                 className="text-base"
                 disabled={taskRunning}
               />
@@ -403,85 +486,6 @@ export default function AlignPage() {
                   )}
                   Analyze Alignment
                 </Button>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Scope</CardTitle>
-              <CardDescription>
-                What to analyze
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Scope</label>
-                <Select value={scope} onValueChange={(v) => setScope(v as AlignScope)} disabled={taskRunning}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select scope" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="project">Whole Project</SelectItem>
-                    <SelectItem value="version">Specific Version</SelectItem>
-                    <SelectItem value="phase">Specific Phase</SelectItem>
-                    <SelectItem value="epic">Specific Epic</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {scope !== 'project' && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Version</label>
-                  <Select value={selectedVersion} onValueChange={setSelectedVersion} disabled={taskRunning}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select version" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {versions.map(v => (
-                        <SelectItem key={v} value={v}>
-                          {v}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {(scope === 'phase' || scope === 'epic') && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Phase</label>
-                  <Select value={selectedPhase} onValueChange={setSelectedPhase} disabled={taskRunning}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select phase" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {phases.map(p => (
-                        <SelectItem key={p.id} value={String(p.id)}>
-                          Phase {p.id}: {p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {scope === 'epic' && selectedPhase && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Epic</label>
-                  <Select value={selectedEpic} onValueChange={setSelectedEpic} disabled={taskRunning}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select epic" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredEpics.map(e => (
-                        <SelectItem key={`${e.phase}.${e.id}`} value={`${e.phase}.${e.id}`}>
-                          Epic {e.id}: {e.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
               )}
             </CardContent>
           </Card>
