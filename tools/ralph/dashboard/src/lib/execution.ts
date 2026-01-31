@@ -23,6 +23,7 @@ import { getNextStory, getRunnableStories, getScoredStories, type StoryScore } f
 import * as state from './run-state'
 import * as git from './git'
 import * as prdDb from './db/prd'
+import * as handoffsDb from './db/handoffs'
 import { settings } from './db'
 
 const execAsync = promisify(exec)
@@ -233,20 +234,30 @@ async function runClaude(
 
 /**
  * Check story status from database (Claude calls /api/signal to update)
+ * Also checks handoffs - complete when documenter hands off to orchestrator
  */
-function checkStoryStatus(storyId: string): { complete: boolean; blocked: boolean; message?: string } {
+function checkStoryStatus(storyId: string): { complete: boolean; blocked: boolean; message?: string; phase?: string } {
   const story = prdDb.stories.get(storyId)
   const runStateData = prdDb.runState.get()
 
+  // Check if story was marked complete via signal API
   if (story?.passes) {
     return { complete: true, blocked: false }
   }
 
+  // Check handoffs for completion (documenter → orchestrator with approved)
+  const handoffState = handoffsDb.getCurrentState(storyId)
+  if (handoffState.phase === 'complete') {
+    return { complete: true, blocked: false }
+  }
+
+  // Check if blocked via signal API
   if (runStateData.status === 'blocked') {
     return { complete: false, blocked: true, message: runStateData.last_error || undefined }
   }
 
-  return { complete: false, blocked: false }
+  // Return current phase for UI
+  return { complete: false, blocked: false, phase: handoffState.phase || undefined }
 }
 
 /**
@@ -516,6 +527,18 @@ export async function runIteration(
     }
     await state.startStory(storyId, branch)
     await state.saveCheckpoint(storyId, 'branch_created', { branch })
+
+    // Create initial handoff to analyst to start the agent pipeline
+    handoffsDb.create({
+      story_id: storyId,
+      from_agent: 'orchestrator',
+      to_agent: 'analyst',
+      payload: {
+        story_id: storyId,
+        branch,
+        version: config.version
+      }
+    })
   }
 
   // Run Claude
@@ -743,6 +766,11 @@ export async function getExecutionStatus(prd: PRD): Promise<{
   progress: { total: number; merged: number; passed: number; percentage: number }
   nextStory: Story | null
   scoredStories: StoryScore[]
+  agentState?: {
+    currentAgent: string | null
+    phase: string | null
+    handoffCount: number
+  }
 }> {
   const currentState = await state.readState()
   const nextStory = getNextStory(prd, currentState.last_completed)
@@ -753,10 +781,22 @@ export async function getExecutionStatus(prd: PRD): Promise<{
   const passed = prd.stories.filter(s => s.passes && !s.merged).length
   const percentage = total > 0 ? Math.round((merged / total) * 100) : 0
 
+  // Get agent state if working on a story
+  let agentState: { currentAgent: string | null; phase: string | null; handoffCount: number } | undefined
+  if (currentState.current_story) {
+    const handoffState = handoffsDb.getCurrentState(currentState.current_story)
+    agentState = {
+      currentAgent: handoffState.currentAgent,
+      phase: handoffState.phase,
+      handoffCount: handoffState.handoffs.length
+    }
+  }
+
   return {
     state: currentState,
     progress: { total, merged, passed, percentage },
     nextStory,
-    scoredStories
+    scoredStories,
+    agentState
   }
 }
